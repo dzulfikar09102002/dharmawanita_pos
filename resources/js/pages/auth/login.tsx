@@ -24,7 +24,7 @@ export default function Login({
 }: Props) {
     return (
         <>
-            <Head title="Log in" />
+            <Head title="Login - Dharma Wanita" />
 
             <Form
                 {...store.form()}
@@ -34,71 +34,70 @@ export default function Login({
                 {({ processing, errors }) => (
                     <>
                         <div className="grid gap-6">
+
+                            {/* EMAIL */}
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email">Email</Label>
                                 <Input
                                     id="email"
                                     type="email"
                                     name="email"
                                     required
                                     autoFocus
-                                    tabIndex={1}
-                                    autoComplete="email"
+                                    className="input-custom pl-10 w-full pr-4 py-3 border-b-2 border-gray-300"
                                     placeholder="email@example.com"
                                 />
                                 <InputError message={errors.email} />
                             </div>
 
+                            {/* PASSWORD */}
                             <div className="grid gap-2">
                                 <div className="flex items-center">
                                     <Label htmlFor="password">Password</Label>
+
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
-                                            className="ml-auto text-sm"
-                                            tabIndex={5}
+                                            className="ml-auto text-sm text-amber-600"
                                         >
-                                            Forgot password?
+                                            Lupa password?
                                         </TextLink>
                                     )}
                                 </div>
+
                                 <PasswordInput
                                     id="password"
                                     name="password"
                                     required
-                                    tabIndex={2}
-                                    autoComplete="current-password"
-                                    placeholder="Password"
+                                    placeholder="••••••••"
+                                    className="input-custom w-full pr-4 py-3 border-b-2 border-gray-300"
                                 />
                                 <InputError message={errors.password} />
                             </div>
 
-                            <div className="flex items-center space-x-3">
-                                <Checkbox
-                                    id="remember"
-                                    name="remember"
-                                    tabIndex={3}
-                                />
-                                <Label htmlFor="remember">Remember me</Label>
+                            {/* REMEMBER */}
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="remember" name="remember" />
+                                <Label htmlFor="remember">Ingat saya</Label>
                             </div>
 
+                            {/* BUTTON */}
                             <Button
                                 type="submit"
-                                className="mt-4 w-full"
-                                tabIndex={4}
+                                className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:opacity-90"
                                 disabled={processing}
-                                data-test="login-button"
                             >
                                 {processing && <Spinner />}
-                                Log in
+                                Masuk
                             </Button>
                         </div>
 
+                        {/* REGISTER */}
                         {canRegister && (
-                            <div className="text-center text-sm text-muted-foreground">
-                                Don't have an account?{' '}
-                                <TextLink href={register()} tabIndex={5}>
-                                    Sign up
+                            <div className="text-center text-sm text-gray-600">
+                                Belum punya akun?{' '}
+                                <TextLink href={register()}>
+                                    Daftar
                                 </TextLink>
                             </div>
                         )}
@@ -106,8 +105,9 @@ export default function Login({
                 )}
             </Form>
 
+            {/* STATUS */}
             {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
+                <div className="mt-4 text-center text-sm text-green-600">
                     {status}
                 </div>
             )}
@@ -116,6 +116,6 @@ export default function Login({
 }
 
 Login.layout = {
-    title: 'Log in to your account',
-    description: 'Enter your email and password below to log in',
+    title: 'Selamat Datang',
+    description: 'Silakan login untuk melanjutkan',
 };
