@@ -3,24 +3,26 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class StoreProductRequest extends FormRequest
+class UpdateProductRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return true;
     }
-    protected function prepareForValidation(): void
-    {
-        $this->merge([
-            'name' => trim($this->name),
-        ]);
-    }
+
     public function rules(): array
     {
+        $id = $this->route('product'); 
         return [
             'category_id'    => 'required|exists:categories,id',
-            'name'           => 'required|string|max:255',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('products', 'name')->ignore($id),
+            ],
             'brand'          => 'required|string|max:255',
             'purchase_price' => 'required|numeric|min:0|max:9999999999999.99',
             'selling_price'  => 'required|numeric|min:0|max:9999999999999.99',

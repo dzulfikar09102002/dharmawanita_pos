@@ -15,15 +15,23 @@ Route::inertia('/', 'welcome', [
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
 
-    Route::resource('/products', ProductController::class);
+Route::resource('/products', ProductController::class)->except('show');
+    Route::get('products/deleted', [ProductController::class, 'deleted'])
+        ->name('products.deleted');
+    Route::post('products/{id}/restore', [ProductController::class, 'restore'])
+        ->name('products.restore');  
 
     Route::resource('/payment-methods', PaymentMethodController::class)->except('show');
     Route::get('payment-methods/deleted', [PaymentMethodController::class, 'deleted'])
         ->name('payment-methods.deleted');
     Route::post('payment-methods/{id}/restore', [PaymentMethodController::class, 'restore'])
-        ->name('payment-methods.restore');    
+        ->name('payment-methods.restore'); 
 
-    Route::resource('/categories', CategoryController::class);
+    Route::resource('/categories', CategoryController::class)->except(['show']);
+    Route::get('/categories/deleted', [CategoryController::class, 'deleted'])
+        ->name('categories.deleted');
+    Route::post('/categories/{id}/restore', [CategoryController::class, 'restore'])
+        ->name('categories.restore');
 
     Route::resource('/suppliers', SupplierController::class)->except('show');
     Route::get('suppliers/deleted', [SupplierController::class, 'deleted'])
