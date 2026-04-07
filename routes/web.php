@@ -10,8 +10,9 @@ Route::inertia('/', 'welcome', [
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
+
+    Route::resource('/products', ProductController::class);
 });
 
-Route::get('/products', [ProductController::class, 'index']);
 
 require __DIR__.'/settings.php';
