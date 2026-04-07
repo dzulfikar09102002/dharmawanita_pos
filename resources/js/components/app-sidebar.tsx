@@ -1,9 +1,18 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-react';
+import {
+    LayoutGrid,
+    Package,
+    Tags,
+    Truck,
+    CreditCard,
+    ShoppingCart,
+    BarChart3,
+} from 'lucide-react';
+
 import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
+
 import {
     Sidebar,
     SidebarContent,
@@ -13,27 +22,41 @@ import {
     SidebarMenuButton,
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { dashboard } from '@/routes';
-import type { NavItem } from '@/types';
 
-const mainNavItems: NavItem[] = [
+import { dashboard } from '@/routes';
+
+const mainNavItems = [
     {
         title: 'Dashboard',
-        href: dashboard(),
+        href: dashboard().url,
         icon: LayoutGrid,
     },
-];
-
-const footerNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: FolderGit2,
+        title: 'Master Data',
+        icon: Package,
+        children: [
+            { title: 'Produk', href: '/products', icon: Package },
+            { title: 'Kategori', href: '/categories', icon: Tags },
+            { title: 'Supplier', href: '/suppliers', icon: Truck },
+            {
+                title: 'Metode Pembayaran',
+                href: '/payment-methods',
+                icon: CreditCard,
+            },
+        ],
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
+        title: 'Transaksi',
+        icon: ShoppingCart,
+        children: [
+            { title: 'Pembelian', href: '/purchases', icon: ShoppingCart },
+            { title: 'Penjualan', href: '/sales', icon: ShoppingCart },
+        ],
+    },
+    {
+        title: 'Laporan',
+        icon: BarChart3,
+        children: [{ title: 'Stok', href: '/stocks', icon: BarChart3 }],
     },
 ];
 
@@ -44,7 +67,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild>
-                            <Link href={dashboard()} prefetch>
+                            <Link href={dashboard().url} prefetch>
                                 <AppLogo />
                             </Link>
                         </SidebarMenuButton>
@@ -57,7 +80,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

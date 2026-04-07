@@ -6,37 +6,35 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Product extends Model
+class Purchase extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'category_id',
-        'name',
-        'brand',
-        'has_expired',
+        'product_id',
+        'supplier_id',
+        'quantity',
         'purchase_price',
-        'selling_price',
+        'purchase_date',
         'expired_date',
         'created_by',
         'updated_by',
         'deleted_by',
     ];
 
-    protected $casts = [
-        'has_expired' => 'boolean',
-        'purchase_price' => 'decimal:2',
-        'selling_price' => 'decimal:2',
-        'expired_date' => 'date',
-    ];
-
-    // Relasi ke kategori
-    public function category()
+    // Relasi ke product
+    public function product()
     {
-        return $this->belongsTo(Category::class);
+        return $this->belongsTo(Product::class);
     }
 
-    // Relasi ke user
+    // Relasi ke supplier
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class);
+    }
+
+    // Relasi ke user (by)
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');

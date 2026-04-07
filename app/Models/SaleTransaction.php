@@ -2,41 +2,42 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Product extends Model
+class SaleTransaction extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'category_id',
-        'name',
-        'brand',
-        'has_expired',
-        'purchase_price',
-        'selling_price',
-        'expired_date',
+        'invoice_number',
+        'payment_method_id',
+        'payment_status',
+        'total_amount',
+        'grand_total',
+        'transaction_date',
         'created_by',
         'updated_by',
         'deleted_by',
     ];
 
     protected $casts = [
-        'has_expired' => 'boolean',
-        'purchase_price' => 'decimal:2',
-        'selling_price' => 'decimal:2',
-        'expired_date' => 'date',
+        'transaction_date' => 'datetime',
     ];
 
-    // Relasi ke kategori
-    public function category()
+    // Relasi
+    public function details()
     {
-        return $this->belongsTo(Category::class);
+        return $this->hasMany(SaleTransactionDetail::class);
     }
 
-    // Relasi ke user
+    public function paymentMethod()
+    {
+        return $this->belongsTo(PaymentMethod::class);
+    }
+
+    // User tracking
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
