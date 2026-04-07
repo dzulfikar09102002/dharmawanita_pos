@@ -18,11 +18,8 @@ class ProductController extends Controller
     {
         $pagination = $this->service->getProducts();
         $categoryOptions = $this->service->getCategoryOptions();
-
-        return response()->json([
-            'pagination' => $pagination,
-            'categoryOptions' => $categoryOptions
-        ]);
+        
+        return Inertia::render('products/index', compact('pagination', 'categoryOptions'));
     }
 
     public function store(StoreProductRequest $request)
