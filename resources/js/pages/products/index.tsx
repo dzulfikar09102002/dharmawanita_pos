@@ -1,11 +1,14 @@
-import { Head, router } from '@inertiajs/react';
+import { Head, Form, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import products from '@/routes/products';
 
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { debounce } from 'lodash';
+import { Button } from '@/components/ui/button';
+import { Plus, Search, X, ArchiveRestore, Pencil } from 'lucide-react';
+
 import {
     createColumnHelper,
     getCoreRowModel,
@@ -17,8 +20,6 @@ import DataTable from '@/components/data-table';
 import TablePagination from '@/components/table-pagination';
 import { Pagination, Product } from '@/lib/model';
 
-import { useCallback, useEffect, useState } from 'react';
-
 import {
     Combobox,
     ComboboxInput,
@@ -27,7 +28,13 @@ import {
     ComboboxList,
     ComboboxItem,
 } from '@/components/ui/combobox';
+
 import { useQuery } from '@/hooks/use-query';
+
+import Modal, { ModalState } from '@/components/product/modal';
+import Alert, { AlertState } from '@/components/product/alert';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Link } from '@inertiajs/react';
 
 type Option = {
     value: string;
@@ -45,71 +52,79 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const columnHelper = createColumnHelper<Product>();
 
+type TableMeta = {
+    onDeleteOrRestore: (id: number, action: boolean) => void;
+    onEdit: (id: number) => void;
+    isDeletedRoute: boolean;
+};
+
 type Props = {
     pagination: Pagination<Product>;
     categoryOptions: Option[];
-    filters: {
-        search?: string;
-        category_id?: string;
-    };
 };
 
-export default function Index({ pagination, categoryOptions, filters }: Props) {
+export default function Index({ pagination, categoryOptions }: Props) {
     const { data } = pagination;
 
     const query = useQuery();
+    const search = query.search || '';
+    const category = query.category_id || 'all';
 
-    const [searchValue, setSearchValue] = useState(query.search || '');
-    const [categoryValue, setCategoryValue] = useState(
-        query.category_id || 'all',
-    );
+    const [modal, setModal] = useState<ModalState>({
+        isOpen: false,
+        dataId: undefined,
+    });
 
-    const debouncedSearch = useCallback(
-        debounce((value: string, category: any) => {
-            router.get(
-                products.index().url,
-                {
-                    search: value,
-                    product_category_id: category,
-                    page: 1,
-                },
-                {
-                    preserveState: true,
-                    replace: true,
-                },
-            );
-        }, 500),
-        [],
-    );
-    useEffect(() => {
-        return () => {
-            debouncedSearch.cancel();
-        };
-    }, [debouncedSearch]);
+    const [alert, setAlert] = useState<AlertState>({
+        delete: true,
+        isOpen: false,
+        dataId: undefined,
+        proccessing: false,
+    });
 
-    const columns = [
+    const onModalSuccess = () => setModal({ isOpen: false, dataId: undefined });
+    const onModalClose = () => setModal({ isOpen: false, dataId: undefined });
+
+    const onAlertClose = () =>
+        setAlert({
+            isOpen: false,
+            proccessing: false,
+            dataId: undefined,
+            delete: true,
+        });
+
+    const onAlertProccessing = () =>
+        setAlert((prev) => ({ ...prev, proccessing: true }));
+
+    const onEdit = (id: number) =>
+        setModal({ isOpen: true, dataId: id });
+
+    const onDeleteOrRestore = (id: number, action: boolean) =>
+        setAlert({
+            isOpen: true,
+            dataId: id,
+            delete: action,
+            proccessing: false,
+        });
+
+    const { url } = usePage();
+    const isDeletedRoute = url.includes('deleted');
+
+    const columns: ColumnDef<Product, any>[] = [
         {
             id: 'no',
             header: 'No',
-            cell: (info: any) =>
+            cell: (info) =>
                 (pagination.current_page - 1) * pagination.per_page +
                 info.row.index +
                 1,
         },
-
-        columnHelper.accessor('name', {
-            header: 'Nama Produk',
-        }),
-
-        columnHelper.accessor('brand', {
-            header: 'Merk',
-        }),
-
+        columnHelper.accessor('name', { header: 'Nama Produk' }),
+        columnHelper.accessor('brand', { header: 'Merk' }),
         columnHelper.accessor('category_id', {
             header: 'Kategori',
             cell: (info) => info.row.original.category?.name ?? '-',
         }),
-
         columnHelper.accessor('purchase_price', {
             header: 'Harga Beli',
             cell: (info) =>
@@ -118,7 +133,6 @@ export default function Index({ pagination, categoryOptions, filters }: Props) {
                     currency: 'IDR',
                 }).format(info.getValue()),
         }),
-
         columnHelper.accessor('selling_price', {
             header: 'Harga Jual',
             cell: (info) =>
@@ -127,103 +141,170 @@ export default function Index({ pagination, categoryOptions, filters }: Props) {
                     currency: 'IDR',
                 }).format(info.getValue()),
         }),
-
         columnHelper.accessor('has_expired', {
-            header: 'Punya Expired',
+            header: 'Expired',
             cell: (info) =>
                 info.getValue() ? (
-                    <span className="inline-flex items-center rounded-md bg-red-100 px-2 py-1 text-xs font-medium text-red-600">
+                    <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-xs">
                         Ya
                     </span>
                 ) : (
-                    <span className="inline-flex items-center rounded-md bg-green-100 px-2 py-1 text-xs font-medium text-green-600">
+                    <span className="bg-red-100 text-red-600 px-2 py-1 rounded text-xs">
                         Tidak
                     </span>
                 ),
         }),
-
-        columnHelper.accessor('expired_date', {
-            header: 'Tanggal Expired',
+        {
+            id: 'action',
+            header: 'Aksi',
             cell: (info) => {
-                const val = info.getValue();
-                if (!val) return '-';
-                return new Date(val).toLocaleDateString('id-ID');
-            },
-        }),
-    ] as ColumnDef<Product>[];
+                const product = info.row.original as Product & { id: number };
+                const meta = info.table.options.meta as TableMeta;
 
-    const table = useReactTable({
+                return (
+                    <div className="flex gap-2">
+                        {!meta.isDeletedRoute && (
+                            <Button
+                                size="icon"
+                                variant="outline"
+                                onClick={() => meta.onEdit(product.id)}
+                            >
+                                <Pencil size={16} />
+                            </Button>
+                        )}
+
+                        <Button
+                            size="icon"
+                            variant={
+                                meta.isDeletedRoute
+                                    ? 'outline'
+                                    : 'destructive'
+                            }
+                            onClick={() =>
+                                meta.onDeleteOrRestore(
+                                    product.id,
+                                    !meta.isDeletedRoute,
+                                )
+                            }
+                        >
+                            {meta.isDeletedRoute ? (
+                                <ArchiveRestore size={16} />
+                            ) : (
+                                <X size={16} />
+                            )}
+                        </Button>
+                    </div>
+                );
+            },
+        },
+    ];
+
+    const table = useReactTable<Product>({
         data,
         columns,
         getCoreRowModel: getCoreRowModel(),
+        meta: {
+            onDeleteOrRestore,
+            onEdit,
+            isDeletedRoute,
+        } as TableMeta,
     });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
 
-            <Card>
-                <CardContent>
-                    <div className="mb-4 grid gap-2 lg:flex">
-                        <Combobox
-                            items={[
-                                { label: 'Semua', value: 'all' },
-                                ...categoryOptions,
-                            ]}
-                            value={categoryOptions.find(
-                                (el) => el.value == categoryValue,
-                            )}
-                            onValueChange={(val: Option | null) => {
-                                const newValue = val?.value ?? 'all';
+            <Modal
+                modalState={modal}
+                onModalClose={onModalClose}
+                onModalSuccess={onModalSuccess}
+                tableData={pagination.data}
+                categoryOptions={categoryOptions} 
+            />
 
-                                setCategoryValue(newValue);
+            <Alert
+                alertState={alert}
+                onAlertClose={onAlertClose}
+                onAlertProccessing={onAlertProccessing}
+            />
 
-                                router.get(
-                                    products.index().url,
-                                    {
-                                        search: searchValue,
-                                        category_id: newValue,
-                                        page: 1,
-                                    },
-                                    {
-                                        preserveState: true,
-                                        replace: true,
-                                    },
-                                );
-                            }}
-                        >
-                            <ComboboxInput
-                                placeholder="Pilih Kategori"
-                                className="w-full"
+            {/* BUTTON TAMBAH */}
+            <div className="mb-4">
+                <Button
+                    className="size-9 lg:size-auto"
+                    onClick={() =>
+                        setModal({ isOpen: true, dataId: undefined })
+                    }
+                >
+                    <Plus />
+                    <span className="hidden lg:inline"> Produk Baru</span>
+                </Button>
+            </div>
+
+            <Card className="border-0 lg:border lg:py-6">
+                <CardHeader className="lg:px-6">
+                    <Form method="GET">
+                        <div className="grid gap-2 lg:flex">
+                            <input type="hidden" name="page" value={1} />
+
+                            <Combobox
+                                items={[
+                                    { label: 'Semua', value: 'all' },
+                                    ...categoryOptions,
+                                ]}
+                                defaultValue={categoryOptions.find(
+                                    (el) => el.value == category,
+                                )}
+                            >
+                                <ComboboxInput name="category_id" />
+                                <ComboboxContent>
+                                    <ComboboxEmpty />
+                                    <ComboboxList>
+                                        {(el) => (
+                                            <ComboboxItem
+                                                key={el.value}
+                                                value={el.value}
+                                            >
+                                                {el.label}
+                                            </ComboboxItem>
+                                        )}
+                                    </ComboboxList>
+                                </ComboboxContent>
+                            </Combobox>
+
+                            <Input
+                                name="search"
+                                defaultValue={search}
+                                placeholder="Cari produk..."
                             />
-                            <ComboboxContent>
-                                <ComboboxEmpty>Tidak ditemukan</ComboboxEmpty>
-                                <ComboboxList>
-                                    {(el) => (
-                                        <ComboboxItem key={el.value} value={el}>
-                                            {el.label}
-                                        </ComboboxItem>
-                                    )}
-                                </ComboboxList>
-                            </ComboboxContent>
-                        </Combobox>
 
-                        {/* SEARCH */}
-                        <Input
-                            placeholder="Cari produk..."
-                            value={searchValue}
-                            onChange={(e) => {
-                                const value = e.target.value;
-                                setSearchValue(value);
-                                debouncedSearch(value, categoryValue);
-                            }}
-                        />
-                    </div>
+                            <Button type="submit" variant="secondary">
+                                <Search /> Cari
+                            </Button>
+                        </div>
+                    </Form>
+                </CardHeader>
 
-                    {/* 📊 TABLE */}
+                <CardContent className="lg:px-6">
+                    <Tabs
+                        value={isDeletedRoute ? 'deleted' : 'available'}
+                        className="mb-4"
+                    >
+                        <TabsList>
+                            <TabsTrigger value="available" asChild>
+                                <Link href={products.index().url}>
+                                    Tersedia
+                                </Link>
+                            </TabsTrigger>
+                            <TabsTrigger value="deleted" asChild>
+                                <Link href={products.deleted().url}>
+                                    Terhapus
+                                </Link>
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+
                     <DataTable columns={columns} table={table} />
-
-                    {/* 📄 PAGINATION */}
                     <TablePagination pagination={pagination} />
                 </CardContent>
             </Card>
