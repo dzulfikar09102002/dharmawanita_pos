@@ -17,7 +17,7 @@ class PaymentMethodService{
     {
         $search = request('search', '');
 
-        return PaymentMethod::onlyTrashed()->where('entity_id', auth()->user()?->entity?->id)
+        return PaymentMethod::onlyTrashed()
             ->whereLike('name', "%$search%")
             ->paginate(request('per_page', 10))
             ->withQueryString();
@@ -28,9 +28,6 @@ class PaymentMethodService{
         return PaymentMethod::create([
             'name' => $input['name'],
             'kind' => $input['kind'],
-            'fixed_fee' => $input['fixed_fee'],
-            'variable_fee' => $input['variable_fee'],
-            'entity_id' => $user->entity?->id,
             'created_by' => $user->id,
             'updated_by' => $user->id,
         ]);
@@ -41,8 +38,6 @@ class PaymentMethodService{
         return $paymentMethod->update([
             'name'         => $input['name'],
             'kind'         => $input['kind'],
-            'fixed_fee'    => $input['fixed_fee'],
-            'variable_fee' => $input['variable_fee'],
             'updated_by'   => auth()->user()->id,
         ]);
     }

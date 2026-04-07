@@ -14,7 +14,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
 
     Route::resource('/products', ProductController::class);
-    Route::resource('/payment-methods', PaymentMethodController::class);
+
+    Route::resource('/payment-methods', PaymentMethodController::class)->except('show');
+    Route::get('payment-methods/deleted', [PaymentMethodController::class, 'deleted'])
+        ->name('payment-methods.deleted');
+    Route::post('payment-methods/{id}/restore', [PaymentMethodController::class, 'restore'])
+        ->name('payment-methods.restore');    
     Route::resource('/categories', CategoryController::class);
 });
 

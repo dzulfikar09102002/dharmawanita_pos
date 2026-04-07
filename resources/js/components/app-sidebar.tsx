@@ -1,12 +1,17 @@
 import { Link } from '@inertiajs/react';
 import {
-    LayoutGrid,
+    LayoutDashboard,
+    ScanBarcode,
+    ShoppingCart,
+    ShoppingBasket,
+    Receipt,
+    BarChart3,
     Package,
     Tags,
     Truck,
     CreditCard,
-    ShoppingCart,
-    BarChart3,
+    Database,
+    Boxes,
 } from 'lucide-react';
 
 import AppLogo from '@/components/app-logo';
@@ -30,11 +35,46 @@ const mainNavItems = [
     {
         title: 'Dashboard',
         href: dashboard().url,
-        icon: LayoutGrid,
+        icon: LayoutDashboard,
     },
     {
+        title: 'Kasir / Penjualan',
+        href: '/cashier',
+        icon: ScanBarcode,
+    },
+
+    {
+        title: 'Pembelian',
+        href: '/purchases',
+        icon: ShoppingBasket,
+    },
+
+    {
+        title: 'Laporan',
+        icon: BarChart3,
+        children: [
+            {
+                title: 'Penjualan',
+                href: '/reports/sales',
+                icon: Receipt,
+            },
+            {
+                title: 'Pembelian',
+                href: '/reports/purchases',
+                icon: ShoppingBasket,
+            },
+            {
+                title: 'Stok',
+                href: '/reports/stocks',
+                icon: Boxes,
+            },
+        ],
+    },
+
+    // 🔥 MASTER DATA
+    {
         title: 'Master Data',
-        icon: Package,
+        icon: Database,
         children: [
             { title: 'Produk', href: '/products', icon: Package },
             { title: 'Kategori', href: '/categories', icon: Tags },
@@ -45,19 +85,6 @@ const mainNavItems = [
                 icon: CreditCard,
             },
         ],
-    },
-    {
-        title: 'Transaksi',
-        icon: ShoppingCart,
-        children: [
-            { title: 'Pembelian', href: '/purchases', icon: ShoppingCart },
-            { title: 'Penjualan', href: '/sales', icon: ShoppingCart },
-        ],
-    },
-    {
-        title: 'Laporan',
-        icon: BarChart3,
-        children: [{ title: 'Stok', href: '/stocks', icon: BarChart3 }],
     },
 ];
 
