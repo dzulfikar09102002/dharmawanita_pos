@@ -24,19 +24,18 @@ export default function Login({
 }: Props) {
     return (
         <>
-            <Head title="Login - Dharma Wanita" />
+            <Head title="Masuk — Dharma Wanita" />
 
             <Form
                 {...store.form()}
                 resetOnSuccess={['password']}
-                className="flex flex-col gap-6"
+                className="flex flex-col gap-5"
             >
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-6">
-
+                        <div style={{ display: 'grid', gap: '1.25rem' }}>
                             {/* EMAIL */}
-                            <div className="grid gap-2">
+                            <div style={{ display: 'grid', gap: '6px' }}>
                                 <Label htmlFor="email">Email</Label>
                                 <Input
                                     id="email"
@@ -44,70 +43,100 @@ export default function Login({
                                     name="email"
                                     required
                                     autoFocus
-                                    className="input-custom pl-10 w-full pr-4 py-3 border-b-2 border-gray-300"
                                     placeholder="email@example.com"
                                 />
                                 <InputError message={errors.email} />
                             </div>
 
                             {/* PASSWORD */}
-                            <div className="grid gap-2">
-                                <div className="flex items-center">
+                            <div style={{ display: 'grid', gap: '6px' }}>
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                    }}
+                                >
                                     <Label htmlFor="password">Password</Label>
-
                                     {canResetPassword && (
                                         <TextLink
                                             href={request()}
-                                            className="ml-auto text-sm text-amber-600"
+                                            style={{ fontSize: '0.78rem' }}
                                         >
                                             Lupa password?
                                         </TextLink>
                                     )}
                                 </div>
-
                                 <PasswordInput
                                     id="password"
                                     name="password"
                                     required
                                     placeholder="••••••••"
-                                    className="input-custom w-full pr-4 py-3 border-b-2 border-gray-300"
                                 />
                                 <InputError message={errors.password} />
                             </div>
 
                             {/* REMEMBER */}
-                            <div className="flex items-center space-x-2">
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                }}
+                            >
                                 <Checkbox id="remember" name="remember" />
-                                <Label htmlFor="remember">Ingat saya</Label>
+                                <Label
+                                    htmlFor="remember"
+                                    style={{
+                                        marginBottom: 0,
+                                        textTransform: 'none',
+                                        letterSpacing: 0,
+                                        fontSize: '0.83rem',
+                                    }}
+                                >
+                                    Ingat saya
+                                </Label>
                             </div>
 
-                            {/* BUTTON */}
-                            <Button
-                                type="submit"
-                                className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:opacity-90"
-                                disabled={processing}
-                            >
+                            {/* SUBMIT */}
+                            <Button type="submit" disabled={processing}>
                                 {processing && <Spinner />}
                                 Masuk
                             </Button>
                         </div>
 
-                        {/* REGISTER */}
+                        {/* REGISTER LINK */}
                         {canRegister && (
-                            <div className="text-center text-sm text-gray-600">
+                            <p
+                                style={{
+                                    textAlign: 'center',
+                                    fontSize: '0.83rem',
+                                    color: 'var(--text-muted)',
+                                }}
+                            >
                                 Belum punya akun?{' '}
                                 <TextLink href={register()}>
-                                    Daftar
+                                    Daftar sekarang
                                 </TextLink>
-                            </div>
+                            </p>
                         )}
                     </>
                 )}
             </Form>
 
-            {/* STATUS */}
             {status && (
-                <div className="mt-4 text-center text-sm text-green-600">
+                <div
+                    style={{
+                        marginTop: '1rem',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        background: 'rgba(34,197,94,0.08)',
+                        border: '1px solid rgba(34,197,94,0.25)',
+                        color: '#15803d',
+                        fontSize: '0.83rem',
+                        textAlign: 'center',
+                    }}
+                >
                     {status}
                 </div>
             )}
@@ -117,5 +146,5 @@ export default function Login({
 
 Login.layout = {
     title: 'Selamat Datang',
-    description: 'Silakan login untuk melanjutkan',
+    description: 'Silakan masuk untuk melanjutkan',
 };
