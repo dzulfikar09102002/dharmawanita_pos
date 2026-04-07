@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/sidebar';
 
 import { dashboard } from '@/routes';
+import paymentMethods from '@/routes/payment-methods';
 
 const mainNavItems = [
     {
@@ -40,7 +41,7 @@ const mainNavItems = [
             { title: 'Supplier', href: '/suppliers', icon: Truck },
             {
                 title: 'Metode Pembayaran',
-                href: '/payment-methods',
+                href: paymentMethods.index().url,
                 icon: CreditCard,
             },
         ],

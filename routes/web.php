@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PaymentMethodController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\ProductController;
@@ -11,8 +12,10 @@ Route::inertia('/', 'welcome', [
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
+
+    Route::resource('/products', ProductController::class);
+    Route::resource('/payment-methods', PaymentMethodController::class);
     Route::resource('/categories', CategoryController::class);
-    Route::resource('/products', ProductController::class); 
 });
 
 

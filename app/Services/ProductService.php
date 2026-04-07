@@ -17,7 +17,7 @@ class ProductService
             });
 
         if ($product_category_id !== 'all') {
-            $query->where('category_id', $category_id);
+            $query->where('category_id', $product_category_id);
         }
 
         return $query
@@ -49,9 +49,9 @@ class ProductService
         return Product::create([
             'category_id' => $data['category_id'],
             'name' => $data['name'],
-            'brand' => $data['brand'], // ✅ samakan dengan DB
+            'brand' => $data['brand'], 
             'has_expired' => $data['has_expired'],
-            'created_by' => $user?->id, // lebih proper
+            'created_by' => $user?->id, 
         ]);
     }
 }
