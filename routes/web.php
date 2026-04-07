@@ -27,7 +27,12 @@ Route::resource('/products', ProductController::class)->except('show');
         ->name('payment-methods.restore');    
 
     Route::resource('/categories', CategoryController::class);
-    Route::resource('/suppliers', SupplierController::class);
+
+    Route::resource('/suppliers', SupplierController::class)->except('show');
+    Route::get('suppliers/deleted', [SupplierController::class, 'deleted'])
+        ->name('suppliers.deleted');
+    Route::post('suppliers/{id}/restore', [SupplierController::class, 'restore'])
+        ->name('suppliers.restore');  
 });
 
 require __DIR__.'/settings.php';
