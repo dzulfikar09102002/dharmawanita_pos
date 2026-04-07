@@ -3,7 +3,12 @@ export interface PaymentMethod {
     name: string;
     kind: string;
 }
-
+export interface Supplier {
+    id: number;
+    name: string;
+    contact: string;
+    address: string;
+}
 export type Pagination<T> = {
     data: T[];
     current_page: number;
