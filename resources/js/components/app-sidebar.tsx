@@ -30,6 +30,9 @@ import {
 
 import { dashboard } from '@/routes';
 import paymentMethods from '@/routes/payment-methods';
+import products from '@/routes/products';
+import categories from '@/routes/categories';
+import suppliers from '@/routes/suppliers';
 
 const mainNavItems = [
     {
@@ -71,14 +74,13 @@ const mainNavItems = [
         ],
     },
 
-    // 🔥 MASTER DATA
     {
         title: 'Master Data',
         icon: Database,
         children: [
-            { title: 'Produk', href: '/products', icon: Package },
-            { title: 'Kategori', href: '/categories', icon: Tags },
-            { title: 'Supplier', href: '/suppliers', icon: Truck },
+            { title: 'Produk', href: products.index().url, icon: Package },
+            { title: 'Kategori', href: categories.index().url, icon: Tags },
+            { title: 'Supplier', href: suppliers.index().url, icon: Truck },
             {
                 title: 'Metode Pembayaran',
                 href: paymentMethods.index().url,
@@ -90,7 +92,7 @@ const mainNavItems = [
 
 export function AppSidebar() {
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar collapsible="offcanvas" variant="inset">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
