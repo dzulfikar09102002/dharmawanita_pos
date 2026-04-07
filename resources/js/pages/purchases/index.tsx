@@ -24,7 +24,7 @@ import suppliers from '@/routes/suppliers';
 import Modal, { ModalState } from '@/components/supplier/modal';
 import Alert, { AlertState } from '@/components/supplier/alert';
 
-const title = 'Agen Penyuplai';
+const title = 'Pembelian';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

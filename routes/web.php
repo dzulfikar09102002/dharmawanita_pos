@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\PaymentMethodController;
+use App\Http\Controllers\PurchaseController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\ProductController;
@@ -26,9 +27,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('/suppliers', SupplierController::class)->except('show');
     Route::get('suppliers/deleted', [SupplierController::class, 'deleted'])
-        ->name('suppliers.deleted');
+    ->name('suppliers.deleted');
     Route::post('suppliers/{id}/restore', [SupplierController::class, 'restore'])
-        ->name('suppliers.restore');  
+    ->name('suppliers.restore');  
+
+    Route::resource('/purchases', PurchaseController::class)->except('show');
+    Route::get('purchase/deleted', [PurchaseController::class, 'deleted'])
+    ->name('purchase.deleted');
+    Route::post('purchase/{id}/restore', [PurchaseController::class, 'restore'])
+    ->name('purchase.restore');  
 });
 
 require __DIR__.'/settings.php';
