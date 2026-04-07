@@ -10,13 +10,13 @@ class ProductService
     public function getProducts()
     {
         $search = request('search', '');
-        $product_category_id = request('category_id', 'all');
+        $category_id = request('category_id', 'all');
         $query = Product::with('category')
             ->where(function ($q) use ($search) {
                 $q->whereLike('name', "%$search%");
             });
 
-        if ($product_category_id !== 'all') {
+        if ($category_id !== 'all') {
             $query->where('category_id', $category_id);
         }
 
@@ -49,9 +49,9 @@ class ProductService
         return Product::create([
             'category_id' => $data['category_id'],
             'name' => $data['name'],
-            'brand' => $data['brand'], // ✅ samakan dengan DB
+            'brand' => $data['brand'], 
             'has_expired' => $data['has_expired'],
-            'created_by' => $user?->id, // lebih proper
+            'created_by' => 'tes user',
         ]);
     }
 }
