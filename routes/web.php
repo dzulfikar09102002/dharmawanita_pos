@@ -20,8 +20,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('payment-methods/deleted', [PaymentMethodController::class, 'deleted'])
         ->name('payment-methods.deleted');
     Route::post('payment-methods/{id}/restore', [PaymentMethodController::class, 'restore'])
-        ->name('payment-methods.restore');    
-    Route::resource('/categories', CategoryController::class);
+        ->name('payment-methods.restore'); 
+
+      // Resource CRUD standar
+    Route::resource('/categories', CategoryController::class)->except(['show']);
+    Route::get('/categories/deleted', [CategoryController::class, 'deleted'])
+        ->name('categories.deleted');
+    Route::post('/categories/{id}/restore', [CategoryController::class, 'restore'])
+        ->name('categories.restore');
+
     Route::resource('/suppliers', SupplierController::class);
 });
 
