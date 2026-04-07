@@ -18,15 +18,19 @@ class ProductController extends Controller
     {
         $pagination = $this->service->getProducts();
         $categoryOptions = $this->service->getCategoryOptions();
-        
+
         return Inertia::render('products/index', compact('pagination', 'categoryOptions'));
     }
 
-    public function store(StoreProductRequest $request)
+   public function store(StoreProductRequest $request)
     {
-        $this->service->store($request->validated());
+        $product = $this->service->store($request->validated());
 
-        return to_route('product-categories.index')
-            ->with('success', 'Produk berhasil ditambahkan');
+        return response()->json([
+            'success' => true,
+            'message' => 'Produk berhasil ditambahkan',
+            'data' => $product
+        ]);
     }
+
 }
