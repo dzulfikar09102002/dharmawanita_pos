@@ -1,16 +1,19 @@
 import type { ReactNode } from 'react';
-import type { BreadcrumbItem } from '@/types/navigation';
+import type { BreadcrumbItem } from './navigation';
 
 export type AppLayoutProps = {
     children: ReactNode;
     breadcrumbs?: BreadcrumbItem[];
 };
 
-export type AppVariant = 'header' | 'sidebar';
-
 export type AuthLayoutProps = {
     children?: ReactNode;
     name?: string;
-    title?: string;
-    description?: string;
+    title?: React.ReactNode;
+    description?: React.ReactNode;
+};
+
+export type Option = {
+    value: string;
+    label: string;
 };

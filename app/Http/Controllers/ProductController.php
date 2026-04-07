@@ -33,11 +33,4 @@ class ProductController extends Controller
         ]);
     }
 
-    // public function store(StoreProductRequest $request)
-    // {
-    //     $this->service->store($request->validated());
-
-    //     return to_route('product.index')
-    //         ->with('success', 'Produk berhasil ditambahkan');
-    // }
 }

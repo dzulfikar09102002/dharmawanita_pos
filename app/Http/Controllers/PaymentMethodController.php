@@ -2,16 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\PaymentMethodService;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class PaymentMethodController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+    public function __construct(
+        private PaymentMethodService $service
+    ) {}
     public function index()
     {
-        //
+        $pagination = $this->service->getPaymentMethod();
+        return Inertia::render('payment-methods/index', compact('pagination'));
     }
 
     /**
