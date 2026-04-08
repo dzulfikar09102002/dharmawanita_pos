@@ -12,11 +12,10 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('sale_transaction_id')->constrained('sale_transactions')->onDelete('cascade');
-            $table->foreignId('product_id')->constrained('products')->onDelete('restrict');
+            $table->foreignId('purchase_id')->constrained('purchase')->onDelete('restrict');
             $table->string('name');
             $table->integer('quantity');
 
-            // Snapshot harga (penting!)
             $table->decimal('purchase_price', 15, 2);
             $table->decimal('selling_price', 15, 2);
 

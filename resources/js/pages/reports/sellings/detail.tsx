@@ -78,7 +78,7 @@ export default function Index({ pagination, transaction }: Props) {
             },
         },
 
-        columnHelper.accessor('product', {
+        columnHelper.accessor('purchase.product', {
             header: 'Produk',
             cell: (info) => {
                 const row = info.row.original as any;
@@ -92,15 +92,13 @@ export default function Index({ pagination, transaction }: Props) {
         }),
 
         columnHelper.accessor('quantity', {
-            header: () => <div className="text-right">Kuantitas</div>,
+            header: () => <div className="text-center">Jumlah</div>,
             cell: (info) => {
                 const row = info.row.original as any;
-                if (row.isTotal) return '';
+                if (row.isTotal) return null;
 
                 return (
-                    <span className="block text-right">
-                        {info.getValue()}
-                    </span>
+                    <span className="block text-center">{info.getValue()}</span>
                 );
             },
         }),
@@ -109,7 +107,7 @@ export default function Index({ pagination, transaction }: Props) {
             header: () => <div className="text-right">Harga Beli</div>,
             cell: (info) => {
                 const row = info.row.original as any;
-                if (row.isTotal) return '';
+                if (row.isTotal) return null;
 
                 return (
                     <span className="block text-right">
@@ -126,7 +124,7 @@ export default function Index({ pagination, transaction }: Props) {
             header: () => <div className="text-right">Harga Jual</div>,
             cell: (info) => {
                 const row = info.row.original as any;
-                if (row.isTotal) return '';
+                if (row.isTotal) return null;
 
                 return (
                     <span className="block text-right">
@@ -140,34 +138,34 @@ export default function Index({ pagination, transaction }: Props) {
         }),
 
         {
-        id: 'subtotal',
-        header: () => <div className="text-right">Subtotal</div>,
-        cell: (info) => {
-            const row = info.row.original as any;
+            id: 'subtotal',
+            header: () => <div className="text-right">Subtotal</div>,
+            cell: (info) => {
+                const row = info.row.original as any;
 
-            if (row.isTotal) {
+                if (row.isTotal) {
+                    return (
+                        <span className="block text-right font-bold">
+                            {new Intl.NumberFormat('id-ID', {
+                                style: 'currency',
+                                currency: 'IDR',
+                            }).format(grandTotal)}
+                        </span>
+                    );
+                }
+
+                const subtotal = row.quantity * row.selling_price;
+
                 return (
-                    <span className="block text-right font-bold">
+                    <span className="block text-right">
                         {new Intl.NumberFormat('id-ID', {
                             style: 'currency',
                             currency: 'IDR',
-                        }).format(grandTotal)}
+                        }).format(subtotal)}
                     </span>
                 );
-            }
-
-            const subtotal = row.quantity * row.selling_price;
-
-            return (
-                <span className="block text-right">
-                    {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                    }).format(subtotal)}
-                </span>
-            );
+            },
         },
-    },
     ];
 
     const table = useReactTable<SaleTransactionDetail>({
@@ -183,21 +181,21 @@ export default function Index({ pagination, transaction }: Props) {
             <Card>
                 <CardContent>
                     <div className="mb-4 space-y-1">
-                    <div className="text-sm text-gray-500">Invoice</div>
-                    <div className="text-lg font-semibold">
-                        {transaction.invoice_number}
-                    </div>
+                        <div className="text-sm text-gray-500">Invoice</div>
+                        <div className="text-lg font-semibold">
+                            {transaction.invoice_number}
+                        </div>
 
-                    <div className="text-sm text-gray-500 mt-2">Tanggal Transaksi</div>
-                    <div>
-                        {formatDate(transaction.transaction_date)}
-                    </div>
+                        <div className="mt-2 text-sm text-gray-500">
+                            Tanggal Transaksi
+                        </div>
+                        <div>{formatDate(transaction.transaction_date)}</div>
 
-                    <div className="text-sm text-gray-500 mt-2">Metode Pembayaran</div>
-                    <div>
-                        {transaction.payment_method?.name ?? '-'}
+                        <div className="mt-2 text-sm text-gray-500">
+                            Metode Pembayaran
+                        </div>
+                        <div>{transaction.payment_method?.name ?? '-'}</div>
                     </div>
-                </div>
                     <DataTable columns={columns} table={table} />
                     <TablePagination pagination={pagination} />
                 </CardContent>

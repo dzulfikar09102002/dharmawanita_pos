@@ -47,9 +47,11 @@ export interface Product {
 export interface Purchase {
     id: number;
     product_id: number;
+    product?: Product;
     code: string;
     year: number;
     supplier_id: number;
+    supplier?: Supplier;
     quantity: number;
     purchase_price: number;
     purchase_date: string; // ISO date string
@@ -78,8 +80,8 @@ export interface SaleTransaction {
 export interface SaleTransactionDetail {
     id: number;
     sale_transaction_id: number;
-    product_id: number;
-    product?: Product;
+    purchase_id: number;
+    purchase?: Purchase;
     quantity: number;
     purchase_price: number;
     selling_price: number;

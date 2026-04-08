@@ -30,11 +30,21 @@ class SalesReportService
 
     public function getDetailSalesReport(int $id)
     {
-
-        $query = SaleTransactionDetail::with('product')
+        $query = SaleTransactionDetail::with([
+            'purchase' => function ($q) {
+                $q->withTrashed()->with([
+                    'product' => function ($q2) {
+                        $q2->withTrashed();
+                    },
+                    'supplier' => function ($q2) {
+                        $q2->withTrashed();
+                    }
+                ]);
+            }
+        ])
         ->where('sale_transaction_id', $id);
 
-         return $query
+        return $query
             ->paginate(request('per_page', 10))
             ->withQueryString();
     }
