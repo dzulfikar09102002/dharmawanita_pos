@@ -214,7 +214,7 @@ export default function Index({ pagination }: Props) {
                         <Input
                             name="search"
                             defaultValue={search}
-                            placeholder="Cari invoice / customer..."
+                            placeholder="20XXXXXXX/DWPXXX/0XXX"
                         />
 
                         <Button type="submit" variant="secondary">

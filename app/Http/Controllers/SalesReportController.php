@@ -20,14 +20,21 @@ class SalesReportController extends Controller
     }
 
     public function show($id)
-{
-    $transaction = SaleTransaction::with('paymentMethod')->findOrFail($id);
+    {
+        $transaction = SaleTransaction::with('paymentMethod')->findOrFail($id);
 
-    $pagination = $this->service->getDetailSalesReport($id);
+        $pagination = $this->service->getDetailSalesReport($id);
 
-    return Inertia::render('reports/sellings/detail', [
-        'pagination' => $pagination,
-        'transaction' => $transaction,
-    ]);
-}
+        return Inertia::render('reports/sellings/detail', [
+            'pagination' => $pagination,
+            'transaction' => $transaction,
+        ]);
+    }
+
+     public function cancel($id)
+    {
+        $this->service->cancel($id);
+       return to_route('reports.sales.index')->with('success', 'Transaksi berhasil dibatalkan');
+    }
+
 }
