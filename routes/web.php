@@ -7,6 +7,7 @@ use Laravel\Fortify\Features;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SalesReportController;
 
 Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
@@ -44,6 +45,12 @@ Route::resource('/products', ProductController::class)->except('show');
     ->name('purchase.deleted');
     Route::post('purchase/{id}/restore', [PurchaseController::class, 'restore'])
     ->name('purchase.restore');  
+
+    Route::resource('/sales-report', SalesReportController::class)->except('show');
+    Route::get('sales-report/deleted', [SalesReportController::class, 'deleted'])
+    ->name('sales-report.deleted');
+    Route::post('sales-report/{id}/restore', [SalesReportController::class, 'restore'])
+    ->name('sales-report.restore'); 
 });
 
 require __DIR__.'/settings.php';
