@@ -38,4 +38,14 @@ class SalesReportService
             ->paginate(request('per_page', 10))
             ->withQueryString();
     }
+
+    public function cancel(int $id)
+    {
+        $invoice = SaleTransaction::findOrFail($id);
+        
+        return $invoice->update([
+            'payment_status' => 'canceled',
+            'updated_by'   => auth()->user()->id,
+        ]);
+    }
 }
