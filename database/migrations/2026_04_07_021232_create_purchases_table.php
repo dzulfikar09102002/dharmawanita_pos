@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('supplier_id')->constrained('suppliers')->onDelete('cascade');
 
             // Data pembelian
+            $table->integer('year'); 
             $table->integer('quantity'); // jumlah stok masuk
             $table->decimal('purchase_price', 15, 2); // harga beli
             $table->date('purchase_date'); // tanggal beli
