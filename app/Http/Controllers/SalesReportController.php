@@ -17,4 +17,6 @@ class SalesReportController extends Controller
         dd($pagination);
         return Inertia::render('reports/sellings/summary', compact('pagination'));
     }
+
+    
 }
