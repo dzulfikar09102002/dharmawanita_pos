@@ -8,6 +8,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SalesReportController;
+use App\Http\Controllers\PurchasesReportController;
 
 Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
@@ -41,10 +42,17 @@ Route::resource('/products', ProductController::class)->except('show');
     ->name('suppliers.restore');  
 
     Route::resource('/purchases', PurchaseController::class)->except('show');
-    Route::get('purchase/deleted', [PurchaseController::class, 'deleted'])
+    Route::get('purchases/deleted', [PurchaseController::class, 'deleted'])
     ->name('purchase.deleted');
-    Route::post('purchase/{id}/restore', [PurchaseController::class, 'restore'])
+    Route::post('purchases/{id}/restore', [PurchaseController::class, 'restore'])
     ->name('purchase.restore');  
+
+    Route::resource('/reports/purchases', PurchasesReportController::class)->except('show')
+    ->names('reports.purchases'); 
+    Route::get('/reports/purchases/deleted', [PurchasesReportController::class, 'deleted'])
+    ->name('purchases.deleted');
+    Route::post('/reports/purchases/{id}/restore', [PurchasesReportController::class, 'restore'])
+    ->name('purchases.restore');  
 
     Route::resource('/reports/sales', SalesReportController::class)->except('show');
     Route::post('reports/sales/{id}/cancel', [SalesReportController::class, 'cancel'])

@@ -43,3 +43,30 @@ export interface Product {
     has_expired: boolean;
     expired_date?: string | null;
 }
+
+export interface Purchase {
+    id: number;
+
+    product_id: number;
+    product?: Product; // relasi
+
+    supplier_id: number;
+    supplier?: Supplier; // relasi
+
+    code: string;
+    year: number;
+
+    quantity: number;
+    purchase_price: number;
+
+    purchase_date: string;
+    expired_date?: string | null;
+
+    created_by?: number | null;
+    updated_by?: number | null;
+    deleted_by?: number | null;
+
+    created_at: string;
+    updated_at: string;
+    deleted_at?: string | null;
+}
