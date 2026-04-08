@@ -43,3 +43,28 @@ export interface Product {
     has_expired: boolean;
     expired_date?: string | null;
 }
+
+export type PaymentStatus = 'pending' | 'paid' | 'canceled';
+
+export interface SaleTransaction {
+    id: number;
+    invoice_number: string;
+    payment_method_id: number;
+    payment_method?: PaymentMethod;
+
+    payment_status: PaymentStatus;
+    total_amount: number;
+    grand_total: number;
+    transaction_date: string;
+}
+
+export interface SaleTransactionDetail {
+    id: number;
+    sale_transaction_id: number;
+    product_id: number;
+    product?: Product;
+    quantity: number;
+    purchase_price: number;
+    selling_price: number;
+    subtotal: number;
+}
