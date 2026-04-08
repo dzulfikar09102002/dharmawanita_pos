@@ -85,3 +85,14 @@ export interface SaleTransactionDetail {
     selling_price: number;
     subtotal: number;
 }
+
+export interface Stock {
+    id: number;
+    name: string;
+    brand: string;
+    purchase_price: number;
+    selling_price: number;
+    total_purchase: number;
+    total_sale: number;
+    stock: number;
+}

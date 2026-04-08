@@ -34,7 +34,7 @@ class SalesReportController extends Controller
      public function cancel($id)
     {
         $this->service->cancel($id);
-       return to_route('reports.sales.index')->with('success', 'Transaksi berhasil dibatalkan');
+    return to_route('reports.sales.index')->with('success', 'Transaksi berhasil dibatalkan');
     }
 
 }

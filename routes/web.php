@@ -9,6 +9,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SalesReportController;
 use App\Http\Controllers\PurchasesReportController;
+use App\Http\Controllers\StockReportController;
 
 Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
@@ -60,5 +61,8 @@ Route::resource('/reports/purchases', PurchasesReportController::class)->except(
     ->names('reports.sales');
     Route::post('/reports/sales/{id}/cancel', [SalesReportController::class, 'cancel'])
         ->name('reports.sales.cancel');
+
+        Route::resource('/reports/stocks', StockReportController::class)
+    ->names('reports.stocks');
 
 require __DIR__.'/settings.php';
