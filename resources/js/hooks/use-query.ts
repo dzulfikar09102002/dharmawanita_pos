@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 
 export function useQuery() {
-    const { search } = window.location;
-    return useMemo(
-        () => Object.fromEntries(new URLSearchParams(search)),
-        [search],
-    );
+    const search = typeof window !== 'undefined' ? window.location.search : '';
+
+    return useMemo(() => {
+        if (!search) return {};
+        return Object.fromEntries(new URLSearchParams(search));
+    }, [search]);
 }

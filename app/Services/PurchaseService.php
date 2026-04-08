@@ -2,24 +2,52 @@
 
 namespace App\Services;
 
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\Purchase;
 
 class PurchaseService
 {
-    public function getPurchases()
+    public function getProducts()
     {
         $search = request('search', '');
+        $category_id = request('product_category_id', 'all');
 
-        return Purchase::with(['product', 'supplier'])
-        ->when($search, function ($query) use ($search) {
-            $query->whereHas('product', function ($q) use ($search) {
-                $q->where('name', 'like', "%$search%");
-            })->orWhereHas('supplier', function ($q) use ($search) {
-                $q->where('name', 'like', "%$search%");
+        $query = Product::with('category')
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%$search%")
+                    ->orWhereHas('category', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%$search%");
+                    });
+                });
             });
-        })
-        ->paginate(request('per_page', 10))
-        ->withQueryString();
+
+        if ($category_id !== 'all') {
+            $query->where('category_id', $category_id);
+        }
+
+        return $query
+            ->orderByDesc('updated_at')
+            ->paginate(request('per_page', 10))
+            ->withQueryString();
+    }
+
+    public function getCategoryOptions()
+    {
+        $options = Category::all()->map(function ($category) {
+            return [
+                'value' => $category->id,
+                'label' => $category->name,
+            ];
+        });
+
+        $options->prepend([
+            'value' => 'all',
+            'label' => 'Semua kategori',
+        ]);
+
+        return $options;
     }
 
     public function getDeletedMethod()

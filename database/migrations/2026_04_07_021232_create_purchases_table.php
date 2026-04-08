@@ -20,6 +20,7 @@ return new class extends Migration
             $table->integer('year'); 
             $table->integer('quantity'); // jumlah stok masuk
             $table->decimal('purchase_price', 15, 2); // harga beli
+            $table->decimal('selling_price', 15, 2); // harga beli
             $table->date('purchase_date'); // tanggal beli
             $table->date('expired_date')->nullable(); // tanggal expired
 

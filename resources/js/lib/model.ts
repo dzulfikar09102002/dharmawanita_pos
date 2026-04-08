@@ -43,3 +43,21 @@ export interface Product {
     has_expired: boolean;
     expired_date?: string | null;
 }
+
+export interface Purchase {
+    id: number;
+    product_id: number;
+    code: string;
+    year: number;
+    supplier_id: number;
+    quantity: number;
+    purchase_price: number;
+    purchase_date: string; // ISO date string
+    expired_date: string | null; // bisa null kalau belum ada
+    created_by: number;
+    updated_by: number | null;
+    deleted_by: number | null;
+    created_at: string; // ISO date string
+    updated_at: string | null;
+    deleted_at: string | null;
+}

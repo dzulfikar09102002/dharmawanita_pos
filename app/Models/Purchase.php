@@ -17,6 +17,7 @@ class Purchase extends Model
         'year',
         'quantity',
         'purchase_price',
+        'selling_price',
         'purchase_date',
         'expired_date',
         'created_by',

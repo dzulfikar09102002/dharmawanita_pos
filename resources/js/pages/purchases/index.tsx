@@ -1,11 +1,19 @@
-import { Form, Head, Link, usePage } from '@inertiajs/react';
+import { Form, Head } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Plus, Search, X, ArchiveRestore, Pencil } from 'lucide-react';
-
+import { Plus, Search, Trash } from 'lucide-react';
+import {
+    Combobox,
+    ComboboxInput,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxList,
+    ComboboxItem,
+} from '@/components/ui/combobox';
 import {
     createColumnHelper,
     getCoreRowModel,
@@ -14,225 +22,322 @@ import {
 } from '@tanstack/react-table';
 
 import DataTable from '@/components/data-table';
-import TablePagination from '@/components/table-pagination';
-import { Pagination, Supplier } from '@/lib/model';
+import { Pagination, Product, Purchase } from '@/lib/model';
 import { useQuery } from '@/hooks/use-query';
 import { useState } from 'react';
-
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import suppliers from '@/routes/suppliers';
-import Modal, { ModalState } from '@/components/supplier/modal';
-import Alert, { AlertState } from '@/components/supplier/alert';
+import purchases from '@/routes/purchases';
+import TablePagination from '@/components/table-pagination';
 
 const title = 'Pembelian';
+
+type Option = {
+    value: string;
+    label: string;
+};
+
+type Item = {
+    product_id: number;
+    name: string;
+    quantity: number;
+    purchase_price: number;
+    selling_price: number;
+    expired_date: string | null;
+};
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title,
-        href: suppliers.index().url,
-    },
-];
-
-const columnHelper = createColumnHelper<Supplier>();
-
-type TableMeta = {
-    onDeleteOrRestore: (id: number, action: boolean) => void;
-    onEdit: (id: number) => void;
-    isDeletedRoute: boolean;
-};
-
-const columns: ColumnDef<Supplier, any>[] = [
-    {
-        id: 'no',
-        header: 'No',
-        cell: (info) => info.row.index + 1,
-    },
-    columnHelper.accessor('name', {
-        header: 'Nama',
-    }),
-    columnHelper.accessor('contact', {
-        header: 'Kontak',
-    }),
-    columnHelper.accessor('address', {
-        header: 'Alamat',
-    }),
-    {
-        id: 'action',
-        header: 'Aksi',
-        cell: (info) => {
-            const supplier = info.row.original as Supplier & { id: number };
-            const meta = info.table.options.meta as TableMeta;
-
-            return (
-                <div className="flex gap-2">
-                    {!meta.isDeletedRoute && (
-                        <Button
-                            size="icon"
-                            variant="outline"
-                            onClick={() => meta.onEdit(supplier.id)}
-                        >
-                            <Pencil size={16} />
-                        </Button>
-                    )}
-
-                    <Button
-                        size="icon"
-                        variant={
-                            meta.isDeletedRoute ? 'outline' : 'destructive'
-                        }
-                        onClick={() =>
-                            meta.onDeleteOrRestore(
-                                supplier.id,
-                                !meta.isDeletedRoute,
-                            )
-                        }
-                    >
-                        {meta.isDeletedRoute ? (
-                            <ArchiveRestore size={16} />
-                        ) : (
-                            <X size={16} />
-                        )}
-                    </Button>
-                </div>
-            );
-        },
+        href: purchases.index().url,
     },
 ];
 
 type Props = {
-    pagination: Pagination<Supplier>;
-    onlyTrashed?: boolean;
+    pagination: Pagination<Product>;
+    categoryOptions: Option[];
 };
 
-export default ({ pagination }: Props) => {
-    const [modal, setModal] = useState<ModalState>({
-        isOpen: false,
-        dataId: undefined,
-    });
-
-    const [alert, setAlert] = useState<AlertState>({
-        delete: true,
-        isOpen: false,
-        dataId: undefined,
-        proccessing: false,
-    });
-
-    const onModalSuccess = () => setModal({ isOpen: false, dataId: undefined });
-
-    const onModalClose = () => setModal({ isOpen: false, dataId: undefined });
-
-    const onAlertClose = () =>
-        setAlert({
-            isOpen: false,
-            proccessing: false,
-            dataId: undefined,
-            delete: true,
-        });
-
-    const onAlertProccessing = () =>
-        setAlert((prev) => ({ ...prev, proccessing: true }));
-
-    const onEdit = (id: number) =>
-        setModal({
-            isOpen: true,
-            dataId: id,
-        });
-
-    const onDeleteOrRestore = (id: number, action: boolean) =>
-        setAlert({
-            isOpen: true,
-            dataId: id,
-            delete: action,
-            proccessing: false,
-        });
-
-    const { url } = usePage();
-    const isDeletedRoute = url.includes('deleted');
-
+export default function Index({ pagination, categoryOptions }: Props) {
     const { data } = pagination;
-    const search = useQuery().search || '';
 
-    const table = useReactTable<Supplier>({
+    const query = useQuery();
+    const search = query.search || '';
+    const product_category_id = query.product_category_id || 'all';
+
+    const [categoryValue, setCategoryValue] = useState(product_category_id);
+    const [items, setItems] = useState<Item[]>([]);
+
+    const safeCategoryOptions = Array.isArray(categoryOptions)
+        ? categoryOptions
+        : [];
+
+    const addItem = (product: Product) => {
+        setItems((prev) => {
+            const exist = prev.find((x) => x.product_id === product.id);
+
+            if (exist) {
+                return prev.map((x) =>
+                    x.product_id === product.id
+                        ? { ...x, quantity: x.quantity + 1 }
+                        : x,
+                );
+            }
+
+            return [
+                ...prev,
+                {
+                    product_id: product.id,
+                    name: product.name,
+                    quantity: 1,
+                    purchase_price: product.purchase_price,
+                    selling_price: product.selling_price,
+                    expired_date: product.expired_date ?? null,
+                },
+            ];
+        });
+    };
+
+    const updateItem = (index: number, field: string, value: any) => {
+        setItems((prev) =>
+            prev.map((item, i) =>
+                i === index ? { ...item, [field]: value } : item,
+            ),
+        );
+    };
+
+    const removeItem = (index: number) => {
+        setItems((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const columnHelper = createColumnHelper<Product>();
+
+    const columns: ColumnDef<Product, any>[] = [
+        {
+            id: 'no',
+            header: 'No',
+            cell: (info) => info.row.index + 1,
+        },
+        columnHelper.accessor('name', {
+            header: 'Nama',
+        }),
+        columnHelper.accessor('brand', {
+            header: 'Merk',
+        }),
+        columnHelper.accessor('category_id', {
+            header: 'Kategori',
+            cell: (info) => info.row.original.category?.name ?? '-',
+        }),
+        columnHelper.accessor('purchase_price', {
+            header: 'Harga Beli',
+            cell: (info) =>
+                new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                }).format(info.getValue()),
+        }),
+        columnHelper.accessor('selling_price', {
+            header: 'Harga Jual',
+            cell: (info) =>
+                new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                }).format(info.getValue()),
+        }),
+        {
+            id: 'action',
+            header: '',
+            cell: (info) => {
+                const product = info.row.original;
+
+                return (
+                    <Button size="sm" onClick={() => addItem(product)}>
+                        + Pilih
+                    </Button>
+                );
+            },
+        },
+    ];
+
+    const table = useReactTable<Product>({
         data,
         columns,
         getCoreRowModel: getCoreRowModel(),
-        meta: {
-            onDeleteOrRestore,
-            onEdit,
-            isDeletedRoute,
-        } as TableMeta,
     });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
 
-            <Modal
-                modalState={modal}
-                onModalClose={onModalClose}
-                onModalSuccess={onModalSuccess}
-                tableData={pagination.data}
-            />
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <Form method="GET">
+                            <div className="grid gap-2 lg:flex">
+                                <input type="hidden" name="page" value={1} />
 
-            <Alert
-                alertState={alert}
-                onAlertClose={onAlertClose}
-                onAlertProccessing={onAlertProccessing}
-            />
+                                <Combobox
+                                    items={safeCategoryOptions}
+                                    value={safeCategoryOptions.find(
+                                        (el) => el.value == categoryValue,
+                                    )}
+                                    onValueChange={(val: Option | null) => {
+                                        const newValue = val?.value ?? 'all';
 
-            <div className="mb-4">
-                <Button
-                    className="size-9 lg:size-auto"
-                    onClick={() =>
-                        setModal({ isOpen: true, dataId: undefined })
-                    }
-                >
-                    <Plus />
-                    <span className="hidden lg:inline"> Agen Baru</span>
-                </Button>
-            </div>
+                                        setCategoryValue(newValue);
 
-            <Card className="border-0 bg-background p-0 lg:border lg:bg-card lg:py-6">
-                <CardHeader className="p-0 lg:px-6">
-                    <Form method="GET">
-                        <div className="grid gap-2 lg:flex">
-                            <input type="hidden" name="page" value={1} />
-                            <Input
-                                defaultValue={search}
-                                name="search"
-                                placeholder="Cari..."
-                            />
-                            <Button variant="secondary">
-                                <Search /> Cari
-                            </Button>
+                                        router.get(
+                                            purchases.index().url,
+                                            {
+                                                search,
+                                                product_category_id: newValue,
+                                                page: 1,
+                                            },
+                                            {
+                                                preserveState: true,
+                                                replace: true,
+                                            },
+                                        );
+                                    }}
+                                >
+                                    <ComboboxInput
+                                        placeholder="Pilih Kategori"
+                                        className="w-full"
+                                    />
+                                    <input
+                                        type="hidden"
+                                        name="product_category_id"
+                                        value={
+                                            categoryValue === 'all'
+                                                ? ''
+                                                : categoryValue
+                                        }
+                                    />
+                                    <ComboboxContent>
+                                        <ComboboxEmpty>
+                                            Tidak ditemukan
+                                        </ComboboxEmpty>
+                                        <ComboboxList>
+                                            {(el) => (
+                                                <ComboboxItem
+                                                    key={el.value}
+                                                    value={el}
+                                                >
+                                                    {el.label}
+                                                </ComboboxItem>
+                                            )}
+                                        </ComboboxList>
+                                    </ComboboxContent>
+                                </Combobox>
+
+                                <Input
+                                    name="search"
+                                    defaultValue={search}
+                                    placeholder="Cari produk..."
+                                />
+
+                                <Button type="submit" variant="secondary">
+                                    <Search /> Cari
+                                </Button>
+                            </div>
+                        </Form>
+                    </CardHeader>
+
+                    <CardContent>
+                        <DataTable columns={columns} table={table} />
+                        <TablePagination pagination={pagination} />
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <h3 className="text-lg font-semibold">
+                            Form Pembelian
+                        </h3>
+                    </CardHeader>
+
+                    <CardContent>
+                        <div className="space-y-3">
+                            {items.length === 0 && (
+                                <p className="text-sm text-muted-foreground">
+                                    Belum ada produk dipilih
+                                </p>
+                            )}
+
+                            {items.map((item, index) => (
+                                <div
+                                    key={index}
+                                    className="space-y-2 rounded-lg border p-3"
+                                >
+                                    <div className="font-medium">
+                                        {item.name}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Input
+                                            type="number"
+                                            value={item.quantity}
+                                            onChange={(e) =>
+                                                updateItem(
+                                                    index,
+                                                    'quantity',
+                                                    Number(e.target.value),
+                                                )
+                                            }
+                                        />
+
+                                        <Input
+                                            type="number"
+                                            value={item.purchase_price}
+                                            onChange={(e) =>
+                                                updateItem(
+                                                    index,
+                                                    'purchase_price',
+                                                    Number(e.target.value),
+                                                )
+                                            }
+                                        />
+
+                                        <Input
+                                            type="number"
+                                            value={item.selling_price}
+                                            onChange={(e) =>
+                                                updateItem(
+                                                    index,
+                                                    'selling_price',
+                                                    Number(e.target.value),
+                                                )
+                                            }
+                                        />
+
+                                        <Input
+                                            type="date"
+                                            value={item.expired_date || ''}
+                                            onChange={(e) =>
+                                                updateItem(
+                                                    index,
+                                                    'expired_date',
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+                                    </div>
+
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => removeItem(index)}
+                                    >
+                                        <Trash size={14} />
+                                    </Button>
+                                </div>
+                            ))}
                         </div>
-                    </Form>
-                </CardHeader>
 
-                <CardContent className="border-t p-0 lg:border-0 lg:px-6">
-                    <Tabs
-                        value={isDeletedRoute ? 'deleted' : 'available'}
-                        className="mb-4"
-                    >
-                        <TabsList>
-                            <TabsTrigger value="available" asChild>
-                                <Link href={suppliers.index().url}>
-                                    Tersedia
-                                </Link>
-                            </TabsTrigger>
-                            <TabsTrigger value="deleted" asChild>
-                                <Link href={suppliers.deleted().url}>
-                                    Terhapus
-                                </Link>
-                            </TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-
-                    <DataTable columns={columns} table={table} />
-
-                    <TablePagination pagination={pagination} />
-                </CardContent>
-            </Card>
+                        <Button className="mt-4 w-full">
+                            <Plus /> Simpan Semua
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
         </AppLayout>
     );
-};
+}

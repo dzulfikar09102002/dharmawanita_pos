@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use App\Services\PurchaseService;
 use Inertia\Inertia;
 
+
 class PurchaseController extends Controller
 {
     public function __construct(
@@ -19,8 +20,9 @@ class PurchaseController extends Controller
 
     public function index()
     {
-        $pagination = $this->service->getPurchases(); 
-        return Inertia::render('purchases/index', compact('pagination'));
+        $pagination = $this->service->getProducts(); 
+        $categoryOptions = $this->service->getCategoryOptions();
+        return Inertia::render('purchases/index', compact('pagination', 'categoryOptions'));
     }
     public function store(StorePurchaseRequest $request)
     {
