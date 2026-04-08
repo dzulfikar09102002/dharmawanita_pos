@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use App\Services\PurchaseService;
 use Inertia\Inertia;
 
+
 class PurchaseController extends Controller
 {
     public function __construct(
@@ -19,11 +20,14 @@ class PurchaseController extends Controller
 
     public function index()
     {
-        $pagination = $this->service->getPurchases(); 
-        return Inertia::render('purchases/index', compact('pagination'));
+        $pagination = $this->service->getProducts(); 
+        $categoryOptions = $this->service->getCategoryOptions();
+        $supplierOptions = $this->service->getSupplierOptions();
+        return Inertia::render('purchases/index', compact('pagination', 'categoryOptions', 'supplierOptions'));
     }
     public function store(StorePurchaseRequest $request)
     {
+        dd($request->validated());
         $this->service->store($request->validated());
         return to_route('purchases.index')->with('success', 'Metode pembayaran berhasil diperbarui');
     }

@@ -43,14 +43,13 @@ Route::resource('/products', ProductController::class)->except('show');
 
     Route::resource('/purchases', PurchaseController::class)->except('show');
     Route::get('purchases/deleted', [PurchaseController::class, 'deleted'])
-    ->name('purchase.deleted');
+    ->name('purchases.deleted');
     Route::post('purchases/{id}/restore', [PurchaseController::class, 'restore'])
-    ->name('purchase.restore');  
-
+    ->name('purchases.restore');  
+});
     Route::resource('/reports/sales', SalesReportController::class)
     ->names('reports.sales');
     Route::post('/reports/sales/{id}/cancel', [SalesReportController::class, 'cancel'])
         ->name('reports.sales.cancel');
-});
 
 require __DIR__.'/settings.php';

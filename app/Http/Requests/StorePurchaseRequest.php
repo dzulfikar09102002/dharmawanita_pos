@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use phpDocumentor\Reflection\PseudoTypes\True_;
 
 class StorePurchaseRequest extends FormRequest
 {
@@ -12,7 +13,7 @@ class StorePurchaseRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -21,9 +22,25 @@ class StorePurchaseRequest extends FormRequest
      * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
-    {
-        return [
-            //
-        ];
-    }
+{
+    return [
+        'items' => ['required', 'array', 'min:1'],
+        'items.*.supplier_id' => 'nullable|exists:suppliers,id',
+        'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+        'items.*.name' => ['required', 'string', 'max:255'],
+        'items.*.quantity' => ['required', 'integer', 'min:1'],
+        'items.*.purchase_price' => ['required', 'numeric', 'min:0'],
+        'items.*.selling_price' => ['required', 'numeric', 'min:0'],
+        'items.*.purchase_date' => ['required', 'date'],
+
+        'items.*.expired_date' => [
+            'nullable',
+            'date',
+            'after:purchase_date',
+        ],
+
+        'items.*.year' => ['required', 'integer', 'digits:4'],
+        'items.*.code' => ['required', 'string', 'max:50'],
+    ];
+}
 }

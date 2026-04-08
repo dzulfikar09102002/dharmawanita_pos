@@ -1,4 +1,4 @@
-import { Head, Form, usePage } from '@inertiajs/react';
+import { Head, Form, usePage, router, Link } from '@inertiajs/react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -34,7 +34,6 @@ import { useQuery } from '@/hooks/use-query';
 import Modal, { ModalState } from '@/components/product/modal';
 import Alert, { AlertState } from '@/components/product/alert';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Link } from '@inertiajs/react';
 
 type Option = {
     value: string;
@@ -68,7 +67,14 @@ export default function Index({ pagination, categoryOptions }: Props) {
 
     const query = useQuery();
     const search = query.search || '';
-    const category = query.category_id || 'all';
+    const category_id = query.category_id || 'all';
+
+    const [searchValue, setSearchValue] = useState(search);
+    const [categoryValue, setCategoryValue] = useState(category_id);
+
+    const safeCategoryOptions = Array.isArray(categoryOptions)
+        ? categoryOptions
+        : [];
 
     const [modal, setModal] = useState<ModalState>({
         isOpen: false,
@@ -96,8 +102,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
     const onAlertProccessing = () =>
         setAlert((prev) => ({ ...prev, proccessing: true }));
 
-    const onEdit = (id: number) =>
-        setModal({ isOpen: true, dataId: id });
+    const onEdit = (id: number) => setModal({ isOpen: true, dataId: id });
 
     const onDeleteOrRestore = (id: number, action: boolean) =>
         setAlert({
@@ -145,11 +150,11 @@ export default function Index({ pagination, categoryOptions }: Props) {
             header: 'Expired',
             cell: (info) =>
                 info.getValue() ? (
-                    <span className="bg-green-100 text-green-600 px-2 py-1 rounded text-xs">
+                    <span className="rounded bg-green-100 px-2 py-1 text-xs text-green-600">
                         Ya
                     </span>
                 ) : (
-                    <span className="bg-red-100 text-red-600 px-2 py-1 rounded text-xs">
+                    <span className="rounded bg-red-100 px-2 py-1 text-xs text-red-600">
                         Tidak
                     </span>
                 ),
@@ -176,9 +181,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
                         <Button
                             size="icon"
                             variant={
-                                meta.isDeletedRoute
-                                    ? 'outline'
-                                    : 'destructive'
+                                meta.isDeletedRoute ? 'outline' : 'destructive'
                             }
                             onClick={() =>
                                 meta.onDeleteOrRestore(
@@ -219,7 +222,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
                 onModalClose={onModalClose}
                 onModalSuccess={onModalSuccess}
                 tableData={pagination.data}
-                categoryOptions={categoryOptions} 
+                categoryOptions={categoryOptions}
             />
 
             <Alert
@@ -228,7 +231,6 @@ export default function Index({ pagination, categoryOptions }: Props) {
                 onAlertProccessing={onAlertProccessing}
             />
 
-            {/* BUTTON TAMBAH */}
             <div className="mb-4">
                 <Button
                     className="size-9 lg:size-auto"
@@ -248,22 +250,41 @@ export default function Index({ pagination, categoryOptions }: Props) {
                             <input type="hidden" name="page" value={1} />
 
                             <Combobox
-                                items={[
-                                    { label: 'Semua', value: 'all' },
-                                    ...categoryOptions,
-                                ]}
-                                defaultValue={categoryOptions.find(
-                                    (el) => el.value == category,
+                                items={safeCategoryOptions}
+                                value={safeCategoryOptions.find(
+                                    (el) => el.value == categoryValue,
                                 )}
+                                onValueChange={(val: Option | null) => {
+                                    const newValue = val?.value ?? 'all';
+
+                                    setCategoryValue(newValue);
+                                    router.get(
+                                        products.index().url,
+                                        {
+                                            search: searchValue,
+                                            category_id: newValue,
+                                            page: 1,
+                                        },
+                                        {
+                                            preserveState: true,
+                                            replace: true,
+                                        },
+                                    );
+                                }}
                             >
-                                <ComboboxInput name="category_id" />
+                                <ComboboxInput
+                                    placeholder="Pilih Kategori"
+                                    className="w-full"
+                                />
                                 <ComboboxContent>
-                                    <ComboboxEmpty />
+                                    <ComboboxEmpty>
+                                        Tidak ditemukan
+                                    </ComboboxEmpty>
                                     <ComboboxList>
                                         {(el) => (
                                             <ComboboxItem
                                                 key={el.value}
-                                                value={el.value}
+                                                value={el}
                                             >
                                                 {el.label}
                                             </ComboboxItem>

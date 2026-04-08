@@ -46,29 +46,20 @@ export interface Product {
 
 export interface Purchase {
     id: number;
-
     product_id: number;
-    product?: Product; // relasi
-
-    supplier_id: number;
-    supplier?: Supplier; // relasi
-
     code: string;
     year: number;
-
+    supplier_id: number;
     quantity: number;
     purchase_price: number;
-
-    purchase_date: string;
-    expired_date?: string | null;
-
-    created_by?: number | null;
-    updated_by?: number | null;
-    deleted_by?: number | null;
-
-    created_at: string;
-    updated_at: string;
-    deleted_at?: string | null;
+    purchase_date: string; // ISO date string
+    expired_date: string | null; // bisa null kalau belum ada
+    created_by: number;
+    updated_by: number | null;
+    deleted_by: number | null;
+    created_at: string; // ISO date string
+    updated_at: string | null;
+    deleted_at: string | null;
 }
 export type PaymentStatus = 'pending' | 'paid' | 'canceled';
 

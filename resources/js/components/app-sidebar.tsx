@@ -33,6 +33,7 @@ import paymentMethods from '@/routes/payment-methods';
 import products from '@/routes/products';
 import categories from '@/routes/categories';
 import suppliers from '@/routes/suppliers';
+import purchases from '@/routes/purchases';
 
 const mainNavItems = [
     {
@@ -48,7 +49,7 @@ const mainNavItems = [
 
     {
         title: 'Pembelian',
-        href: '/purchases',
+        href: purchases.index().url,
         icon: ShoppingBasket,
     },
 
