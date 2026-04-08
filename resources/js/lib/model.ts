@@ -80,8 +80,8 @@ export interface SaleTransaction {
 export interface SaleTransactionDetail {
     id: number;
     sale_transaction_id: number;
-    product_id: number;
-    product?: Product;
+    purchase_id: number;
+    purchase?: Purchase;
     quantity: number;
     purchase_price: number;
     selling_price: number;
