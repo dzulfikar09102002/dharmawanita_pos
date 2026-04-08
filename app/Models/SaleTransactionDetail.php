@@ -12,7 +12,8 @@ class SaleTransactionDetail extends Model
 
     protected $fillable = [
         'sale_transaction_id',
-        'product_id',
+        'purchase_id',
+        'code',
         'quantity',
         'purchase_price',
         'selling_price',
@@ -28,9 +29,9 @@ class SaleTransactionDetail extends Model
         return $this->belongsTo(SaleTransaction::class);
     }
 
-    public function product()
+    public function purchase()
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(Purchase::class);
     }
 
     // User tracking

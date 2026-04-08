@@ -99,7 +99,7 @@ export default function TablePagination<T>({ pagination }: Props<T>) {
                     items={Array.from({ length: last_page }, (_, i) =>
                         (i + 1).toString(),
                     )}
-                    defaultValue={String(current_page)}
+                    value={String(current_page)}
                     onValueChange={handlePageChange}
                 >
                     <ComboboxInput placeholder="Pilih Halaman" />
