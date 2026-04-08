@@ -24,12 +24,11 @@ class PurchasesReportService
         ->withQueryString();
 }
 
-    public function getDeletedMethod()
+   public function getDeletedMethod()
 {
-    $search = request('search', '');
+   $search = request('search', '');
 
-    return Purchase::onlyTrashed()
-        ->with(['product', 'supplier']) 
+    return Purchase::onlyTrashed()->with(['product', 'supplier'])
         ->when($search, function ($query) use ($search) {
             $query->where(function ($q) use ($search) {
                 $q->whereHas('product', function ($q2) use ($search) {

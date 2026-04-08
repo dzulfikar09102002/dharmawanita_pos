@@ -45,6 +45,7 @@ class PurchasesReportController extends Controller
     public function deleted(){
         $onlyTrashed = true;
         $pagination = $this->service->getDeletedMethod();
+        dd($pagination);
         return Inertia::render('reports/purchasing/index', compact('pagination', 'onlyTrashed'));
     }
 }

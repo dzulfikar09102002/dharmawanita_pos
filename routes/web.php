@@ -47,6 +47,15 @@ Route::resource('/products', ProductController::class)->except('show');
     Route::post('purchases/{id}/restore', [PurchaseController::class, 'restore'])
     ->name('purchases.restore');  
 });
+
+Route::resource('/reports/purchases', PurchasesReportController::class)->except('show')
+    ->names('reports.purchases'); 
+    Route::get('/reports/purchases/deleted', [PurchasesReportController::class, 'deleted'])
+    ->name('reports.purchases.deleted');
+    Route::post('/reports/purchases/{id}/restore', [PurchasesReportController::class, 'restore'])
+    ->name('reports.purchases.restore');  
+
+
     Route::resource('/reports/sales', SalesReportController::class)
     ->names('reports.sales');
     Route::post('/reports/sales/{id}/cancel', [SalesReportController::class, 'cancel'])
