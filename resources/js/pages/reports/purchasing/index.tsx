@@ -20,7 +20,7 @@ import { useQuery } from '@/hooks/use-query';
 import { useState } from 'react';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import purchases from '@/routes/purchases';
+import purchases from '@/routes/reports/purchases';
 import Alert, { AlertState } from '@/components/purchase-report/alert';
 
 const title = 'Pembelian';

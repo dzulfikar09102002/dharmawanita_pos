@@ -12,7 +12,7 @@ import { toast } from 'sonner';
 import { router } from '@inertiajs/react';
 import { Spinner } from '../ui/spinner';
 import products from '@/routes/products';
-import purchasess from '@/routes/purchases';
+import purchasess from '@/routes/reports/purchases';
 import purchases from '@/pages/purchases';
 
 export type AlertState = {
