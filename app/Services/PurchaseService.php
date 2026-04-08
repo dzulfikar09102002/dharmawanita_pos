@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Purchase;
+use App\Models\Supplier;
 
 class PurchaseService
 {
@@ -46,6 +47,17 @@ class PurchaseService
             'value' => 'all',
             'label' => 'Semua kategori',
         ]);
+
+        return $options;
+    }
+    public function getSupplierOptions()
+    {
+        $options = Supplier::all()->map(function ($supplier) {
+            return [
+                'value' => $supplier->id,
+                'label' => $supplier->name,
+            ];
+        });
 
         return $options;
     }

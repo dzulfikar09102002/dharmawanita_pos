@@ -22,10 +22,12 @@ class PurchaseController extends Controller
     {
         $pagination = $this->service->getProducts(); 
         $categoryOptions = $this->service->getCategoryOptions();
-        return Inertia::render('purchases/index', compact('pagination', 'categoryOptions'));
+        $supplierOptions = $this->service->getSupplierOptions();
+        return Inertia::render('purchases/index', compact('pagination', 'categoryOptions', 'supplierOptions'));
     }
     public function store(StorePurchaseRequest $request)
     {
+        dd($request->validated());
         $this->service->store($request->validated());
         return to_route('purchases.index')->with('success', 'Metode pembayaran berhasil diperbarui');
     }
