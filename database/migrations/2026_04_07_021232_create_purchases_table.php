@@ -13,6 +13,7 @@ return new class extends Migration
 
             // Relasi
             $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
+            $table->string('code');
             $table->foreignId('supplier_id')->constrained('suppliers')->onDelete('cascade');
 
             // Data pembelian

@@ -41,7 +41,7 @@ const mainNavItems = [
         icon: LayoutDashboard,
     },
     {
-        title: 'Kasir / Penjualan',
+        title: 'Kasir/Penjualan',
         href: '/cashier',
         icon: ScanBarcode,
     },
@@ -68,6 +68,11 @@ const mainNavItems = [
             },
             {
                 title: 'Stok',
+                href: '/reports/stocks',
+                icon: Boxes,
+            },
+            {
+                title: 'Laba/Rugi',
                 href: '/reports/stocks',
                 icon: Boxes,
             },
