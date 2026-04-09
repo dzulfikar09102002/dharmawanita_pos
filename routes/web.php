@@ -68,7 +68,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('/reports/stocks', StockReportController::class)
     ->names('reports.stocks');
 
-      Route::resource('/reports/sales', SalesReportController::class)
-    ->names('reports.sales');
+      Route::resource('/reports/laba-rugi', LabaRugiController::class)
+    ->names('reports.laba-rugi');
 
 require __DIR__.'/settings.php';

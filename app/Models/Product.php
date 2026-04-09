@@ -56,4 +56,14 @@ class Product extends Model
     {
         return $this->belongsTo(User::class, 'deleted_by');
     }
+
+    public function saleDetails()
+    {
+        return $this->hasMany(SaleTransactionDetail::class, 'product_id');
+    }
+
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class);
+    }
 }
