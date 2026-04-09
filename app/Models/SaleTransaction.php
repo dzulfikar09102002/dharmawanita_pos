@@ -16,6 +16,7 @@ class SaleTransaction extends Model
         'payment_status',
         'total_amount',
         'grand_total',
+        'change',
         'transaction_date',
         'created_by',
         'updated_by',

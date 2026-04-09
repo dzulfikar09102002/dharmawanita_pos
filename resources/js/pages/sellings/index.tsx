@@ -186,12 +186,20 @@ export default function Index({ pagination, categoryOptions }: Props) {
 
         router.get(first_page_url, { page }, inertiaOptions);
     };
-    useEffect(() => {
-        const timer = setTimeout(() => {
+
+    const debounceRef = useRef<NodeJS.Timeout | null>(null);
+    const handleSearchChange = (value: string) => {
+        setSearchValue(value);
+
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current);
+        }
+
+        debounceRef.current = setTimeout(() => {
             router.get(
                 sellings.index().url,
                 {
-                    search: searchValue,
+                    search: value,
                     product_category_id:
                         categoryValue === 'all' ? '' : categoryValue,
                     page: 1,
@@ -203,9 +211,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
                 },
             );
         }, 300);
-
-        return () => clearTimeout(timer);
-    }, [searchValue, categoryValue]);
+    };
     const autoAddedRef = useRef<string | null>(null);
     useEffect(() => {
         if (!searchValue) return;
@@ -264,11 +270,11 @@ export default function Index({ pagination, categoryOptions }: Props) {
                                     </ComboboxList>
                                 </ComboboxContent>
                             </Combobox>
-
-                            {/* SEARCH (DEBOUNCED) */}
                             <Input
                                 value={searchValue}
-                                onChange={(e) => setSearchValue(e.target.value)}
+                                onChange={(e) =>
+                                    handleSearchChange(e.target.value)
+                                }
                                 placeholder="Cari produk..."
                             />
                         </div>
@@ -285,17 +291,33 @@ export default function Index({ pagination, categoryOptions }: Props) {
                                         className="relative cursor-pointer transition hover:shadow-md"
                                         onClick={() => addItem(purchase)}
                                     >
-                                        <CardContent className="p-3">
+                                        <CardContent className="pl-4">
                                             <div className="absolute top-1 right-2">
                                                 <span className="rounded bg-muted px-2 py-0.5 text-[11px] font-medium">
                                                     {purchase.code}
                                                 </span>
                                             </div>
-                                            <div className="text-sm font-semibold">
+                                            <div className="mt-2 text-sm font-semibold">
                                                 {product?.name}
                                             </div>
                                             <div className="text-xs text-muted-foreground">
                                                 {product?.brand}
+                                            </div>
+                                            <div className="mt-4 text-sm font-semibold">
+                                                {new Intl.NumberFormat(
+                                                    'id-ID',
+                                                    {
+                                                        style: 'currency',
+                                                        currency: 'IDR',
+                                                        minimumFractionDigits: 0,
+                                                        maximumFractionDigits: 0,
+                                                    },
+                                                ).format(
+                                                    Number(
+                                                        product?.selling_price ??
+                                                            0,
+                                                    ),
+                                                )}
                                             </div>
                                         </CardContent>
                                     </Card>

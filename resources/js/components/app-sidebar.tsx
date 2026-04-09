@@ -13,6 +13,7 @@ import {
     Database,
     Boxes,
     PoundSterling,
+    BadgePoundSterling,
 } from 'lucide-react';
 
 import AppLogo from '@/components/app-logo';
@@ -78,7 +79,7 @@ const mainNavItems = [
             {
                 title: 'Laba/Rugi',
                 href: '/reports/laba-rugi',
-                icon: Boxes,
+                icon: BadgePoundSterling,
             },
         ],
     },

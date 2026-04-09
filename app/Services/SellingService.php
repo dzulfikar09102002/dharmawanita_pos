@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services;
+use App\Models\PaymentMethod;
 use App\Models\Purchase;
 use App\Models\SaleTransactionDetail;
 use App\Models\InventoryTransaction;
@@ -64,15 +65,14 @@ class SellingService
             $items = $input['items'] ?? [];
             $user  = auth()->id();
 
-            $totalAmount = collect($items)->sum(function ($item) {
+            $grandTotal = collect($items)->sum(function ($item) {
                 return $item['quantity'] * $item['selling_price'];
             });
 
             $sale = SaleTransaction::create([
                 'invoice_number'   => $this->generateInvoiceNumber(),
                 'payment_status'   => 'pending',
-                'total_amount'     => $totalAmount,
-                'grand_total'      => $totalAmount,
+                'grand_total'      => $grandTotal,
                 'transaction_date' => now(),
                 'created_by'       => $user,
                 'updated_by'       => $user,
@@ -108,7 +108,7 @@ class SellingService
                 ]);
             }
 
-            return $sale->load('details.purchase.product');
+            return $sale;
         });
     }
 
@@ -131,9 +131,44 @@ class SellingService
             $nextNumber = $lastSequence + 1;
         }
 
-        $sequence = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        $sequence = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
 
         return $prefix . $sequence;
     }
+    public function getTransactionDetails(int $id)
+    {
+        return SaleTransactionDetail::with('purchase.product')->where('sale_transaction_id', $id)->get();
+    }
+    public function getSaleTransaction(int $id)
+    {
+        return SaleTransaction::where('id', $id)
+            ->where('payment_status', 'pending')
+            ->firstOrFail();
+    }
+    public function getPaymentMethods()
+    {
+        return PaymentMethod::whereRaw('LOWER(kind) != ?', ['cash'])->get();
+    }
 
+    
+public function pay(SaleTransaction $sale, array $input): SaleTransaction
+{
+    return DB::transaction(function () use ($sale, $input) {
+
+        $sale = SaleTransaction::whereKey($sale->id)
+            ->where('payment_status', 'pending')
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        $sale->update([
+            'payment_method_id' => $input['payment_method_id'],
+            'total_amount'      => $input['paid_amount'],
+            'change'            => $input['change_amount'],
+            'payment_status'    => 'paid',
+            'updated_by'        => auth()->id(),
+        ]);
+
+        return $sale->fresh();
+    });
+}
 }

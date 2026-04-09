@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePaymentMethodRequest;
+use App\Http\Requests\StorePaymentRequest;
 use App\Http\Requests\StoreSellingRequest;
 use App\Http\Requests\UpdateSellingRequest;
 use App\Models\SaleTransaction;
@@ -25,8 +27,22 @@ class SellingController extends Controller
     }
     public function store(StoreSellingRequest $request)
     {
-        $this->service->store($request->validated());
-        return to_route('sellings.index')->with('success', 'Transaksi berhasil disimpan');
+        $sale = $this->service->store($request->validated());
+        return redirect()->route('sellings.payment', $sale->id);
+    }
+
+    public function payment(int $id)
+    {
+        $transaction = $this->service->getSaleTransaction($id);
+        $details = $this->service->getTransactionDetails($id);
+        $paymentMethods = $this->service->getPaymentMethods();
+        return Inertia::render('sellings/payment', compact('transaction', 'details', 'paymentMethods'));
+    }
+
+    public function pay(StorePaymentRequest $request, SaleTransaction $sale)
+    {
+        $this->service->pay($sale, $request->validated());
+        return to_route('sellings.index')->with('success', 'Pembayaran berhasil dipulihkan');
     }
 
 }

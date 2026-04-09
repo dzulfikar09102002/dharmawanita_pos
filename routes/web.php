@@ -76,7 +76,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ->names('reportsStocks');
         Route::resource('/sellings', SellingController::class)
     ->names('sellings');
-
+        Route::get(
+                'sellings/{sale}/payment',
+                [SellingController::class, 'payment']
+            )->name('sellings.payment');
+        Route::post(
+        'sellings/{sale}/payment',
+        [SellingController::class, 'pay']
+    )->name('sellings.pay');
       Route::resource('/reports/laba-rugi', LabaRugiController::class)
     ->names('reports.laba-rugi');
     Route::get('/laba-rugi/{bulan?}/{tahun?}', [LabaRugiController::class, 'index'])
