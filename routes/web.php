@@ -10,15 +10,17 @@ use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SalesReportController;
 use App\Http\Controllers\PurchasesReportController;
 use App\Http\Controllers\StockReportController;
+use App\Http\Controllers\LabaRugiController;
+use App\Http\Controllers\DashboardController;
 
 Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::resource('dashboard', DashboardController::class)->except('show');
 
-Route::resource('/products', ProductController::class)->except('show');
+    Route::resource('/products', ProductController::class)->except('show');
     Route::get('products/deleted', [ProductController::class, 'deleted'])
         ->name('products.deleted');
     Route::post('products/{id}/restore', [ProductController::class, 'restore'])
@@ -47,14 +49,14 @@ Route::resource('/products', ProductController::class)->except('show');
     ->name('purchases.deleted');
     Route::post('purchases/{id}/restore', [PurchaseController::class, 'restore'])
     ->name('purchases.restore');  
-});
+    });
 
-Route::resource('/reports/purchases', PurchasesReportController::class)->except('show')
-    ->names('reports.purchases'); 
-    Route::get('/reports/purchases/deleted', [PurchasesReportController::class, 'deleted'])
-    ->name('reports.purchases.deleted');
-    Route::post('/reports/purchases/{id}/restore', [PurchasesReportController::class, 'restore'])
-    ->name('reports.purchases.restore');  
+    Route::resource('/reports/purchases', PurchasesReportController::class)->except('show')
+        ->names('reports.purchases'); 
+        Route::get('/reports/purchases/deleted', [PurchasesReportController::class, 'deleted'])
+        ->name('reports.purchases.deleted');
+        Route::post('/reports/purchases/{id}/restore', [PurchasesReportController::class, 'restore'])
+        ->name('reports.purchases.restore');  
 
 
     Route::resource('/reports/sales', SalesReportController::class)
@@ -64,5 +66,8 @@ Route::resource('/reports/purchases', PurchasesReportController::class)->except(
 
         Route::resource('/reports/stocks', StockReportController::class)
     ->names('reports.stocks');
+
+      Route::resource('/reports/sales', SalesReportController::class)
+    ->names('reports.sales');
 
 require __DIR__.'/settings.php';
