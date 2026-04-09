@@ -58,4 +58,27 @@ class SalesReportService
             'updated_by'   => auth()->user()->id,
         ]);
     }
+
+    public function getDeletedMethod()
+    {
+        $search = request('search', '');
+
+        return SaleTransaction::onlyTrashed()
+            ->with('paymentMethod')
+            ->when($search, function ($q) use ($search) {
+                $q->where('invoice_number', 'like', "%$search%");
+            })
+            ->paginate(request('per_page', 10))
+            ->withQueryString();
+    }
+
+     public function delete(SaleTransaction $salereport)
+    {
+        return $salereport->delete();
+    }
+
+    public function restore(int $id){
+        $salereport = SaleTransaction::withTrashed()->findOrFail($id);
+        return $salereport->restore();
+    }
 }

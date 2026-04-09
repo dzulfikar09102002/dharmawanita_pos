@@ -14,65 +14,109 @@ import { Spinner } from '../ui/spinner';
 import salesReport from '@/routes/reports/sales';
 
 export type AlertState = {
+    type: 'delete' | 'restore' | 'cancel';
     isOpen: boolean;
     dataId: any;
-    proccessing: boolean;
+    processing: boolean;
 };
 
 type Props = {
     alertState: AlertState;
     onAlertClose: () => void;
-    onAlertProccessing: () => void;
+    onAlertProcessing: () => void;
 };
 
-export default ({ alertState, onAlertClose, onAlertProccessing }: Props) => {
+
+export default ({ alertState, onAlertClose, onAlertProcessing }: Props) => {
+    const isDelete = alertState.type === 'delete';
+    const isRestore = alertState.type === 'restore';
+    const isCancel = alertState.type === 'cancel';
+
+    const title = isDelete
+        ? 'Hapus Transaksi'
+        : isRestore
+        ? 'Pulihkan Transaksi'
+        : 'Batalkan Transaksi';
+
+    const successMessage = isDelete
+        ? 'Transaksi berhasil dihapus'
+        : isRestore
+        ? 'Transaksi berhasil dipulihkan'
+        : 'Transaksi berhasil dibatalkan';
+
+    const errorMessage = isDelete
+        ? 'Gagal menghapus transaksi'
+        : isRestore
+        ? 'Gagal memulihkan transaksi'
+        : 'Gagal membatalkan transaksi';
+
     return (
         <AlertDialog
             open={alertState.isOpen}
-            onOpenChange={() => alertState.proccessing || onAlertClose()}
+            onOpenChange={(open) => {
+                if (!open && !alertState.processing) {
+                    onAlertClose();
+                }
+            }}
         >
-            <AlertDialogContent className="top-[40%]">
+            <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>
-                        Batalkan Transaksi
-                    </AlertDialogTitle>
+                    <AlertDialogTitle>{title}</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Apakah anda yakin ingin membatalkan transaksi ini?
+                        Apakah anda yakin?
                     </AlertDialogDescription>
                 </AlertDialogHeader>
 
                 <AlertDialogFooter>
-                    <AlertDialogCancel disabled={alertState.proccessing}>
+                    <AlertDialogCancel disabled={alertState.processing}>
                         Batal
                     </AlertDialogCancel>
 
                     <Button
-                        variant="destructive"
-                        disabled={alertState.proccessing}
+                        variant={isDelete || isCancel ? 'destructive' : 'default'}
+                        disabled={alertState.processing}
                         onClick={() => {
                             const options = {
                                 only: ['pagination'],
                                 preserveState: true,
-                                onBefore: onAlertProccessing,
+                                onBefore: onAlertProcessing,
+
                                 onError: (errors: any) => {
-                                    toast.error('Gagal membatalkan transaksi');
+                                    toast.error(errorMessage);
                                     console.error(errors);
+                                    onAlertClose();
                                 },
+
                                 onSuccess: () => {
-                                    toast.success('Transaksi berhasil dibatalkan');
+                                    toast.success(successMessage);
+                                    onAlertClose();
                                 },
-                                onFinish: onAlertClose,
+
+                                onFinish: () => {},
                             };
 
-                            router.post(
-                                salesReport.cancel(alertState.dataId).url,
-                                {},
-                                options
-                            );
+                            if (isDelete) {
+                                router.delete(
+                                    salesReport.destroy(alertState.dataId).url,
+                                    options
+                                );
+                            } else if (isRestore) {
+                                router.post(
+                                    salesReport.restore(alertState.dataId).url,
+                                    {},
+                                    options
+                                );
+                            } else if (isCancel) {
+                                router.post(
+                                    salesReport.cancel(alertState.dataId).url,
+                                    {},
+                                    options
+                                );
+                            }
                         }}
                     >
                         <Spinner
-                            className={alertState.proccessing ? '' : 'hidden'}
+                            className={alertState.processing ? '' : 'hidden'}
                         />
                         Ya
                     </Button>

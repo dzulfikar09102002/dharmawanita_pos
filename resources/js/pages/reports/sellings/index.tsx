@@ -1,15 +1,13 @@
-import { Head, Form } from '@inertiajs/react';
+import { Head, Form, Link, usePage, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import salesReport from '@/routes/reports/sales';
-import { Eye } from 'lucide-react';
+import { Eye, Search, X, ArchiveRestore } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, X } from 'lucide-react';
-
-import { router } from '@inertiajs/react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import {
     createColumnHelper,
@@ -21,9 +19,7 @@ import {
 import DataTable from '@/components/data-table';
 import TablePagination from '@/components/table-pagination';
 import { Pagination, SaleTransaction } from '@/lib/model';
-
 import { useQuery } from '@/hooks/use-query';
-
 import Alert, { AlertState } from '@/components/sales-report/alert';
 
 const title = 'Laporan Penjualan';
@@ -38,8 +34,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 const columnHelper = createColumnHelper<SaleTransaction>();
 
 type TableMeta = {
-    onCancel: (id: number) => void;
+    onDeleteOrRestore: (id: number, isDelete: boolean) => void;
     onDetail: (id: number) => void;
+    isDeletedRoute: boolean;
 };
 
 type Props = {
@@ -49,33 +46,35 @@ type Props = {
 export default function Index({ pagination }: Props) {
     const { data } = pagination;
 
+    const { url } = usePage();
+    const isDeletedRoute = url.includes('deleted');
+
     const query = useQuery();
     const search = query.search || '';
-    const payment_method = query.payment_method_id || 'all';
-    const [alert, setAlert] = useState<AlertState>({
+
+    const initialAlertState: AlertState = {
+        type: 'delete',
         isOpen: false,
         dataId: undefined,
-        proccessing: false,
+        processing: false,
+    };
+
+    const [alert, setAlert] = useState<AlertState>(initialAlertState);
+
+    const onAlertClose = () => setAlert(initialAlertState);
+
+    const onAlertProcessing = () =>
+        setAlert((prev) => ({ ...prev, processing: true }));
+
+    const onDeleteOrRestore = (id: number, isDelete: boolean) =>
+    setAlert({
+        isOpen: true,
+        dataId: id,
+        type: isDelete ? 'delete' : 'restore',
+        processing: false,
     });
 
-    const onAlertClose = () =>
-        setAlert({
-            isOpen: false,
-            proccessing: false,
-            dataId: undefined,
-        });
-
-    const onAlertProccessing = () =>
-        setAlert((prev) => ({ ...prev, proccessing: true }));
-
-    const onCancel = (id: number) =>
-        setAlert({
-            isOpen: true,
-            dataId: id,
-            proccessing: false,
-        });
-
-        const onDetail = (id: number) => {
+    const onDetail = (id: number) => {
         router.visit(`/reports/sales/${id}`);
     };
 
@@ -104,19 +103,22 @@ export default function Index({ pagination }: Props) {
                 const status = info.getValue() as
                     | 'paid'
                     | 'pending'
-                    | 'canceled';
+                    | 'canceled'
+                    | undefined;
 
-                const map = {
+                const map: Record<string, string> = {
                     paid: 'bg-green-100 text-green-600',
                     pending: 'bg-yellow-100 text-yellow-600',
                     canceled: 'bg-red-100 text-red-600',
                 };
 
-                const label = {
+                const label: Record<string, string> = {
                     paid: 'Lunas',
                     pending: 'Pending',
                     canceled: 'Dibatalkan',
                 };
+
+                if (!status) return '-';
 
                 return (
                     <span className={`px-2 py-1 rounded text-xs ${map[status]}`}>
@@ -159,31 +161,36 @@ export default function Index({ pagination }: Props) {
 
                 return (
                     <div className="flex gap-2">
-                        {/* DETAIL */}
                         <Button
                             size="icon"
                             variant="outline"
-                            title="Detail"
                             onClick={() => meta.onDetail(row.id)}
                         >
                             <Eye size={16} />
                         </Button>
 
-                        {/* CANCEL */}
                         <Button
                             size="icon"
-                            variant="destructive"
-                            title="Batalkan"
-                            disabled={row.payment_status === 'canceled'}
-                            onClick={() => meta.onCancel(row.id)}
+                            variant={
+                                meta.isDeletedRoute ? 'outline' : 'destructive'
+                            }
+                            onClick={() =>
+                                meta.onDeleteOrRestore(
+                                    row.id,
+                                    !meta.isDeletedRoute
+                                )
+                            }
                         >
-                            <X size={16} />
+                            {meta.isDeletedRoute ? (
+                                <ArchiveRestore size={16} />
+                            ) : (
+                                <X size={16} />
+                            )}
                         </Button>
                     </div>
                 );
             },
-        }
-
+        },
     ];
 
     const table = useReactTable<SaleTransaction>({
@@ -191,8 +198,9 @@ export default function Index({ pagination }: Props) {
         columns,
         getCoreRowModel: getCoreRowModel(),
         meta: {
-            onCancel,
-            onDetail
+            onDeleteOrRestore,
+            onDetail,
+            isDeletedRoute,
         } as TableMeta,
     });
 
@@ -203,7 +211,7 @@ export default function Index({ pagination }: Props) {
             <Alert
                 alertState={alert}
                 onAlertClose={onAlertClose}
-                onAlertProccessing={onAlertProccessing}
+                onAlertProcessing={onAlertProcessing}
             />
 
             <Card>
@@ -214,7 +222,7 @@ export default function Index({ pagination }: Props) {
                         <Input
                             name="search"
                             defaultValue={search}
-                            placeholder="20XXXXXXX/DWPXXX/0XXX"
+                            placeholder="Cari invoice..."
                         />
 
                         <Button type="submit" variant="secondary">
@@ -224,6 +232,25 @@ export default function Index({ pagination }: Props) {
                 </CardHeader>
 
                 <CardContent>
+                    <Tabs
+                        value={isDeletedRoute ? 'deleted' : 'active'}
+                        className="mb-4"
+                    >
+                        <TabsList>
+                            <TabsTrigger value="active" asChild>
+                                <Link href={salesReport.index().url}>
+                                    Aktif
+                                </Link>
+                            </TabsTrigger>
+
+                            <TabsTrigger value="deleted" asChild>
+                                <Link href={salesReport.deleted().url}>
+                                    Terhapus
+                                </Link>
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+
                     <DataTable columns={columns} table={table} />
                     <TablePagination pagination={pagination} />
                 </CardContent>
