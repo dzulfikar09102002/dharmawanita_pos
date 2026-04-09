@@ -45,7 +45,7 @@ type Props = {
     dailySales?: DailySales[];
 };
 
-const years = [2023, 2024, 2025, 2026];
+const years = [2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030];
 
 const monthLabels: Record<number, string> = {
     1: 'Januari',
@@ -103,61 +103,59 @@ export default function Dashboard({
 
             <div className="p-4 flex flex-col gap-4">
                 <div className="flex justify-between items-center">
-                    <h1 className="text-xl font-bold">
-                        Dashboard - {monthLabels[month]} {year}
-                    </h1>
+                <h1 className="text-xl font-bold">
+                    Dashboard - {monthLabels[month]} {year}
+                </h1>
 
-                    <div className="flex gap-2">
-                        <select
-                            value={month}
-                            onChange={(e) =>
-                                router.get(
-                                    '/dashboard',
-                                    {
-                                        month: Number(e.target.value),
-                                        year: year, 
-                                    },
-                                    {
-                                        preserveState: true,
-                                        replace: true, 
-                                    }
-                                )
-                            }
-                            className="border rounded px-3 py-2"
-                        >
-                            {months.map((m) => (
-                                <option key={m.value} value={m.value}>
-                                    {m.label}
-                                </option>
-                            ))}
-                        </select>
+                <div className="flex gap-2">
+                    {/* BULAN */}
+                    <select
+                        value={month}
+                        onChange={(e) =>
+                            router.get(
+                                '/dashboard',
+                                {
+                                    month: Number(e.target.value),
+                                    year: year,
+                                },
+                                {
+                                    preserveState: true,
+                                    replace: true,
+                                }
+                            )
+                        }
+                        className="border rounded px-3 py-2"
+                    >
+                        {months.map((m) => (
+                            <option key={m.value} value={m.value}>
+                                {m.label}
+                            </option>
+                        ))}
+                    </select>
 
-                        {/* TAHUN */}
-                        <select
-                            value={year}
-                            onChange={(e) =>
-                                router.get(
-                                    '/dashboard',
-                                    {
-                                        month: month, 
-                                        year: Number(e.target.value),
-                                    },
-                                    {
-                                        preserveState: true,
-                                        replace: true, 
-                                    }
-                                )
-                            }
-                            className="border rounded px-3 py-2"
-                        >
-                            {[2023, 2024, 2025, 2026].map((y) => (
-                                <option key={y} value={y}>
-                                    {y}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    {/* TAHUN (INPUT) */}
+                    <input
+                        type="number"
+                        value={year}
+                        onChange={(e) =>
+                            router.get(
+                                '/dashboard',
+                                {
+                                    month: month,
+                                    year: Number(e.target.value),
+                                },
+                                {
+                                    preserveState: true,
+                                    replace: true,
+                                }
+                            )
+                        }
+                        className="border rounded px-3 py-2 w-24"
+                        min={2000}
+                        max={2100}
+                    />
                 </div>
+            </div>
 
                 <div className="grid gap-4 md:grid-cols-4">
                     <Card>
