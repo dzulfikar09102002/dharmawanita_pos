@@ -40,6 +40,11 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function saleTransactionDetails()
+{
+    return $this->hasMany(SaleTransactionDetail::class, 'product_id');
+}
+
     // Relasi ke user
     public function createdBy()
     {
@@ -54,5 +59,15 @@ class Product extends Model
     public function deletedBy()
     {
         return $this->belongsTo(User::class, 'deleted_by');
+    }
+
+    public function saleDetails()
+    {
+        return $this->hasMany(SaleTransactionDetail::class, 'product_id');
+    }
+
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class);
     }
 }

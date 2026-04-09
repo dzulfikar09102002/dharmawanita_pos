@@ -77,8 +77,8 @@ const mainNavItems = [
             },
             {
                 title: 'Laba/Rugi',
-                href: '/reports/profits',
-                icon: PoundSterling,
+                href: '/reports/laba-rugi',
+                icon: Boxes,
             },
         ],
     },
