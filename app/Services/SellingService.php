@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 
 class SellingService
 {
-    public function getProducts()
+  public function getProducts()
     {
         $search = request('search', '');
         $category_id = request('product_category_id', 'all');
@@ -19,13 +19,13 @@ class SellingService
         $query = Purchase::with(['product.category', 'product.stock'])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
-                    $q->where('code', 'like', "%$search%") 
-                    ->orWhereHas('product', function ($q2) use ($search) {
-                        $q2->where('name', 'like', "%$search%")
-                            ->orWhereHas('category', function ($q3) use ($search) {
-                                $q3->where('name', 'like', "%$search%");
-                            });
-                    });
+                    $q->where('code', 'like', "%$search%")
+                        ->orWhereHas('product', function ($q2) use ($search) {
+                            $q2->where('name', 'like', "%$search%")
+                                ->orWhereHas('category', function ($q3) use ($search) {
+                                    $q3->where('name', 'like', "%$search%");
+                                });
+                        });
                 });
             });
 
@@ -34,6 +34,9 @@ class SellingService
                 $q->where('category_id', $category_id);
             });
         }
+        $query->whereHas('product.stock', function ($q) {
+            $q->where('stock', '>', 0);
+        });
 
         return $query
             ->orderByDesc('updated_at')
@@ -97,7 +100,7 @@ class SellingService
                 InventoryTransaction::create([
                     'product_id'     => $item['product_id'],
                     'type'           => 'out',
-                    'source'         => $item['source'],
+                    'source'         => 'sale',
                     'reference_id'   => $detail->id,
                     'quantity'       => $item['quantity'],
                     'purchase_price' => $item['purchase_price'],

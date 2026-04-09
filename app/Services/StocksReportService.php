@@ -21,7 +21,7 @@ class StocksReportService
             $query->where('name', 'like', "%{$search}%");
         }
 
-        return $query->where('stock', '>' , 0)
+        return $query->orderByDesc('stock')
             ->paginate(request('per_page', 10))
             ->withQueryString();
     }
