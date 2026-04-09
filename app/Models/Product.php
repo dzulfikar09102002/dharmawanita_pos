@@ -36,6 +36,11 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    public function saleTransactionDetails()
+{
+    return $this->hasMany(SaleTransactionDetail::class, 'product_id');
+}
+
     // Relasi ke user
     public function createdBy()
     {
