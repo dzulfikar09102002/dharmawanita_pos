@@ -18,7 +18,8 @@ Route::inertia('/', 'welcome', [
 ])->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::resource('dashboard', DashboardController::class)->except('show');
+   Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->name('dashboard');
 
     Route::resource('/products', ProductController::class)->except('show');
     Route::get('products/deleted', [ProductController::class, 'deleted'])
