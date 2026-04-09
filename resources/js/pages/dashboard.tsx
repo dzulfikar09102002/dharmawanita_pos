@@ -35,6 +35,7 @@ type Props = {
     expiredProducts?: Product[];
     bestSellingProducts?: BestSelling[];
 
+    year?: number;
     month?: number;
     income?: number;
     expense?: number;
@@ -43,6 +44,8 @@ type Props = {
 
     dailySales?: DailySales[];
 };
+
+const years = [2023, 2024, 2025, 2026];
 
 const monthLabels: Record<number, string> = {
     1: 'Januari',
@@ -92,6 +95,7 @@ export default function Dashboard({
     receivable = 0,
     dailySales = [],
     month = new Date().getMonth() + 1,
+     year = new Date().getFullYear(),
 }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -103,23 +107,56 @@ export default function Dashboard({
                         Dashboard - {monthLabels[month]} {year}
                     </h1>
 
-                    <select
-                        value={month}
-                        onChange={(e) =>
-                            router.get(
-                                '/dashboard',
-                                { month: Number(e.target.value) },
-                                { preserveState: true }
-                            )
-                        }
-                        className="border rounded px-3 py-2"
-                    >
-                        {months.map((m) => (
-                            <option key={m.value} value={m.value}>
-                                {m.label}
-                            </option>
-                        ))}
-                    </select>
+                    <div className="flex gap-2">
+                        <select
+                            value={month}
+                            onChange={(e) =>
+                                router.get(
+                                    '/dashboard',
+                                    {
+                                        month: Number(e.target.value),
+                                        year: year, 
+                                    },
+                                    {
+                                        preserveState: true,
+                                        replace: true, 
+                                    }
+                                )
+                            }
+                            className="border rounded px-3 py-2"
+                        >
+                            {months.map((m) => (
+                                <option key={m.value} value={m.value}>
+                                    {m.label}
+                                </option>
+                            ))}
+                        </select>
+
+                        {/* TAHUN */}
+                        <select
+                            value={year}
+                            onChange={(e) =>
+                                router.get(
+                                    '/dashboard',
+                                    {
+                                        month: month, 
+                                        year: Number(e.target.value),
+                                    },
+                                    {
+                                        preserveState: true,
+                                        replace: true, 
+                                    }
+                                )
+                            }
+                            className="border rounded px-3 py-2"
+                        >
+                            {[2023, 2024, 2025, 2026].map((y) => (
+                                <option key={y} value={y}>
+                                    {y}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-4">
