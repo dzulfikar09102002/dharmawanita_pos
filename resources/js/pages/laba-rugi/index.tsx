@@ -3,6 +3,7 @@ import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Filter, Printer } from 'lucide-react';
+
 // ✅ TYPE
 type LabaRugiData = {
     bulan: number;
@@ -42,20 +43,27 @@ export default function LabaRugi({ data }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Laba Rugi" />
 
-            {/* ✅ STYLE PRINT */}
+            {/* ✅ PRINT STYLE (ISOLATE CONTAINER) */}
             <style>
                 {`
                 @media print {
-                    .no-print {
-                        display: none !important;
+                    body * {
+                        visibility: hidden;
                     }
 
-                    body {
-                        margin: 0;
+                    #print-area, #print-area * {
+                        visibility: visible;
                     }
 
-                    .print-container {
+                    #print-area {
+                        position: absolute;
+                        left: 0;
+                        top: 0;
                         width: 100%;
+                    }
+
+                    @page {
+                        margin: 20mm;
                     }
                 }
                 `}
@@ -63,8 +71,8 @@ export default function LabaRugi({ data }: Props) {
 
             <div className="p-4 flex flex-col gap-4">
 
-                {/* 🔽 FILTER */}
-                <Card className="no-print">
+                {/* 🔽 FILTER + BUTTON */}
+                <Card>
                     <CardHeader>Filter Laporan</CardHeader>
                     <CardContent className="flex gap-4">
                         <select
@@ -88,7 +96,7 @@ export default function LabaRugi({ data }: Props) {
 
                         <button
                             onClick={handleFilter}
-                            className="bg-blue-500 text-white px-4 py-2 rounded flex items-center gap-2"
+                            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2"
                         >
                             <Filter size={16} />
                             Filter
@@ -96,7 +104,7 @@ export default function LabaRugi({ data }: Props) {
 
                         <button
                             onClick={() => window.print()}
-                            className="bg-green-500 text-white px-4 py-2 rounded flex items-center gap-2"
+                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
                         >
                             <Printer size={16} />
                             Cetak Laporan
@@ -104,8 +112,8 @@ export default function LabaRugi({ data }: Props) {
                     </CardContent>
                 </Card>
 
-                {/* 🔽 LAPORAN */}
-                <div className="print-container">
+                {/* 🔽 LAPORAN (YANG AKAN DIPRINT) */}
+                <div id="print-area">
                     <Card>
                         <CardHeader className='text-center'>
                             <CardTitle>
