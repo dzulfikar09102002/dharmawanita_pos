@@ -11,14 +11,16 @@ use App\Models\Purchase;
 
 class DashboardService
 {
-    public function getExpiredProducts()
-    {
-        return Product::query()
-            ->whereNotNull('expired_date')
-            ->orderBy('expired_date', 'asc')
-            ->limit(5)
-            ->get();
-    }
+    public function getExpiredProducts($month, $year)
+{
+    return Product::query()
+        ->whereNotNull('expired_date')
+        ->whereMonth('expired_date', $month) 
+        ->whereYear('expired_date', $year)   
+        ->orderBy('expired_date', 'asc')
+        ->limit(5)
+        ->get();
+}
 
     public function getBestSellingProducts($month, $year)
     {

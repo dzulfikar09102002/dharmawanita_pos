@@ -43,7 +43,7 @@ type Props = {
     dailySales?: DailySales[];
 };
 
-const years = [2023, 2024, 2025, 2026];
+const years = [2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030];
 
 const monthLabels: Record<number, string> = {
     1: 'Januari',
@@ -106,6 +106,7 @@ export default function Dashboard({
                     </h1>
 
                     <div className="flex gap-2">
+                        {/* BULAN */}
                         <select
                             value={month}
                             onChange={(e) =>
@@ -130,8 +131,9 @@ export default function Dashboard({
                             ))}
                         </select>
 
-                        {/* TAHUN */}
-                        <select
+                        {/* TAHUN (INPUT) */}
+                        <input
+                            type="number"
                             value={year}
                             onChange={(e) =>
                                 router.get(
@@ -146,14 +148,10 @@ export default function Dashboard({
                                     },
                                 )
                             }
-                            className="rounded border px-3 py-2"
-                        >
-                            {[2023, 2024, 2025, 2026].map((y) => (
-                                <option key={y} value={y}>
-                                    {y}
-                                </option>
-                            ))}
-                        </select>
+                            className="w-24 rounded border px-3 py-2"
+                            min={2000}
+                            max={2100}
+                        />
                     </div>
                 </div>
 

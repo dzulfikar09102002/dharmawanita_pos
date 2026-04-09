@@ -12,17 +12,17 @@ class LabaRugiService
     public function getLabaRugi(int $bulan, int $tahun)
     {
         $totalPendapatan = SaleTransaction::where('payment_status', 'paid')
-        ->whereMonth('created_at', $bulan)
-        ->whereYear('created_at', $tahun)
+        ->whereMonth('transaction_date', $bulan)
+        ->whereYear('transaction_date', $tahun)
         ->sum('grand_total');
 
         $totalPendapatanPiutang = SaleTransaction::where('created_at', '!=', 'updated_at')
-        ->whereMonth('created_at', $bulan)
-        ->whereYear('created_at', $tahun)
+        ->whereMonth('transaction_date', $bulan)
+        ->whereYear('transaction_date', $tahun)
         ->sum('grand_total');
 
-        $totalPembelian = Purchase::whereMonth('created_at', $bulan)
-            ->whereYear('created_at', $tahun)
+        $totalPembelian = Purchase::whereMonth('purchase_date', $bulan)
+            ->whereYear('purchase_date', $tahun)
             ->sum('purchase_price');
 
         $laba = $totalPendapatan + $totalPendapatanPiutang - $totalPembelian;
