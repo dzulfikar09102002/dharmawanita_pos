@@ -1,4 +1,4 @@
-import { Form, Head, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 import { router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -10,12 +10,9 @@ import {
     ChevronRight,
     Minus,
     Plus,
-    Save,
     Search,
     ShoppingCart,
-    Trash,
 } from 'lucide-react';
-import { DatePicker } from '@/components/ui/date-picker';
 import {
     Combobox,
     ComboboxInput,
@@ -24,20 +21,10 @@ import {
     ComboboxList,
     ComboboxItem,
 } from '@/components/ui/combobox';
-import {
-    createColumnHelper,
-    getCoreRowModel,
-    useReactTable,
-    type ColumnDef,
-} from '@tanstack/react-table';
-
-import DataTable from '@/components/data-table';
-import { Pagination, Product, Purchase } from '@/lib/model';
+import { Pagination, Purchase } from '@/lib/model';
 import { useQuery } from '@/hooks/use-query';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import sellings from '@/routes/sellings';
-import TablePagination from '@/components/table-pagination';
-import { FieldLabel } from '@/components/ui/field';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 
@@ -61,7 +48,6 @@ type Item = {
 
     purchase_date: string;
     expired_date: string | null;
-    supplier_id: number | null;
     source: string;
 };
 
@@ -78,31 +64,15 @@ type Props = {
     supplierOptions: Option[];
 };
 
-export default function Index({
-    pagination,
-    categoryOptions,
-    supplierOptions,
-}: Props) {
+export default function Index({ pagination, categoryOptions }: Props) {
     const { data: products } = pagination;
 
     const { data, setData, post, processing, errors } = useForm<{
         items: Item[];
-        supplier_id: string | null;
     }>({
         items: [],
-        supplier_id: null,
     });
-    const today = () => {
-        const d = new Date();
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${d.getFullYear()}-${month}-${day}`;
-    };
     const err = (key: string) => ((errors as any)[key] ? 'border-red-500' : '');
-    const safeSupplierOptions = Array.isArray(supplierOptions)
-        ? supplierOptions
-        : [];
-    const [supplierValue, setSupplierValue] = useState<string | null>(null);
     const query = useQuery();
     const search = query.search || '';
     const product_category_id = query.product_category_id || 'all';
@@ -149,7 +119,6 @@ export default function Index({
 
                 year,
                 code: purchase.code,
-                supplier_id: purchase.supplier_id ?? null,
                 source: 'purchase',
             },
         ]);
@@ -178,14 +147,6 @@ export default function Index({
         (sum, item) => sum + item.quantity * item.selling_price,
         0,
     );
-    const yearOptions: Option[] = Array.from({ length: 5 }, (_, i) => {
-        const year = new Date().getFullYear() - i;
-
-        return {
-            value: String(year),
-            label: String(year),
-        };
-    });
 
     const handleSearch = (e: React.SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -213,24 +174,56 @@ export default function Index({
         last_page,
         first_page_url,
     } = pagination;
-    const sourceOptions: Option[] = [
-        { value: 'purchase', label: 'Pembelian' },
-        { value: 'return', label: 'Pengembalian' },
-        { value: 'adjustment', label: 'Penyesuaian' },
-        { value: 'transfer', label: 'Transfer Masuk' },
-        { value: 'other', label: 'Lainnya' },
-    ];
+
     const inertiaOptions = {
         preserveScroll: true,
         preserveState: true,
         only: ['pagination'],
     };
-
+    const [searchValue, setSearchValue] = useState(search);
     const handlePageChange = (page: string | null) => {
         if (!page) return;
 
         router.get(first_page_url, { page }, inertiaOptions);
     };
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            router.get(
+                sellings.index().url,
+                {
+                    search: searchValue,
+                    product_category_id:
+                        categoryValue === 'all' ? '' : categoryValue,
+                    page: 1,
+                },
+                {
+                    preserveState: true,
+                    replace: true,
+                    only: ['pagination'],
+                },
+            );
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchValue, categoryValue]);
+    const autoAddedRef = useRef<string | null>(null);
+    useEffect(() => {
+        if (!searchValue) return;
+        if (products.length !== 1) {
+            autoAddedRef.current = null;
+            return;
+        }
+
+        const purchase = products[0];
+        if (autoAddedRef.current === purchase.id.toString()) {
+            return;
+        }
+
+        addItem(purchase);
+
+        autoAddedRef.current = purchase.id.toString();
+        setSearchValue('');
+    }, [products]);
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
@@ -238,76 +231,47 @@ export default function Index({
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[60%_40%]">
                 <Card className="flex flex-col">
                     <CardHeader>
-                        <form onSubmit={handleSearch}>
-                            <div className="grid gap-2 lg:flex">
-                                <input type="hidden" name="page" value={1} />
-
-                                <Combobox
-                                    items={safeCategoryOptions}
-                                    value={safeCategoryOptions.find(
-                                        (el) => el.value == categoryValue,
-                                    )}
-                                    onValueChange={(val: Option | null) => {
-                                        const newValue = val?.value ?? 'all';
-
-                                        setCategoryValue(newValue);
-
-                                        router.get(
-                                            sellings.index().url,
-                                            {
-                                                search,
-                                                product_category_id: newValue,
-                                                page: 1,
-                                            },
-                                            {
-                                                preserveState: true,
-                                                replace: true,
-                                                only: ['pagination'],
-                                            },
-                                        );
-                                    }}
-                                >
-                                    <ComboboxInput
-                                        placeholder="Pilih Kategori"
-                                        className="w-full"
-                                    />
-                                    <input
-                                        type="hidden"
-                                        name="product_category_id"
-                                        value={
-                                            categoryValue === 'all'
-                                                ? ''
-                                                : categoryValue
-                                        }
-                                    />
-                                    <ComboboxContent>
-                                        <ComboboxEmpty>
-                                            Tidak ditemukan
-                                        </ComboboxEmpty>
-                                        <ComboboxList>
-                                            {(el) => (
-                                                <ComboboxItem
-                                                    key={el.value}
-                                                    value={el}
-                                                >
-                                                    {el.label}
-                                                </ComboboxItem>
-                                            )}
-                                        </ComboboxList>
-                                    </ComboboxContent>
-                                </Combobox>
-
-                                <Input
-                                    name="search"
-                                    defaultValue={search}
-                                    placeholder="Cari produk..."
+                        <div className="grid gap-2 lg:grid-cols-[30%_70%]">
+                            {/* CATEGORY */}
+                            <Combobox
+                                items={safeCategoryOptions}
+                                value={safeCategoryOptions.find(
+                                    (el) => el.value == categoryValue,
+                                )}
+                                onValueChange={(val: Option | null) => {
+                                    const newValue = val?.value ?? 'all';
+                                    setCategoryValue(newValue);
+                                }}
+                            >
+                                <ComboboxInput
+                                    placeholder="Pilih Kategori"
+                                    className="w-full"
                                 />
 
-                                <Button type="submit" variant="secondary">
-                                    <Search /> Cari
-                                </Button>
-                            </div>
-                        </form>
+                                <ComboboxContent>
+                                    <ComboboxEmpty>
+                                        Tidak ditemukan
+                                    </ComboboxEmpty>
+                                    <ComboboxList>
+                                        {(el) => (
+                                            <ComboboxItem
+                                                key={el.value}
+                                                value={el}
+                                            >
+                                                {el.label}
+                                            </ComboboxItem>
+                                        )}
+                                    </ComboboxList>
+                                </ComboboxContent>
+                            </Combobox>
+
+                            {/* SEARCH (DEBOUNCED) */}
+                            <Input
+                                value={searchValue}
+                                onChange={(e) => setSearchValue(e.target.value)}
+                                placeholder="Cari produk..."
+                            />
+                        </div>
                     </CardHeader>
 
                     <CardContent className="flex-1">
@@ -318,10 +282,15 @@ export default function Index({
                                 return (
                                     <Card
                                         key={purchase.id}
-                                        className="cursor-pointer transition hover:shadow-md"
+                                        className="relative cursor-pointer transition hover:shadow-md"
                                         onClick={() => addItem(purchase)}
                                     >
                                         <CardContent className="p-3">
+                                            <div className="absolute top-1 right-2">
+                                                <span className="rounded bg-muted px-2 py-0.5 text-[11px] font-medium">
+                                                    {purchase.code}
+                                                </span>
+                                            </div>
                                             <div className="text-sm font-semibold">
                                                 {product?.name}
                                             </div>
@@ -333,7 +302,6 @@ export default function Index({
                                 );
                             })}
                         </div>
-
                         <div className="mt-4">
                             <div className="flex items-center gap-2 text-sm">
                                 <div>Halaman</div>
@@ -421,7 +389,6 @@ export default function Index({
                                     key={index}
                                     className="space-y-2 border-b pb-3"
                                 >
-                                    {/* ROW 1: nama + harga */}
                                     <div className="flex justify-between">
                                         <div className="font-medium">
                                             {item.name}

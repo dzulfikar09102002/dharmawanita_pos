@@ -23,13 +23,13 @@ class DashboardService
     public function getBestSellingProducts($month, $year)
     {
         return SaleTransactionDetail::query()
-            ->select('product_id', DB::raw('SUM(quantity) as total_sold'))
-            ->with('product')
+            ->select('purchase_id', DB::raw('SUM(quantity) as total_sold'))
+            ->with('purchase.product')
             ->whereHas('saleTransaction', function ($q) use ($month, $year) {
                 $q->whereMonth('transaction_date', $month)
                 ->whereYear('transaction_date', $year);
             })
-            ->groupBy('product_id')
+            ->groupBy('purchase_id')
             ->orderByDesc('total_sold')
             ->limit(5)
             ->get();
@@ -40,6 +40,7 @@ class DashboardService
         return SaleTransaction::query()
             ->whereMonth('transaction_date', $month)
             ->whereYear('transaction_date', $year) 
+            ->where('payment_status', '=', 'paid')
             ->sum('grand_total');
     }
 
@@ -79,6 +80,7 @@ class DashboardService
             ->whereYear('transaction_date', $year) 
             ->groupBy('date')
             ->orderBy('date')
+            ->where('payment_status', '=', 'paid')
             ->get()
             ->map(function ($item) {
                 return [

@@ -11,6 +11,7 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from 'recharts';
+import { Purchase } from '@/lib/model';
 
 type Product = {
     id: number;
@@ -19,11 +20,8 @@ type Product = {
 };
 
 type BestSelling = {
-    product_id: number;
     total_sold: number;
-    product?: {
-        name: string;
-    };
+    purchase?: Purchase;
 };
 
 type DailySales = {
@@ -95,14 +93,14 @@ export default function Dashboard({
     receivable = 0,
     dailySales = [],
     month = new Date().getMonth() + 1,
-     year = new Date().getFullYear(),
+    year = new Date().getFullYear(),
 }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
 
-            <div className="p-4 flex flex-col gap-4">
-                <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-4 p-4">
+                <div className="flex items-center justify-between">
                     <h1 className="text-xl font-bold">
                         Dashboard - {monthLabels[month]} {year}
                     </h1>
@@ -115,15 +113,15 @@ export default function Dashboard({
                                     '/dashboard',
                                     {
                                         month: Number(e.target.value),
-                                        year: year, 
+                                        year: year,
                                     },
                                     {
                                         preserveState: true,
-                                        replace: true, 
-                                    }
+                                        replace: true,
+                                    },
                                 )
                             }
-                            className="border rounded px-3 py-2"
+                            className="rounded border px-3 py-2"
                         >
                             {months.map((m) => (
                                 <option key={m.value} value={m.value}>
@@ -139,16 +137,16 @@ export default function Dashboard({
                                 router.get(
                                     '/dashboard',
                                     {
-                                        month: month, 
+                                        month: month,
                                         year: Number(e.target.value),
                                     },
                                     {
                                         preserveState: true,
-                                        replace: true, 
-                                    }
+                                        replace: true,
+                                    },
                                 )
                             }
-                            className="border rounded px-3 py-2"
+                            className="rounded border px-3 py-2"
                         >
                             {[2023, 2024, 2025, 2026].map((y) => (
                                 <option key={y} value={y}>
@@ -176,7 +174,11 @@ export default function Dashboard({
 
                     <Card>
                         <CardHeader>Laba / Rugi</CardHeader>
-                        <CardContent className={profit >= 0 ? 'text-green-500' : 'text-red-500'}>
+                        <CardContent
+                            className={
+                                profit >= 0 ? 'text-green-500' : 'text-red-500'
+                            }
+                        >
                             Rp {profit.toLocaleString('id-ID')}
                         </CardContent>
                     </Card>
@@ -231,7 +233,11 @@ export default function Dashboard({
                                             <span>{p.name}</span>
                                             <span className="text-sm text-muted-foreground">
                                                 {p.expired_date
-                                                    ? new Date(p.expired_date).toLocaleDateString('id-ID')
+                                                    ? new Date(
+                                                          p.expired_date,
+                                                      ).toLocaleDateString(
+                                                          'id-ID',
+                                                      )
                                                     : '-'}
                                             </span>
                                         </div>
@@ -256,7 +262,8 @@ export default function Dashboard({
                                             className="flex justify-between border-b pb-2"
                                         >
                                             <span>
-                                                {item.product?.name ?? '-'}
+                                                {item.purchase?.product?.name ??
+                                                    '-'}
                                             </span>
                                             <span className="text-sm text-muted-foreground">
                                                 {item.total_sold} terjual
@@ -267,7 +274,6 @@ export default function Dashboard({
                             )}
                         </CardContent>
                     </Card>
-
                 </div>
             </div>
         </AppLayout>

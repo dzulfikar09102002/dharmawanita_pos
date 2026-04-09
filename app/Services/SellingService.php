@@ -1,12 +1,11 @@
 <?php
 
 namespace App\Services;
-
-use App\Models\Category;
-use App\Models\InventoryTransaction;
-use App\Models\Product;
 use App\Models\Purchase;
-use App\Models\Supplier;
+use App\Models\SaleTransactionDetail;
+use App\Models\InventoryTransaction;
+use App\Models\Category;
+use App\Models\SaleTransaction;
 use Illuminate\Support\Facades\DB;
 
 class SellingService
@@ -19,7 +18,7 @@ class SellingService
         $query = Purchase::with(['product.category', 'product.stock'])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
-                    $q->where('code', 'like', "%$search%") // 🔥 search by code
+                    $q->where('code', 'like', "%$search%") 
                     ->orWhereHas('product', function ($q2) use ($search) {
                         $q2->where('name', 'like', "%$search%")
                             ->orWhereHas('category', function ($q3) use ($search) {
@@ -56,78 +55,85 @@ class SellingService
 
         return $options;
     }
-    public function getSupplierOptions()
-    {
-        $options = Supplier::all()->map(function ($supplier) {
-            return [
-                'value' => $supplier->id,
-                'label' => $supplier->name,
-            ];
-        });
 
-        return $options;
-    }
 
     public function store(array $input)
-{
-    return DB::transaction(function () use ($input) {
+    {
+        return DB::transaction(function () use ($input) {
 
-        $items = $input['items'] ?? [];
+            $items = $input['items'] ?? [];
+            $user  = auth()->id();
 
-        $createdPurchases = [];
-        $user = auth()->id();
-        foreach ($items as $item) {
-            $purchase = Purchase::create([
-                'product_id'      => $item['product_id'],
-                'supplier_id'     => $item['supplier_id'] ?? null,
-                'code'            => $item['code'],
-                'year'            => $item['year'],
-                'quantity'        => $item['quantity'],
-                'purchase_price'  => $item['purchase_price'],
-                'selling_price'   => $item['selling_price'],
-                'purchase_date'   => $item['purchase_date'],
-                'expired_date'    => $item['expired_date'] ?? null,
-                'created_by'      => $user,
-                'updated_by'      => $user,
+            $totalAmount = collect($items)->sum(function ($item) {
+                return $item['quantity'] * $item['selling_price'];
+            });
+
+            $sale = SaleTransaction::create([
+                'invoice_number'   => $this->generateInvoiceNumber(),
+                'payment_status'   => 'pending',
+                'total_amount'     => $totalAmount,
+                'grand_total'      => $totalAmount,
+                'transaction_date' => now(),
+                'created_by'       => $user,
+                'updated_by'       => $user,
             ]);
 
-            InventoryTransaction::create([
-                'product_id'      => $item['product_id'],
-                'type'            => 'in',
-                'source'          => $item['source'], 
-                'reference_id'    => $purchase->id, 
-                'quantity'        => $item['quantity'],
-                'purchase_price'  => $item['purchase_price'],
-                'selling_price'   => $item['selling_price'],
-                'note'            => 'Pembelian barang',
-                'created_by'      => $user,
-                'updated_by'      => $user,
-            ]);
+            foreach ($items as $item) {
 
-            $createdPurchases[] = $purchase;
+                $subtotal = $item['quantity'] * $item['selling_price'];
+
+                $detail = SaleTransactionDetail::create([
+                    'sale_transaction_id' => $sale->id,
+                    'purchase_id'         => $item['purchase_id'],
+                    'code'                => $item['code'],
+                    'quantity'            => $item['quantity'],
+                    'purchase_price'      => $item['purchase_price'],
+                    'selling_price'       => $item['selling_price'],
+                    'subtotal'            => $subtotal,
+                    'created_by'          => $user,
+                    'updated_by'          => $user,
+                ]);
+
+                InventoryTransaction::create([
+                    'product_id'     => $item['product_id'],
+                    'type'           => 'out',
+                    'source'         => $item['source'],
+                    'reference_id'   => $detail->id,
+                    'quantity'       => $item['quantity'],
+                    'purchase_price' => $item['purchase_price'],
+                    'selling_price'  => $item['selling_price'],
+                    'note'           => 'Penjualan barang',
+                    'created_by'     => $user,
+                    'updated_by'     => $user,
+                ]);
+            }
+
+            return $sale->load('details.purchase.product');
+        });
+    }
+
+    private function generateInvoiceNumber(): string
+    {
+        $date = now()->format('Ymd');
+
+        $prefix = $date . '/DWPSBY/';
+
+        $last = SaleTransaction::withTrashed()
+            ->whereDate('transaction_date', now()->toDateString())
+            ->where('invoice_number', 'like', $prefix . '%')
+            ->orderByDesc('id')
+            ->value('invoice_number');
+
+        $nextNumber = 1;
+
+        if ($last) {
+            $lastSequence = (int) substr($last, -3);
+            $nextNumber = $lastSequence + 1;
         }
 
-        return $createdPurchases;
-    });
-}
+        $sequence = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
 
-    public function update(Purchase $purchase, array $input)
-    {
-        return $purchase->update([
-            'name'        => $input['name'],
-            'contact'     => $input['contact'],
-            'address'     => $input['address'],
-            'updated_by'  => auth()->user()->id,
-        ]);
+        return $prefix . $sequence;
     }
 
-     public function delete(Purchase $purchase)
-    {
-        return $purchase->delete();
-    }
-
-    public function restore(int $id){
-        $purchase = Purchase::withTrashed()->findOrFail($id);
-        return $purchase->restore();
-    }
 }

@@ -28,26 +28,5 @@ class SellingController extends Controller
         $this->service->store($request->validated());
         return to_route('sellings.index')->with('success', 'Transaksi berhasil disimpan');
     }
-    public function update(UpdateSellingRequest $request, SaleTransaction $selling)
-    {
-        $this->service->update($selling, $request->validated());
-        return to_route('sellings.index')->with('success', 'Transaksi berhasil diperbarui');
-    }
-    public function destroy(SaleTransaction $selling)
-    {
-        $this->service->delete($selling);
-        return to_route('sellings.index')->with('success', 'Transaksi berhasil dihapus');
-    }
 
-    public function restore(int $id)
-    {
-        $this->service->restore($id);
-        return to_route('sellings.index')->with('success', 'Transaksi berhasil dipulihkan');
-    }
-
-    public function deleted(){
-        $onlyTrashed = true;
-        $pagination = $this->service->getDeletedMethod();
-        return Inertia::render('sellings/index', compact('pagination', 'onlyTrashed'));
-    }
 }
