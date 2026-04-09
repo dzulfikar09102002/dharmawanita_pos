@@ -1,9 +1,10 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import salesReport from '@/routes/reports/sales';
 
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 import {
     createColumnHelper,
@@ -43,6 +44,7 @@ export default function Index({ pagination, transaction }: Props) {
             href: '#',
         },
     ];
+
     const { data } = pagination;
 
     const grandTotal = (data ?? []).reduce((acc, item) => {
@@ -67,7 +69,6 @@ export default function Index({ pagination, transaction }: Props) {
             header: 'No',
             cell: (info) => {
                 const row = info.row.original as any;
-
                 if (row.isTotal) return '';
 
                 return (
@@ -196,8 +197,39 @@ export default function Index({ pagination, transaction }: Props) {
                         </div>
                         <div>{transaction.payment_method?.name ?? '-'}</div>
                     </div>
+
                     <DataTable columns={columns} table={table} />
                     <TablePagination pagination={pagination} />
+
+                    {/* ✅ ACTION BUTTONS */}
+                    <div className="flex justify-end gap-2 mt-6">
+                        <Button
+                            variant="outline"
+                            onClick={() =>
+                                router.visit(salesReport.index().url)
+                            }
+                        >
+                            Kembali
+                        </Button>
+
+                       <Button
+                            variant="destructive"
+                            disabled={transaction.payment_status === 'canceled'}
+                            onClick={() => {
+                                router.post(
+                                    salesReport.cancel(transaction.id).url,
+                                    {},
+                                    {
+                                        onSuccess: () => {
+                                            router.visit(salesReport.index().url);
+                                        },
+                                    }
+                                );
+                            }}
+                        >
+                            Batalkan Transaksi
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
         </AppLayout>

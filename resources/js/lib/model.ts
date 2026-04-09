@@ -98,3 +98,12 @@ export interface Stock {
     total_sale: number;
     stock: number;
 }
+
+export interface LabaRugi {
+    bulan: number;
+    tahun: number;
+    total_penjualan: number;
+    total_pembelian: number;
+    laba_rugi: number;
+}
+

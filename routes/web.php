@@ -50,9 +50,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ->name('purchases.deleted');
     Route::post('purchases/{id}/restore', [PurchaseController::class, 'restore'])
     ->name('purchases.restore');  
-    });
 
-    Route::resource('/reports/purchases', PurchasesReportController::class)->except('show')
+        Route::resource('/reports/purchases', PurchasesReportController::class)->except('show')
         ->names('reports.purchases'); 
         Route::get('/reports/purchases/deleted', [PurchasesReportController::class, 'deleted'])
         ->name('reports.purchases.deleted');
@@ -60,15 +59,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('reports.purchases.restore');  
 
 
-    Route::resource('/reports/sales', SalesReportController::class)
-    ->names('reports.sales');
-    Route::post('/reports/sales/{id}/cancel', [SalesReportController::class, 'cancel'])
-        ->name('reports.sales.cancel');
+        Route::get('reports/sales/deleted', [SalesReportController::class, 'deleted'])
+            ->name('reports.sales.deleted');
+
+        Route::post('/reports/sales/{id}/restore', [SalesReportController::class, 'restore'])
+            ->name('reports.sales.restore');  
+
+        Route::post('/reports/sales/{id}/cancel', [SalesReportController::class, 'cancel'])
+            ->name('reports.sales.cancel');
+
+        Route::resource('/reports/sales', SalesReportController::class)
+            ->names('reports.sales');
 
         Route::resource('/reports/stocks', StockReportController::class)
     ->names('reports.stocks');
 
       Route::resource('/reports/laba-rugi', LabaRugiController::class)
     ->names('reports.laba-rugi');
+    Route::get('/laba-rugi/{bulan?}/{tahun?}', [LabaRugiController::class, 'index'])
+    ->name('laba-rugi.index');
+    });
+
+
 
 require __DIR__.'/settings.php';

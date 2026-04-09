@@ -37,4 +37,23 @@ class SalesReportController extends Controller
     return to_route('reports.sales.index')->with('success', 'Transaksi berhasil dibatalkan');
     }
 
+    public function destroy(SaleTransaction $sale)
+    {
+        $sale->delete();
+
+        return to_route('reports.sales.index')
+            ->with('success', 'Transaksi berhasil dihapus');
+    }
+
+     public function restore(int $id)
+    {
+        $this->service->restore($id);
+        return to_route('reports.sales.index')->with('success', 'Transaksi berhasil dipulihkan');
+    }
+
+    public function deleted(){
+        $onlyTrashed = true;
+        $pagination = $this->service->getDeletedMethod();
+        return Inertia::render('reports/sellings/index', compact('pagination', 'onlyTrashed'));
+    }
 }
