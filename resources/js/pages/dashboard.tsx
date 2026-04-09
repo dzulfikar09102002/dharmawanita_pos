@@ -41,7 +41,6 @@ export default function Dashboard({
 
             <div className="p-4 flex flex-col gap-4">
 
-                {/* 🔥 SUMMARY CARDS */}
                 <div className="grid gap-4 md:grid-cols-3">
                     <Card>
                         <CardHeader>Total Produk (Ditampilkan)</CardHeader>
@@ -78,7 +77,6 @@ export default function Dashboard({
                     </Card>
                 </div>
 
-                {/* 🔥 2 TABLE */}
                 <div className="grid gap-4 md:grid-cols-2">
 
                     {/* 🔴 LEFT - EXPIRED */}
@@ -109,7 +107,6 @@ export default function Dashboard({
                         </CardContent>
                     </Card>
 
-                    {/* 🟢 RIGHT - BEST SELLING */}
                     <Card>
                         <CardHeader>Produk Terlaris</CardHeader>
                         <CardContent>
