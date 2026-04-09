@@ -15,13 +15,22 @@ class DashboardController extends Controller
     ) {}
 
 
-     public function index()
-{
-    $products = $this->service->getExpiredProducts();
+    public function index()
+    {
+        $month = request('month', now()->month);
 
-    return Inertia::render('dashboard', [
-        'expiredProducts' => $this->service->getExpiredProducts(),
-        'bestSellingProducts' => $this->service->getBestSellingProducts(),
-    ]);
-}
+        return Inertia::render('dashboard', [
+            'expiredProducts' => $this->service->getExpiredProducts($month),
+            'bestSellingProducts' => $this->service->getBestSellingProducts($month),
+
+            'income' => $this->service->getMonthlyIncome($month),
+            'expense' => $this->service->getMonthlyExpense($month),
+            'profit' => $this->service->getProfit($month),
+            'receivable' => $this->service->getReceivable($month),
+
+            'dailySales' => $this->service->getDailySalesChart($month),
+
+            'month' => (int) $month, 
+        ]);
+    }
 }
