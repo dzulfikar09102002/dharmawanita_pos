@@ -28,13 +28,13 @@ class PurchasesReportController extends Controller
         return to_route('reports.purchases.index')->with('success', 'Metode pembayaran berhasil dihapus');
     }
 
-    public function store(Request $request)
-    {
-        $this->service->store($request->all());
+    // public function store(Request $request)
+    // {
+    //     $this->service->store($request->all());
 
-        return to_route('reports.purchasing.index')
-            ->with('success', 'Data berhasil ditambahkan');
-    }
+    //     return to_route('reports.purchasing.index')
+    //         ->with('success', 'Data berhasil ditambahkan');
+    // }
 
     public function restore(int $id)
     {

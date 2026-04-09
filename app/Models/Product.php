@@ -31,6 +31,10 @@ class Product extends Model
     ];
 
     // Relasi ke kategori
+    public function stock()
+    {
+        return $this->hasOne(ProductStock::class, 'id', 'id');
+    }
     public function category()
     {
         return $this->belongsTo(Category::class);

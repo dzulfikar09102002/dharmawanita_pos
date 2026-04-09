@@ -24,23 +24,23 @@ class SupplierController extends Controller
     public function store(StoreSupplierRequest $request)
     {
         $this->service->store($request->validated());
-        return to_route('suppliers.index')->with('success', 'Metode pembayaran berhasil diperbarui');
+        return to_route('suppliers.index')->with('success', 'Supplier berhasil diperbarui');
     }
     public function update(UpdateSupplierRequest $request, Supplier $supplier)
     {
         $this->service->update($supplier, $request->validated());
-        return to_route('suppliers.index')->with('success', 'Metode pembayaran berhasil diperbarui');
+        return to_route('suppliers.index')->with('success', 'Supplier berhasil diperbarui');
     }
     public function destroy(Supplier $supplier)
     {
         $this->service->delete($supplier);
-        return to_route('suppliers.index')->with('success', 'Metode pembayaran berhasil dihapus');
+        return to_route('suppliers.index')->with('success', 'Supplier berhasil dihapus');
     }
 
     public function restore(int $id)
     {
         $this->service->restore($id);
-        return to_route('suppliers.index')->with('success', 'Metode pembayaran berhasil dipulihkan');
+        return to_route('suppliers.index')->with('success', 'Supplier berhasil dipulihkan');
     }
 
     public function deleted(){

@@ -39,7 +39,7 @@ export function DatePicker({ value, onChange }: DatePickerProps) {
                     onSelect={(d) =>
                         onChange(
                             d
-                                ? d.toISOString().slice(0, 10)
+                                ? format(d, "yyyy-MM-dd")
                                 : null
                         )
                     }

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\SellingController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\ProductController;
@@ -63,6 +64,8 @@ Route::resource('/reports/purchases', PurchasesReportController::class)->except(
         ->name('reports.sales.cancel');
 
         Route::resource('/reports/stocks', StockReportController::class)
-    ->names('reports.stocks');
+    ->names('reportsStocks');
+        Route::resource('/sellings', SellingController::class)
+    ->names('sellings');
 
 require __DIR__.'/settings.php';

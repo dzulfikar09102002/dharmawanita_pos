@@ -12,6 +12,7 @@ import {
     CreditCard,
     Database,
     Boxes,
+    PoundSterling,
 } from 'lucide-react';
 
 import AppLogo from '@/components/app-logo';
@@ -34,6 +35,8 @@ import products from '@/routes/products';
 import categories from '@/routes/categories';
 import suppliers from '@/routes/suppliers';
 import purchases from '@/routes/purchases';
+import reportsStocks from '@/routes/reportsStocks';
+import sellings from '@/routes/sellings';
 
 const mainNavItems = [
     {
@@ -42,13 +45,13 @@ const mainNavItems = [
         icon: LayoutDashboard,
     },
     {
-        title: 'Kasir/Penjualan',
-        href: '/cashier',
+        title: 'Kasir',
+        href: sellings.index().url,
         icon: ScanBarcode,
     },
 
     {
-        title: 'Pembelian',
+        title: 'Barang Masuk',
         href: purchases.index().url,
         icon: ShoppingBasket,
     },
@@ -69,13 +72,13 @@ const mainNavItems = [
             },
             {
                 title: 'Stok',
-                href: '/reports/stocks',
+                href: reportsStocks.index().url,
                 icon: Boxes,
             },
             {
                 title: 'Laba/Rugi',
-                href: '/reports/stocks',
-                icon: Boxes,
+                href: '/reports/profits',
+                icon: PoundSterling,
             },
         ],
     },

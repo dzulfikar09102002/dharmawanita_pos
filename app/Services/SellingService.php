@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\InventorySource;
-use App\Enums\InventoryType;
 use App\Models\Category;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
@@ -11,25 +9,30 @@ use App\Models\Purchase;
 use App\Models\Supplier;
 use Illuminate\Support\Facades\DB;
 
-class PurchaseService
+class SellingService
 {
     public function getProducts()
     {
         $search = request('search', '');
         $category_id = request('product_category_id', 'all');
 
-        $query = Product::with('category')
+        $query = Purchase::with(['product.category', 'product.stock'])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%$search%")
-                    ->orWhereHas('category', function ($q2) use ($search) {
-                        $q2->where('name', 'like', "%$search%");
+                    $q->where('code', 'like', "%$search%") // 🔥 search by code
+                    ->orWhereHas('product', function ($q2) use ($search) {
+                        $q2->where('name', 'like', "%$search%")
+                            ->orWhereHas('category', function ($q3) use ($search) {
+                                $q3->where('name', 'like', "%$search%");
+                            });
                     });
                 });
             });
 
         if ($category_id !== 'all') {
-            $query->where('category_id', $category_id);
+            $query->whereHas('product', function ($q) use ($category_id) {
+                $q->where('category_id', $category_id);
+            });
         }
 
         return $query
@@ -37,7 +40,6 @@ class PurchaseService
             ->paginate(request('per_page', 25))
             ->withQueryString();
     }
-
     public function getCategoryOptions()
     {
         $options = Category::all()->map(function ($category) {
@@ -88,14 +90,7 @@ class PurchaseService
                 'created_by'      => $user,
                 'updated_by'      => $user,
             ]);
-            $product = Product::find($item['product_id']);
 
-            if (!empty($item['expired_date'])) {
-                $product->update([
-                    'has_expired' => true,
-                    'expired_date' => $item['expired_date'],
-                ]);
-            }
             InventoryTransaction::create([
                 'product_id'      => $item['product_id'],
                 'type'            => 'in',

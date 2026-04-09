@@ -5,7 +5,15 @@ import type { BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Minus, Plus, Save, Search, Trash } from 'lucide-react';
+import {
+    ChevronLeft,
+    ChevronRight,
+    Minus,
+    Plus,
+    Save,
+    Search,
+    Trash,
+} from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import {
     Combobox,
@@ -29,8 +37,10 @@ import { useState } from 'react';
 import purchases from '@/routes/purchases';
 import TablePagination from '@/components/table-pagination';
 import { FieldLabel } from '@/components/ui/field';
+import { Spinner } from '@/components/ui/spinner';
+import { toast } from 'sonner';
 
-const title = 'Pembelian';
+const title = 'Barang Masuk';
 
 type Option = {
     value: string;
@@ -50,6 +60,7 @@ type Item = {
     purchase_date: string;
     expired_date: string | null;
     supplier_id: number | null;
+    source: string;
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -132,6 +143,7 @@ export default function Index({
                 year,
                 code: '',
                 supplier_id: null,
+                source: 'purchase',
             },
         ]);
     };
@@ -151,7 +163,6 @@ export default function Index({
         );
     };
 
-    const columnHelper = createColumnHelper<Product>();
     const yearOptions: Option[] = Array.from({ length: 5 }, (_, i) => {
         const year = new Date().getFullYear() - i;
 
@@ -160,42 +171,7 @@ export default function Index({
             label: String(year),
         };
     });
-    const columns: ColumnDef<Product, any>[] = [
-        {
-            id: 'no',
-            header: 'No',
-            cell: (info) => info.row.index + 1,
-        },
-        columnHelper.accessor('name', {
-            header: 'Nama',
-        }),
-        columnHelper.accessor('brand', {
-            header: 'Merk',
-        }),
-        columnHelper.accessor('category_id', {
-            header: 'Kategori',
-            cell: (info) => info.row.original.category?.name ?? '-',
-        }),
-        {
-            id: 'action',
-            header: '',
-            cell: (info) => {
-                const product = info.row.original;
 
-                return (
-                    <Button size="sm" onClick={() => addItem(product)}>
-                        <Plus /> Pilih
-                    </Button>
-                );
-            },
-        },
-    ];
-
-    const table = useReactTable<Product>({
-        data: products,
-        columns,
-        getCoreRowModel: getCoreRowModel(),
-    });
     const handleSearch = (e: React.SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
@@ -215,11 +191,36 @@ export default function Index({
             },
         );
     };
+    const {
+        prev_page_url,
+        next_page_url,
+        current_page,
+        last_page,
+        first_page_url,
+    } = pagination;
+    const sourceOptions: Option[] = [
+        { value: 'purchase', label: 'Pembelian' },
+        { value: 'return', label: 'Pengembalian' },
+        { value: 'adjustment', label: 'Penyesuaian' },
+        { value: 'transfer', label: 'Transfer Masuk' },
+        { value: 'other', label: 'Lainnya' },
+    ];
+    const inertiaOptions = {
+        preserveScroll: true,
+        preserveState: true,
+        only: ['pagination'],
+    };
+
+    const handlePageChange = (page: string | null) => {
+        if (!page) return;
+
+        router.get(first_page_url, { page }, inertiaOptions);
+    };
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
 
-            <div className="grid grid-cols-1 items-stretch gap-4 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[60%_40%]">
                 <Card className="flex flex-col">
                     <CardHeader>
                         <form onSubmit={handleSearch}>
@@ -294,20 +295,101 @@ export default function Index({
                         </form>
                     </CardHeader>
 
-                    <CardContent>
-                        <DataTable columns={columns} table={table} />
-                        <TablePagination pagination={pagination} />
+                    <CardContent className="flex-1">
+                        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+                            {products.map((product) => (
+                                <Card
+                                    key={product.id}
+                                    className="cursor-pointer transition hover:shadow-md"
+                                    onClick={() => addItem(product)}
+                                >
+                                    <CardContent className="p-3">
+                                        <div className="text-sm font-semibold">
+                                            {product.name}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            {product.brand}
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+
+                        <div className="mt-4">
+                            <div className="flex items-center gap-2 text-sm">
+                                <div>Halaman</div>
+
+                                <Button
+                                    size="icon"
+                                    variant="outline"
+                                    disabled={!prev_page_url}
+                                    onClick={() =>
+                                        prev_page_url &&
+                                        router.get(
+                                            prev_page_url,
+                                            {},
+                                            inertiaOptions,
+                                        )
+                                    }
+                                >
+                                    <ChevronLeft />
+                                </Button>
+
+                                <Combobox
+                                    items={Array.from(
+                                        { length: last_page },
+                                        (_, i) => (i + 1).toString(),
+                                    )}
+                                    value={String(current_page)}
+                                    onValueChange={handlePageChange}
+                                >
+                                    <ComboboxInput placeholder="Pilih Halaman" />
+
+                                    <ComboboxContent>
+                                        <ComboboxEmpty>
+                                            No items found.
+                                        </ComboboxEmpty>
+                                        <ComboboxList>
+                                            {(page) => (
+                                                <ComboboxItem
+                                                    key={page}
+                                                    value={page}
+                                                >
+                                                    {page}
+                                                </ComboboxItem>
+                                            )}
+                                        </ComboboxList>
+                                    </ComboboxContent>
+                                </Combobox>
+
+                                <Button
+                                    size="icon"
+                                    variant="outline"
+                                    disabled={!next_page_url}
+                                    onClick={() =>
+                                        next_page_url &&
+                                        router.get(
+                                            next_page_url,
+                                            {},
+                                            inertiaOptions,
+                                        )
+                                    }
+                                >
+                                    <ChevronRight />
+                                </Button>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
 
                 <Card className="flex h-full flex-col">
                     <CardHeader>
                         <h3 className="text-lg font-semibold">
-                            Form Pembelian
+                            Form Pembelian & Barang Masuk
                         </h3>
                     </CardHeader>
 
-                    <CardContent className="max-h-[100vh] flex-1 overflow-y-auto">
+                    <CardContent className="max-h-[60vh] flex-1 overflow-y-auto">
                         <div className="space-y-3">
                             {data.items.length === 0 && (
                                 <p className="text-sm text-muted-foreground">
@@ -498,7 +580,52 @@ export default function Index({
                                             }
                                         />
                                         <FieldLabel>
-                                            Tanggal Beli{' '}
+                                            Sumber{' '}
+                                            <span className="text-red-500">
+                                                *
+                                            </span>
+                                        </FieldLabel>
+
+                                        <Combobox
+                                            items={sourceOptions}
+                                            value={sourceOptions.find(
+                                                (opt) =>
+                                                    opt.value === item.source,
+                                            )}
+                                            onValueChange={(
+                                                val: Option | null,
+                                            ) => {
+                                                updateItem(
+                                                    index,
+                                                    'source',
+                                                    val?.value ?? 'purchase',
+                                                );
+                                            }}
+                                        >
+                                            <ComboboxInput
+                                                placeholder="Pilih Sumber"
+                                                className="w-full"
+                                            />
+
+                                            <ComboboxContent>
+                                                <ComboboxEmpty>
+                                                    Tidak ditemukan
+                                                </ComboboxEmpty>
+
+                                                <ComboboxList>
+                                                    {(el) => (
+                                                        <ComboboxItem
+                                                            key={el.value}
+                                                            value={el}
+                                                        >
+                                                            {el.label}
+                                                        </ComboboxItem>
+                                                    )}
+                                                </ComboboxList>
+                                            </ComboboxContent>
+                                        </Combobox>
+                                        <FieldLabel>
+                                            Tanggal Masuk{' '}
                                             <span className="text-red-500">
                                                 *
                                             </span>
@@ -585,9 +712,24 @@ export default function Index({
                     <Button
                         className="mx-auto mt-4 w-[95%] cursor-pointer"
                         disabled={processing}
-                        onClick={() => post(purchases.store().url)}
+                        onClick={() =>
+                            post(purchases.store().url, {
+                                onSuccess: () => {
+                                    setData('items', []);
+                                    toast.success('Data berhasil disimpan');
+                                },
+                            })
+                        }
                     >
-                        <Save /> Simpan Semua
+                        {processing ? (
+                            <>
+                                <Spinner /> Menyimpan
+                            </>
+                        ) : (
+                            <>
+                                <Save /> Simpan Semua
+                            </>
+                        )}
                     </Button>
                 </Card>
             </div>

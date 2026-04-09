@@ -32,7 +32,7 @@ class StorePurchaseRequest extends FormRequest
         'items.*.purchase_price' => ['required', 'numeric', 'min:0'],
         'items.*.selling_price' => ['required', 'numeric', 'min:0'],
         'items.*.purchase_date' => ['required', 'date'],
-
+        'items.*.source' => ['required', 'string'],
         'items.*.expired_date' => [
             'nullable',
             'date',

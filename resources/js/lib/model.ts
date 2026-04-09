@@ -42,8 +42,12 @@ export interface Product {
     selling_price: number;
     has_expired: boolean;
     expired_date?: string | null;
+    stock: ProductStock;
 }
-
+export interface ProductStock {
+    id: number;
+    stock: number;
+}
 export interface Purchase {
     id: number;
     product_id: number;
@@ -94,7 +98,7 @@ export interface Stock {
     brand: string;
     purchase_price: number;
     selling_price: number;
-    total_purchase: number;
-    total_sale: number;
+    total_in: number;
+    total_out: number;
     stock: number;
 }

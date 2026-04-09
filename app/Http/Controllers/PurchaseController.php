@@ -27,7 +27,6 @@ class PurchaseController extends Controller
     }
     public function store(StorePurchaseRequest $request)
     {
-        dd($request->validated());
         $this->service->store($request->validated());
         return to_route('purchases.index')->with('success', 'Metode pembayaran berhasil diperbarui');
     }
@@ -48,9 +47,9 @@ class PurchaseController extends Controller
         return to_route('purchases.index')->with('success', 'Metode pembayaran berhasil dipulihkan');
     }
 
-    public function deleted(){
-        $onlyTrashed = true;
-        $pagination = $this->service->getDeletedMethod();
-        return Inertia::render('purchases/index', compact('pagination', 'onlyTrashed'));
-    }
+    // public function deleted(){
+    //     $onlyTrashed = true;
+    //     $pagination = $this->service->getDeletedMethod();
+    //     return Inertia::render('purchases/index', compact('pagination', 'onlyTrashed'));
+    // }
 }
