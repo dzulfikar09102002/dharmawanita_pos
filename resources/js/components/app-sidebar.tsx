@@ -14,6 +14,7 @@ import {
     Boxes,
     PoundSterling,
     BadgePoundSterling,
+    BaggageClaim,
 } from 'lucide-react';
 
 import AppLogo from '@/components/app-logo';
@@ -100,7 +101,7 @@ const mainNavItems = [
             {
                 title: 'Metode Pembelian',
                 href: purchaseMethods.index().url,
-                icon: CreditCard,
+                icon: BaggageClaim,
             },
         ],
     },
