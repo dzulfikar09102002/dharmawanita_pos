@@ -3,7 +3,7 @@ import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import salesReport from '@/routes/reports/sales';
-import { Eye, Search, X, ArchiveRestore } from 'lucide-react';
+import { Eye, Search, X, ArchiveRestore, FilterX } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,12 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+const namaBulan = [
+    'Januari', 'Februari', 'Maret', 'April',
+    'Mei', 'Juni', 'Juli', 'Agustus',
+    'September', 'Oktober', 'November', 'Desember'
+];
+
 const columnHelper = createColumnHelper<SaleTransaction>();
 
 type TableMeta = {
@@ -41,11 +47,14 @@ type TableMeta = {
 
 type Props = {
     pagination: Pagination<SaleTransaction>;
+    bulan: number;
+    tahun: number;
 };
 
-export default function Index({ pagination }: Props) {
+export default function Index({ pagination, bulan: initialBulan, tahun: initialTahun }: Props) {
     const { data } = pagination;
-
+    const [bulan, setBulan] = useState<number>(initialBulan);
+    const [tahun, setTahun] = useState<number>(initialTahun);
     const { url } = usePage();
     const isDeletedRoute = url.includes('deleted');
 
@@ -57,6 +66,28 @@ export default function Index({ pagination }: Props) {
         isOpen: false,
         dataId: undefined,
         processing: false,
+    };
+
+        const handleReset = () => {
+        const currentMonth = new Date().getMonth() + 1;
+        const currentYear = new Date().getFullYear();
+
+        setBulan(currentMonth);
+        setTahun(currentYear);
+
+        router.get(
+            salesReport.index().url,
+            {
+                search: '',
+                bulan: currentMonth,
+                tahun: currentYear,
+                page: 1,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            }
+        );
     };
 
     const [alert, setAlert] = useState<AlertState>(initialAlertState);
@@ -94,7 +125,10 @@ export default function Index({ pagination }: Props) {
 
         columnHelper.accessor('payment_method', {
             header: 'Metode Pembayaran',
-            cell: (info) => info.getValue()?.name ?? '-',
+            cell: (info) => {
+                const row = info.row.original;
+                return row.payment_method?.name ?? '-';
+            },
         }),
 
         columnHelper.accessor('payment_status', {
@@ -151,7 +185,11 @@ export default function Index({ pagination }: Props) {
         columnHelper.accessor('transaction_date', {
             header: 'Tanggal Transaksi',
             cell: (info) =>
-                new Date(info.getValue()).toLocaleDateString('id-ID'),
+               new Date(info.getValue()).toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                })
         }),
 
         {
@@ -220,18 +258,69 @@ export default function Index({ pagination }: Props) {
 
             <Card>
                 <CardHeader>
-                    <Form method="GET" className="flex gap-2">
+                    <Form method="GET" className="flex flex-wrap items-end gap-3">
                         <input type="hidden" name="page" value={1} />
 
-                        <Input
-                            name="search"
-                            defaultValue={search}
-                            placeholder="Cari invoice..."
-                        />
+                        {/* Search (panjang) */}
+                        <div className="flex flex-col flex-1 min-w-[250px]">
+                            <label className="text-xs text-gray-500 mb-1">Cari Invoice</label>
+                            <Input
+                                name="search"
+                                defaultValue={search}
+                                placeholder="Cari invoice..."
+                                className="w-full focus-visible:ring-2 focus-visible:ring-blue-500"
+                            />
+                        </div>
 
-                        <Button type="submit" variant="secondary">
-                            <Search /> Cari
-                        </Button>
+                        {/* Bulan */}
+                        <div className="flex flex-col">
+                            <label className="text-xs text-gray-500 mb-1">Bulan</label>
+                            <select
+                                name="bulan"
+                                value={bulan}
+                                onChange={(e) => setBulan(Number(e.target.value))}
+                                className="border border-gray-300 rounded px-3 py-2 w-[160px]
+                                        focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                {namaBulan.map((nama, i) => (
+                                    <option key={i} value={i + 1}>
+                                        {nama}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Tahun */}
+                        <div className="flex flex-col">
+                            <label className="text-xs text-gray-500 mb-1">Tahun</label>
+                            <input
+                                type="number"
+                                name="tahun"
+                                value={tahun}
+                                onChange={(e) => setTahun(Number(e.target.value))}
+                                className="border border-gray-300 rounded px-3 py-2 w-[110px]
+                                        focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                        </div>
+
+                       <div className="flex gap-2">
+                            <Button
+                                type="submit"
+                                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 px-4 py-2"
+                            >
+                                <Search size={16} />
+                                Filter
+                            </Button>
+
+                               <Button
+                                    type="button"
+                                    onClick={handleReset}
+                                    className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white"
+                                >
+                                    <FilterX size={16} />
+                                    Reset Filter
+                                </Button>
+                        </div>
                     </Form>
                 </CardHeader>
 

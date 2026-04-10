@@ -15,8 +15,16 @@ class SalesReportController extends Controller
 
     public function index()
     {
-        $pagination = $this->service->getSalesReport();
-        return Inertia::render('reports/sellings/index', compact('pagination'));
+        $bulan = request('bulan', now()->month);
+        $tahun = request('tahun', now()->year);
+
+        $result = $this->service->getSalesReport($bulan, $tahun);
+
+        return Inertia::render('reports/sellings/index', [
+            'pagination' => $result['data'],   // 🔥 ambil pagination
+            'bulan' => $result['bulan'],       // 🔥 ambil bulan hasil logic
+            'tahun' => $result['tahun'],       // 🔥 ambil tahun hasil logic
+        ]);
     }
 
     public function show($id)

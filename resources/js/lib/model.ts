@@ -83,6 +83,8 @@ export interface SaleTransaction {
     total_amount: number;
     grand_total: number;
     transaction_date: string;
+    bulan: number;
+    tahun: number;
 }
 
 export interface SaleTransactionDetail {

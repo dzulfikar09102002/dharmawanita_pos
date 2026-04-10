@@ -6,26 +6,53 @@ use App\Models\SaleTransaction;
 use App\Models\SaleTransactionDetail;
 use App\Models\PaymentMethod;
 use App\Models\Product;
-
+use Carbon\Carbon;
 class SalesReportService
 {
     
-    public function getSalesReport()
+    public function getSalesReport(?int $bulan = null, ?int $tahun = null)
     {
         $search = request('search', '');
         $payment_method_id = request('payment_method_id', 'all');
-        $query = SaleTransaction::with('paymentMethod')
-            ->where(function ($q) use ($search) {
-                $q->whereLike('invoice_number', "%$search%");
-            });
+
+        $query = SaleTransaction::with('paymentMethod');
+
+        // 🔥 Kalau search ada → ambil tanggal dari invoice
+        if ($search) {
+            $invoice = SaleTransaction::whereLike('invoice_number', "%$search%")
+                ->orderByDesc('transaction_date')
+                ->first();
+
+            if ($invoice) {
+                $date = \Carbon\Carbon::parse($invoice->transaction_date);
+                $bulan = $date->month;
+                $tahun = $date->year;
+            }
+
+            $query->whereLike('invoice_number', "%$search%");
+        }
+
+        if (!is_null($bulan)) {
+            $query->whereMonth('transaction_date', $bulan);
+        }
+
+        if (!is_null($tahun)) {
+            $query->whereYear('transaction_date', $tahun);
+        }
 
         if ($payment_method_id !== 'all') {
             $query->where('payment_method_id', $payment_method_id);
         }
 
-        return $query
-            ->paginate(request('per_page', 10))
-            ->withQueryString();
+        return [
+            'data' => $query
+                ->orderByDesc('transaction_date')
+                ->paginate(request('per_page', 10))
+                ->withQueryString(),
+
+            'bulan' => $bulan,
+            'tahun' => $tahun,
+        ];
     }
 
     public function getDetailSalesReport(int $id)
