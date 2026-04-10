@@ -32,6 +32,7 @@ import {
 
 import { dashboard } from '@/routes';
 import paymentMethods from '@/routes/payment-methods';
+import purchaseMethods from '@/routes/purchase-methods';
 import products from '@/routes/products';
 import categories from '@/routes/categories';
 import suppliers from '@/routes/suppliers';
@@ -94,6 +95,11 @@ const mainNavItems = [
             {
                 title: 'Metode Pembayaran',
                 href: paymentMethods.index().url,
+                icon: CreditCard,
+            },
+            {
+                title: 'Metode Pembelian',
+                href: purchaseMethods.index().url,
                 icon: CreditCard,
             },
         ],

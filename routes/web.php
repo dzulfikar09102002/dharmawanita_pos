@@ -13,6 +13,7 @@ use App\Http\Controllers\PurchasesReportController;
 use App\Http\Controllers\StockReportController;
 use App\Http\Controllers\LabaRugiController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PurchaseMethodController;
 
 Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
@@ -33,6 +34,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('payment-methods.deleted');
     Route::post('payment-methods/{id}/restore', [PaymentMethodController::class, 'restore'])
         ->name('payment-methods.restore'); 
+
+         Route::resource('/purchase-methods', PurchaseMethodController::class)->except('show');
+    Route::get('purchase-methods/deleted', [PurchaseMethodController::class, 'deleted'])
+        ->name('purchase-methods.deleted');
+    Route::post('purchase-methods/{id}/restore', [PurchaseMethodController::class, 'restore'])
+        ->name('purchase-methods.restore'); 
 
     Route::resource('/categories', CategoryController::class)->except(['show']);
     Route::get('/categories/deleted', [CategoryController::class, 'deleted'])

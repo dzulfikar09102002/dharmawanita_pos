@@ -3,6 +3,10 @@ export interface PaymentMethod {
     name: string;
     kind: string;
 }
+export interface PurchaseMethod {
+    id: number;
+    name: string;
+}
 export interface Supplier {
     id: number;
     name: string;
