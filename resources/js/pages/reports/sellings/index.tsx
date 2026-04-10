@@ -67,12 +67,12 @@ export default function Index({ pagination }: Props) {
         setAlert((prev) => ({ ...prev, processing: true }));
 
     const onDeleteOrRestore = (id: number, isDelete: boolean) =>
-    setAlert({
-        isOpen: true,
-        dataId: id,
-        type: isDelete ? 'delete' : 'restore',
-        processing: false,
-    });
+        setAlert({
+            isOpen: true,
+            dataId: id,
+            type: isDelete ? 'delete' : 'restore',
+            processing: false,
+        });
 
     const onDetail = (id: number) => {
         router.visit(`/reports/sales/${id}`);
@@ -121,14 +121,16 @@ export default function Index({ pagination }: Props) {
                 if (!status) return '-';
 
                 return (
-                    <span className={`px-2 py-1 rounded text-xs ${map[status]}`}>
+                    <span
+                        className={`rounded px-2 py-1 text-xs ${map[status]}`}
+                    >
                         {label[status]}
                     </span>
                 );
             },
         }),
 
-        columnHelper.accessor('total_amount', {
+        columnHelper.accessor('grand_total', {
             header: 'Jumlah',
             cell: (info) =>
                 new Intl.NumberFormat('id-ID', {
@@ -137,7 +139,7 @@ export default function Index({ pagination }: Props) {
                 }).format(info.getValue()),
         }),
 
-        columnHelper.accessor('grand_total', {
+        columnHelper.accessor('total_amount', {
             header: 'Total Pembayaran',
             cell: (info) =>
                 new Intl.NumberFormat('id-ID', {
@@ -156,7 +158,9 @@ export default function Index({ pagination }: Props) {
             id: 'action',
             header: 'Aksi',
             cell: (info) => {
-                const row = info.row.original as SaleTransaction & { id: number };
+                const row = info.row.original as SaleTransaction & {
+                    id: number;
+                };
                 const meta = info.table.options.meta as TableMeta;
 
                 return (
@@ -177,7 +181,7 @@ export default function Index({ pagination }: Props) {
                             onClick={() =>
                                 meta.onDeleteOrRestore(
                                     row.id,
-                                    !meta.isDeletedRoute
+                                    !meta.isDeletedRoute,
                                 )
                             }
                         >

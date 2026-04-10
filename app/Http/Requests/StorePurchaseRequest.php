@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Product;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use phpDocumentor\Reflection\PseudoTypes\True_;
@@ -43,4 +44,22 @@ class StorePurchaseRequest extends FormRequest
         'items.*.code' => ['required', 'string', 'max:50'],
     ];
 }
+public function withValidator($validator)
+{
+    $validator->after(function ($validator) {
+        foreach ($this->items ?? [] as $index => $item) {
+            $product = Product::find($item['product_id']);
+
+            if ($product && $product->has_expired) {
+                if (empty($item['expired_date'])) {
+                    $validator->errors()->add(
+                        "items.$index.expired_date",
+                        'Tanggal expired wajib diisi untuk produk ini.'
+                    );
+                }
+            }
+        }
+    });
 }
+}
+

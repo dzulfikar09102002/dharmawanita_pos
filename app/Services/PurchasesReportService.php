@@ -25,21 +25,22 @@ class PurchasesReportService
 }
 
    public function getDeletedMethod()
-    {
-        $search = request('search', '');
+{
+   $search = request('search', '');
 
-        return Purchase::onlyTrashed()
-    ->with([
-        'product' => function ($q) {
-            $q->withTrashed();
-        },
-        'supplier' => function ($q) {
-            $q->withTrashed();
-        }
-    ])
-            ->paginate(request('per_page', 10))
-            ->withQueryString();
-    }
+    return Purchase::onlyTrashed()->with(['product', 'supplier'])
+        ->when($search, function ($query) use ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('product', function ($q2) use ($search) {
+                    $q2->where('name', 'like', "%$search%");
+                })->orWhereHas('supplier', function ($q2) use ($search) {
+                    $q2->where('name', 'like', "%$search%");
+                });
+            });
+        })
+        ->paginate(request('per_page', 10))
+        ->withQueryString();
+}
 
      public function delete(Purchase $purchasereport)
     {
