@@ -28,6 +28,7 @@ class DashboardController extends Controller
             'expense' => $this->service->getMonthlyExpense($month, $year),
             'profit' => $this->service->getProfit($month, $year),
             'receivable' => $this->service->getReceivable($month, $year),
+            'debt' => $this->service->getDebt($month, $year),
 
             'dailySales' => $this->service->getDailySalesChart($month, $year),
 

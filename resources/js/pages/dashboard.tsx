@@ -38,6 +38,7 @@ type Props = {
     income?: number;
     expense?: number;
     profit?: number;
+    debt?: number;
     receivable?: number;
 
     dailySales?: DailySales[];
@@ -90,6 +91,7 @@ export default function Dashboard({
     income = 0,
     expense = 0,
     profit = 0,
+    debt = 0,
     receivable = 0,
     dailySales = [],
     month = new Date().getMonth() + 1,
@@ -155,7 +157,7 @@ export default function Dashboard({
                     </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-5">
                     <Card>
                         <CardHeader>Penerimaan</CardHeader>
                         <CardContent>
@@ -187,6 +189,13 @@ export default function Dashboard({
                             Rp {receivable.toLocaleString('id-ID')}
                         </CardContent>
                     </Card>
+
+                    <Card>
+                        <CardHeader>Utang</CardHeader>
+                        <CardContent className="text-red-500 font-bold">
+                            Rp {debt?.toLocaleString('id-ID') ?? 0}
+                        </CardContent>
+                    </Card>                                                                         
                 </div>
 
                 <Card>

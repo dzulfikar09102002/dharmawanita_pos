@@ -3,10 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StorePurchaseRequest;
-// use App\Http\Requests\UpdatePurchaseRequest;
 use App\Models\Purchase;
-use App\Models\Supplier;
 use Illuminate\Http\Request;
 use App\Services\PurchasesReportService;
 use Inertia\Inertia;
@@ -17,34 +14,49 @@ class PurchasesReportController extends Controller
         private PurchasesReportService $service
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        $pagination = $this->service->getPurchases(); 
-        return Inertia::render('reports/purchasing/index', compact('pagination'));
+        $month = $request->get('month', now()->month);
+        $year  = $request->get('year', now()->year);
+
+        $pagination = $this->service->getPurchases();
+
+        return Inertia::render('reports/purchasing/index', [
+            'pagination' => $pagination,
+            'onlyTrashed' => false,
+            'month' => (int) $month,
+            'year' => (int) $year,
+        ]);
     }
+
     public function destroy(Purchase $purchase)
     {
         $this->service->delete($purchase);
-        return to_route('reports.purchases.index')->with('success', 'Metode pembayaran berhasil dihapus');
+
+        return to_route('reports.purchases.index', request()->only('search', 'month', 'year'))
+            ->with('success', 'Data berhasil dihapus');
     }
-
-    // public function store(Request $request)
-    // {
-    //     $this->service->store($request->all());
-
-    //     return to_route('reports.purchasing.index')
-    //         ->with('success', 'Data berhasil ditambahkan');
-    // }
 
     public function restore(int $id)
     {
         $this->service->restore($id);
-        return to_route('reports.purchases.index')->with('success', 'Kategori berhasil dipulihkan');
+
+        return to_route('reports.purchases.deleted', request()->only('search', 'month', 'year'))
+            ->with('success', 'Data berhasil dipulihkan');
     }
 
-    public function deleted(){
-        $onlyTrashed = true;
+    public function deleted(Request $request)
+    {
+        $month = $request->get('month', now()->month);
+        $year  = $request->get('year', now()->year);
+
         $pagination = $this->service->getDeletedMethod();
-        return Inertia::render('reports/purchasing/index', compact('pagination', 'onlyTrashed'));
+
+        return Inertia::render('reports/purchasing/index', [
+            'pagination' => $pagination,
+            'onlyTrashed' => true,
+            'month' => (int) $month,
+            'year' => (int) $year,
+        ]);
     }
 }

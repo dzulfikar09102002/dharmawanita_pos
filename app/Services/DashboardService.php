@@ -91,4 +91,13 @@ class DashboardService
                 ];
             });
     }
+
+    public function getDebt($month, $year)
+    {
+        return \App\Models\Purchase::query()
+            ->where('status_payment', 'pending')
+            ->whereMonth('purchase_date', $month)
+            ->whereYear('purchase_date', $year)
+            ->sum('purchase_price');
+    }
 }

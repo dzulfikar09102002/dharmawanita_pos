@@ -63,6 +63,7 @@ export interface Purchase {
     quantity: number;
     purchase_price: number;
     purchase_date: string; // ISO date string
+    status_payment: PaymentStatus;
     expired_date: string | null; // bisa null kalau belum ada
     created_by: number;
     updated_by: number | null;
@@ -70,6 +71,7 @@ export interface Purchase {
     created_at: string; // ISO date string
     updated_at: string | null;
     deleted_at: string | null;
+    month: number;
 }
 export type PaymentStatus = 'pending' | 'paid' | 'canceled';
 
