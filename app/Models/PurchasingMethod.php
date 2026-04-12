@@ -9,7 +9,7 @@ class PurchasingMethod extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'purchasing_method';
+    protected $table = 'purchasing_methods';
 
     protected $fillable = [
         'name',
