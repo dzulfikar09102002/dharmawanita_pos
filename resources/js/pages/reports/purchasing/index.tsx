@@ -48,6 +48,7 @@ type Props = {
     year: number;
 };
 
+// ✅ FORMAT RUPIAH
 const formatRupiah = (value: number) =>
     new Intl.NumberFormat('id-ID', {
         style: 'currency',
@@ -61,7 +62,12 @@ const namaBulan = [
     'Juli','Agustus','September','Oktober','November','Desember'
 ];
 
-export default function Index({ pagination, month: initialMonth, year: initialYear }: Props) {
+export default function Index({
+    pagination,
+    month: initialMonth,
+    year: initialYear
+}: Props) {
+
     const now = new Date();
 
     const [month, setMonth] = useState(initialMonth ?? now.getMonth() + 1);
@@ -74,6 +80,13 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
         proccessing: false,
     });
 
+    const [payModal, setPayModal] = useState<{
+        open: boolean;
+        data?: Purchase;
+    }>({
+        open: false,
+    });
+
     const { url } = usePage();
     const isDeletedRoute = url.includes('deleted');
 
@@ -81,25 +94,16 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
     const search = query.search || '';
 
     const handleReset = () => {
-        const now = new Date();
-        const m = now.getMonth() + 1;
-        const y = now.getFullYear();
+        const m = new Date().getMonth() + 1;
+        const y = new Date().getFullYear();
 
         setMonth(m);
         setYear(y);
 
         router.get(
             purchases.index().url,
-            {
-                search: '',
-                month: m,
-                year: y,
-                page: 1,
-            },
-            {
-                preserveState: true,
-                replace: true,
-            }
+            { search: '', month: m, year: y, page: 1 },
+            { preserveState: true, replace: true }
         );
     };
 
@@ -111,14 +115,19 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
             proccessing: false,
         });
 
+    const handlePrint = (type: 'month' | 'year') => {
+        let url = `/reports/print-purchases-report?type=${type}&year=${year}`;
+        if (type === 'month') url += `&month=${month}`;
+        window.open(url, '_blank');
+    };
+
     const columns: ColumnDef<Purchase, any>[] = [
         {
             id: 'no',
             header: 'No',
             cell: (info) =>
                 (pagination.current_page - 1) * pagination.per_page +
-                info.row.index +
-                1,
+                info.row.index + 1,
         },
         columnHelper.accessor('code', { header: 'Kode' }),
         columnHelper.accessor('product_id', {
@@ -131,12 +140,9 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
         }),
         columnHelper.accessor('quantity', { header: 'Qty' }),
         columnHelper.accessor('purchase_price', {
-    header: 'Harga',
-    cell: (info) => {
-        const value = info.getValue();
-        return value ? formatRupiah(value) : '-';
-    },
-}),
+            header: 'Harga',
+            cell: (info) => formatRupiah(info.getValue() || 0),
+        }),
         columnHelper.accessor('purchase_date', {
             header: 'Tanggal',
             cell: (info) =>
@@ -147,81 +153,74 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                 }),
         }),
         {
-    accessorKey: 'status_payment',
-    header: 'Status',
-    cell: (info) => {
-        const status = info.getValue();
+            accessorKey: 'status_payment',
+            header: 'Status',
+            cell: (info) => {
+                const status = info.getValue();
 
-        if (!status) return '-';
+                if (!status) return '-';
 
-        return (
-            <span
-                className={`px-2 py-1 rounded text-xs font-semibold ${
-                    status === 'paid'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'
-                }`}
-            >
-                {status === 'paid' ? 'Paid' : 'Pending'}
-            </span>
-        );
-    },
-},
-        {
-    id: 'action',
-    header: 'Aksi',
-    cell: (info) => {
-        const row = info.row.original;
-        const meta = info.table.options.meta as TableMeta;
-
-        return (
-            <div className="flex gap-2">
-                {/* ✅ PAYMENT BUTTON */}
-                {row.status_payment === 'pending' && !meta.isDeletedRoute && (
-                    <Button
-                        size="icon"
-                        variant="default"
-                        className="bg-green-600 hover:bg-green-700"
-                        onClick={() =>
-                            setPayModal({
-                                open: true,
-                                data: row,
-                            })
-                        }
+                return (
+                    <span
+                        className={`px-2 py-1 rounded text-xs font-semibold ${
+                            status === 'paid'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-yellow-100 text-yellow-700'
+                        }`}
                     >
-                        💰
-                    </Button>
-                )}
+                        {status === 'paid' ? 'Paid' : 'Pending'}
+                    </span>
+                );
+            },
+        },
+        {
+            id: 'action',
+            header: 'Aksi',
+            cell: (info) => {
+                const row = info.row.original;
+                const meta = info.table.options.meta as TableMeta;
 
-                {/* ❌ DELETE / RESTORE */}
-                <Button
-                    size="icon"
-                    variant={meta.isDeletedRoute ? 'outline' : 'destructive'}
-                    onClick={() =>
-                        meta.onDeleteOrRestore(
-                            row.id,
-                            !meta.isDeletedRoute
-                        )
-                    }
-                >
-                    {meta.isDeletedRoute ? (
-                        <ArchiveRestore size={16} />
-                    ) : (
-                        <X size={16} />
-                    )}
-                </Button>
-            </div>
-        );
-    },
-},
+                return (
+                    <div className="flex gap-2">
+                        {/* PAYMENT */}
+                        {row.status_payment === 'pending' && !meta.isDeletedRoute && (
+                            <Button
+                                size="icon"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                onClick={() =>
+                                    setPayModal({
+                                        open: true,
+                                        data: row,
+                                    })
+                                }
+                            >
+                                💰
+                            </Button>
+                        )}
+
+                        {/* DELETE / RESTORE */}
+                        <Button
+                            size="icon"
+                            className={
+                                meta.isDeletedRoute
+                                    ? 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                                    : 'bg-red-600 hover:bg-red-700 text-white'
+                            }
+                            onClick={() =>
+                                meta.onDeleteOrRestore(row.id, !meta.isDeletedRoute)
+                            }
+                        >
+                            {meta.isDeletedRoute ? (
+                                <ArchiveRestore size={16} />
+                            ) : (
+                                <X size={16} />
+                            )}
+                        </Button>
+                    </div>
+                );
+            },
+        },
     ];
-
-    const [payModal, setPayModal] = useState<{
-    open: boolean;
-    data?: Purchase;
-    }>({
-        open: false,
-    });
 
     const table = useReactTable<Purchase>({
         data: pagination.data,
@@ -232,16 +231,6 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
             isDeletedRoute,
         },
     });
-
-    const handlePrint = (type: 'month' | 'year') => {
-    let url = `/reports/print-purchases-report?type=${type}&year=${year}`;
-
-    if (type === 'month') {
-        url += `&month=${month}`;
-    }
-
-    window.open(url, '_blank');
-    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -262,59 +251,20 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                 }
             />
 
-            <NumberBoardModal
-    open={payModal.open}
-    onClose={() =>
-        setPayModal({
-            open: false,
-            data: undefined,
-        })
-    }
-    grandTotal={Number(payModal.data?.purchase_price ?? 0)}
-    onConfirm={(amount) => {
-        console.log('Jumlah bayar:', amount);
-
-        router.post(
-    purchases.pay(payModal.data!.id).url,
-    {
-        total_payment: amount,
-    },
-    {
-        onSuccess: () => toast.success('Pembayaran berhasil'),
-        onError: () => toast.error('Pembayaran gagal'),
-    }
-    );
-
-        setPayModal({
-            open: false,
-            data: undefined,
-        });
-    }}
-/>
-
             <Card>
                 <CardHeader>
                     <Form method="GET" className="flex flex-wrap items-end gap-3">
-                        <input type="hidden" name="page" value={1} />
 
-                        {/* 🔍 SEARCH */}
                         <div className="flex flex-col flex-1 min-w-[250px]">
                             <label className="text-xs text-gray-500 mb-1">
                                 Cari Produk / Supplier
                             </label>
-                            <Input
-                                name="search"
-                                defaultValue={search}
-                                placeholder="Cari..."
-                                className="w-full focus-visible:ring-2 focus-visible:ring-blue-500"
-                            />
+                            <Input name="search" defaultValue={search} />
                         </div>
 
-                        {/* 📅 BULAN */}
                         <div className="flex flex-col">
                             <label className="text-xs text-gray-500 mb-1">Bulan</label>
                             <select
-                                name="month"
                                 value={month}
                                 onChange={(e) => setMonth(Number(e.target.value))}
                                 className="border rounded px-3 py-2 w-[160px]"
@@ -327,21 +277,19 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                             </select>
                         </div>
 
-                        {/* 📅 TAHUN */}
                         <div className="flex flex-col">
                             <label className="text-xs text-gray-500 mb-1">Tahun</label>
                             <Input
                                 type="number"
-                                name="year"
                                 value={year}
                                 onChange={(e) => setYear(Number(e.target.value))}
                                 className="w-[110px]"
                             />
                         </div>
 
-                        {/* 🔘 ACTION */}
+                        {/* BUTTON FILTER */}
                         <div className="flex gap-2">
-                            <Button>
+                            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                                 <Search size={16} />
                                 Filter
                             </Button>
@@ -349,6 +297,7 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                             <Button
                                 type="button"
                                 onClick={handleReset}
+                                className="bg-red-600 hover:bg-red-700 text-white"
                             >
                                 <FilterX size={16} />
                                 Reset Filter
@@ -358,45 +307,24 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                 </CardHeader>
 
                 <CardContent>
-                    <div className="flex justify-between items-center mb-4">
-        
-                            {/* Kiri: tombol cetak */}
-                            <div className="flex gap-2">
-                                <Button
-                                    type="button"
-                                    onClick={() => handlePrint('month')}
-                                >
-                                    <Printer size={16} />
-                                    Cetak Laporan Bulanan
-                                </Button>
+                    {/* PRINT BUTTON */}
+                    <div className="flex gap-2 mb-4">
+                        <Button
+                            onClick={() => handlePrint('month')}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                            <Printer size={16} />
+                            Cetak Laporan Bulanan
+                        </Button>
 
-                                <Button
-                                    type="button"
-                                    onClick={() => handlePrint('year')}
-                                >
-                                    <Printer size={16} />
-                                    Cetak Laporan Tahunan
-                                </Button>
-                            </div>
-
-                        </div>
-                    <Tabs
-                        value={isDeletedRoute ? 'deleted' : 'available'}
-                        className="mb-4"
-                    >
-                        <TabsList>
-                            <TabsTrigger value="available" asChild>
-                                <Link href={purchases.index().url}>
-                                    Tersedia
-                                </Link>
-                            </TabsTrigger>
-                            <TabsTrigger value="deleted" asChild>
-                                <Link href={purchases.deleted().url}>
-                                    Terhapus
-                                </Link>
-                            </TabsTrigger>
-                        </TabsList>
-                    </Tabs>
+                        <Button
+                            onClick={() => handlePrint('year')}
+                            className="bg-purple-600 hover:bg-purple-700 text-white"
+                        >
+                            <Printer size={16} />
+                            Cetak Laporan Tahunan
+                        </Button>
+                    </div>
 
                     <DataTable columns={columns} table={table} />
                     <TablePagination pagination={pagination} />

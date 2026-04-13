@@ -37,7 +37,6 @@ const namaBulan = [
     'September', 'Oktober', 'November', 'Desember'
 ];
 
-// ✅ FORMAT RUPIAH (FIX UTAMA)
 const formatRupiah = (value: number | string | null | undefined) =>
     new Intl.NumberFormat('id-ID', {
         style: 'currency',
@@ -181,13 +180,11 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
             },
         }),
 
-        // ✅ FIX RUPIAH
         columnHelper.accessor('grand_total', {
             header: 'Jumlah',
             cell: (info) => formatRupiah(info.getValue()),
         }),
 
-        // ✅ FIX RUPIAH
         columnHelper.accessor('total_amount', {
             header: 'Total Pembayaran',
             cell: (info) => formatRupiah(info.getValue()),
@@ -222,7 +219,11 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
 
                         <Button
                             size="icon"
-                            variant={meta.isDeletedRoute ? 'outline' : 'destructive'}
+                            className={
+                                meta.isDeletedRoute
+                                    ? 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                                    : 'bg-red-600 hover:bg-red-700 text-white'
+                            }
                             onClick={() =>
                                 meta.onDeleteOrRestore(row.id, !meta.isDeletedRoute)
                             }
@@ -302,14 +303,21 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
                         </div>
 
                         <div className="flex gap-2">
-                            <Button type="submit">
+                            <Button
+                                type="submit"
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                            >
                                 <Search size={16} />
                                 Filter
                             </Button>
 
-                            <Button type="button" onClick={handleReset}>
+                            <Button
+                                type="button"
+                                onClick={handleReset}
+                               className="bg-red-600 hover:bg-red-700 text-white"
+                            >
                                 <FilterX size={16} />
-                                Reset
+                                Reset Filter
                             </Button>
                         </div>
                     </Form>
@@ -317,12 +325,18 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
 
                 <CardContent>
                     <div className="flex gap-2 mb-4">
-                        <Button onClick={() => handlePrint('month')}>
+                        <Button
+                            onClick={() => handlePrint('month')}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
                             <Printer size={16} />
                             Cetak Laporan Bulanan
                         </Button>
 
-                        <Button onClick={() => handlePrint('year')}>
+                        <Button
+                            onClick={() => handlePrint('year')}
+                            className="bg-purple-600 hover:bg-purple-700 text-white"
+                        >
                             <Printer size={16} />
                             Cetak Laporan Tahunan
                         </Button>

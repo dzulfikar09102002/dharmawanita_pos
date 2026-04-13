@@ -24,6 +24,15 @@ const namaBulan = [
     'September', 'Oktober', 'November', 'Desember'
 ];
 
+// ✅ GLOBAL FORMAT RUPIAH
+const formatRupiah = (value: number | string | null | undefined) =>
+    new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(Number(value || 0));
+
 const breadcrumbs = [
     {
         title: 'Laporan Laba Rugi',
@@ -51,6 +60,9 @@ export default function LabaRugi({ data }: Props) {
 
         window.open(`/laba-rugi/print?${params.toString()}`, '_blank');
     };
+
+    const totalPendapatan =
+        data.total_pendapatan + data.total_pendapatan_piutang;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -87,9 +99,10 @@ export default function LabaRugi({ data }: Props) {
                             />
                         </div>
 
-                        <div className="flex flex-wrap gap-2">
+                       <div className="flex flex-wrap gap-2">
                             <Button
                                 onClick={handleFilter}
+                                className="bg-blue-600 hover:bg-blue-700 text-white"
                             >
                                 <Filter size={16} />
                                 Filter
@@ -97,16 +110,18 @@ export default function LabaRugi({ data }: Props) {
 
                             <Button
                                 onClick={() => handlePrint('month')}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white"
                             >
                                 <Printer size={16} />
-                                Bulanan
+                                Cetak Laporan Bulanan
                             </Button>
 
                             <Button
                                 onClick={() => handlePrint('year')}
+                                className="bg-purple-600 hover:bg-purple-700 text-white"
                             >
                                 <Printer size={16} />
-                                Tahunan
+                                 Cetak Laporan Tahunan
                             </Button>
                         </div>
 
@@ -126,49 +141,42 @@ export default function LabaRugi({ data }: Props) {
 
                     <CardContent className="space-y-4 text-sm">
 
+                        {/* PENDAPATAN */}
                         <div>
                             <h3 className="font-semibold border-b pb-1">Pendapatan</h3>
 
                             <div className="flex justify-between mt-2">
                                 <span className="pl-4">Pendapatan Tunai</span>
-                                <span>
-                                    Rp {data.total_pendapatan.toLocaleString('id-ID')}
-                                </span>
+                                <span>{formatRupiah(data.total_pendapatan)}</span>
                             </div>
 
                             <div className="flex justify-between">
                                 <span className="pl-4">Pendapatan Piutang</span>
-                                <span>
-                                    Rp {data.total_pendapatan_piutang.toLocaleString('id-ID')}
-                                </span>
+                                <span>{formatRupiah(data.total_pendapatan_piutang)}</span>
                             </div>
 
                             <div className="flex justify-between font-semibold border-t mt-2 pt-2">
                                 <span>Total Pendapatan</span>
-                                <span>
-                                    Rp {(data.total_pendapatan + data.total_pendapatan_piutang).toLocaleString('id-ID')}
-                                </span>
+                                <span>{formatRupiah(totalPendapatan)}</span>
                             </div>
                         </div>
 
+                        {/* PEMBELIAN */}
                         <div>
                             <h3 className="font-semibold border-b pb-1">Pembelian</h3>
 
                             <div className="flex justify-between mt-2">
                                 <span className="pl-4">Pembelian</span>
-                                <span>
-                                    Rp {data.total_pembelian.toLocaleString('id-ID')}
-                                </span>
+                                <span>{formatRupiah(data.total_pembelian)}</span>
                             </div>
 
                             <div className="flex justify-between font-semibold border-t mt-2 pt-2">
                                 <span>Total Pembelian</span>
-                                <span>
-                                    Rp {data.total_pembelian.toLocaleString('id-ID')}
-                                </span>
+                                <span>{formatRupiah(data.total_pembelian)}</span>
                             </div>
                         </div>
 
+                        {/* LABA / RUGI */}
                         <div className="border-t pt-4">
                             <div className="flex justify-between text-lg font-bold">
                                 <span>Laba / Rugi</span>
@@ -180,8 +188,8 @@ export default function LabaRugi({ data }: Props) {
                                     }
                                 >
                                     {data.laba_rugi < 0
-                                        ? `(Rp ${Math.abs(data.laba_rugi).toLocaleString('id-ID')})`
-                                        : `Rp ${data.laba_rugi.toLocaleString('id-ID')}`}
+                                        ? `(${formatRupiah(Math.abs(data.laba_rugi))})`
+                                        : formatRupiah(data.laba_rugi)}
                                 </span>
                             </div>
                         </div>
