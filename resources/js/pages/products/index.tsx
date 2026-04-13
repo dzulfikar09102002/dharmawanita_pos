@@ -49,6 +49,14 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
+const formatRupiah = (value: number | string | null | undefined) =>
+    new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(Number(value || 0));
+
 const columnHelper = createColumnHelper<Product>();
 
 type TableMeta = {
@@ -132,19 +140,12 @@ export default function Index({ pagination, categoryOptions }: Props) {
         }),
         columnHelper.accessor('purchase_price', {
             header: 'Harga Beli',
-            cell: (info) =>
-                new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                }).format(info.getValue()),
+            cell: (info) => formatRupiah(info.getValue()),
         }),
+
         columnHelper.accessor('selling_price', {
             header: 'Harga Jual',
-            cell: (info) =>
-                new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                }).format(info.getValue()),
+            cell: (info) => formatRupiah(info.getValue()),
         }),
         columnHelper.accessor('has_expired', {
             header: 'Expired',
