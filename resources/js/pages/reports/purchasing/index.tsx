@@ -352,7 +352,7 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                                 className="bg-red-500 hover:bg-red-600 text-white flex items-center gap-2"
                             >
                                 <FilterX size={16} />
-                                Reset
+                                Reset Filter
                             </Button>
                         </div>
                     </Form>
