@@ -25,7 +25,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import purchases from '@/routes/reports/purchases';
 import Alert, { AlertState } from '@/components/purchase-report/alert';
 
-const title = 'Pembelian';
+const title = 'Laporan Pembelian';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -47,6 +47,14 @@ type Props = {
     month: number;
     year: number;
 };
+
+const formatRupiah = (value: number) =>
+    new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(value || 0);
 
 const namaBulan = [
     'Januari','Februari','Maret','April','Mei','Juni',
@@ -123,17 +131,20 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
         }),
         columnHelper.accessor('quantity', { header: 'Qty' }),
         columnHelper.accessor('purchase_price', {
-            header: 'Harga',
-            cell: (info) =>
-                new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                }).format(info.getValue()),
-        }),
+    header: 'Harga',
+    cell: (info) => {
+        const value = info.getValue();
+        return value ? formatRupiah(value) : '-';
+    },
+}),
         columnHelper.accessor('purchase_date', {
             header: 'Tanggal',
             cell: (info) =>
-                new Date(info.getValue()).toLocaleDateString('id-ID'),
+                new Date(info.getValue()).toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                }),
         }),
         {
     accessorKey: 'status_payment',

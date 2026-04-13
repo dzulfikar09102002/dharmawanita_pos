@@ -46,6 +46,14 @@ type Props = {
 
 const years = [2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030];
 
+const formatRupiah = (value: any) =>
+    new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(Number(value) || 0);
+
 const monthLabels: Record<number, string> = {
     1: 'Januari',
     2: 'Februari',
@@ -161,14 +169,14 @@ export default function Dashboard({
                     <Card>
                         <CardHeader>Penerimaan</CardHeader>
                         <CardContent>
-                            Rp {income.toLocaleString('id-ID')}
+                            {formatRupiah(income)}
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>Pengeluaran</CardHeader>
                         <CardContent>
-                            Rp {expense.toLocaleString('id-ID')}
+                            {formatRupiah(expense)}
                         </CardContent>
                     </Card>
 
@@ -179,21 +187,21 @@ export default function Dashboard({
                                 profit >= 0 ? 'text-green-500' : 'text-red-500'
                             }
                         >
-                            Rp {profit.toLocaleString('id-ID')}
+                            {formatRupiah(profit)}
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>Piutang</CardHeader>
                         <CardContent>
-                            Rp {receivable.toLocaleString('id-ID')}
+                            {formatRupiah(receivable)}
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>Utang</CardHeader>
-                        <CardContent className="text-red-500 font-bold">
-                            Rp {debt?.toLocaleString('id-ID') ?? 0}
+                        <CardContent className={debt > 0 ? 'text-red-500 font-bold' : 'text-black-500'}>
+                            {formatRupiah(debt)}
                         </CardContent>
                     </Card>                                                                         
                 </div>
@@ -207,10 +215,36 @@ export default function Dashboard({
                             </p>
                         ) : (
                             <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={dailySales}>
-                                    <XAxis dataKey="date" />
-                                    <YAxis />
-                                    <Tooltip />
+                                <LineChart
+                                    data={dailySales}
+                                    margin={{ top: 10, right: 10, left: 20, bottom: 0 }}
+                                >
+                                    <XAxis
+                                        dataKey="date"
+                                        tickFormatter={(value) =>
+                                            new Date(value).toLocaleDateString('id-ID', {
+                                                day: '2-digit',
+                                                month: 'short',
+                                            })
+                                        }
+                                    />
+
+                                    <YAxis
+                                        width={100}
+                                        tickFormatter={(value) => formatRupiah(value)}
+                                    />
+
+                                    <Tooltip
+                                        labelFormatter={(label) =>
+                                            new Date(label).toLocaleDateString('id-ID', {
+                                                day: '2-digit',
+                                                month: 'long',
+                                                year: 'numeric',
+                                            })
+                                        }
+                                        formatter={(value: any) => [formatRupiah(value), 'Total']}
+                                    />
+
                                     <Line
                                         type="monotone"
                                         dataKey="total"
@@ -240,12 +274,12 @@ export default function Dashboard({
                                             <span>{p.name}</span>
                                             <span className="text-sm text-muted-foreground">
                                                 {p.expired_date
-                                                    ? new Date(
-                                                          p.expired_date,
-                                                      ).toLocaleDateString(
-                                                          'id-ID',
-                                                      )
-                                                    : '-'}
+                                                ? new Date(p.expired_date).toLocaleDateString('id-ID', {
+                                                    day: '2-digit',
+                                                    month: 'long',
+                                                    year: 'numeric',
+                                                })
+                                                : '-'}
                                             </span>
                                         </div>
                                     ))}
