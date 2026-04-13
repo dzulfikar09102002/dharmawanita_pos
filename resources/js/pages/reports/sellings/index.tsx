@@ -123,6 +123,20 @@ export default function Index({
         );
     };
 
+    const handleFilter = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    router.get(salesReport.index().url, {
+        search,
+        bulan,
+        tahun,
+        page: 1,
+    }, {
+        preserveState: true,
+        replace: true,
+    });
+};
+
     const [alert, setAlert] = useState<AlertState>(initialAlertState);
 
     const handlePrint = (type: 'month' | 'year') => {
@@ -228,7 +242,7 @@ export default function Index({
 
                 return kurangBayar > 0 ? (
                     <span className="text-red-600 font-semibold">
-                        ({formatRupiah(kurangBayar)})
+                        {formatRupiah(kurangBayar)}
                     </span>
                 ) : (
                     <span className="text-green-600 font-semibold">
@@ -319,9 +333,11 @@ export default function Index({
                     <Form
                         method="GET"
                         className="flex flex-wrap items-end gap-3"
+                        onSubmit={handleFilter}
                     >
                         <input type="hidden" name="page" value={1} />
-
+                        <input type="hidden" name="bulan" value={bulan} />
+                        <input type="hidden" name="tahun" value={tahun} />
                         <div className="flex min-w-[250px] flex-1 flex-col">
                             <label className="mb-1 text-xs text-gray-500">
                                 Cari Invoice
