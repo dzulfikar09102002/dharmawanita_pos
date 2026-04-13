@@ -13,84 +13,73 @@ use Illuminate\Support\Facades\DB;
 class SellingService
 {
     public function getProducts()
-    {
-        $search = request('search', '');
-        $category_id = request('product_category_id', 'all');
-
-        // 🔹 IN (langsung dari purchase)
-        $stockIn = \DB::table('inventory_transactions as it')
-            ->selectRaw('
-                it.reference_id as purchase_id,
-                SUM(it.quantity) as total_in
-            ')
-            ->where('it.type', 'in')
-            ->where('it.source', 'purchase')
-            ->whereNull('it.deleted_at')
-            ->groupBy('it.reference_id');
-
-        // 🔹 OUT (lewat sale_transaction_details)
-        $stockOut = \DB::table('inventory_transactions as it')
-            ->join('sale_transaction_details as std', 'std.id', '=', 'it.reference_id')
-            ->selectRaw('
-                std.purchase_id,
-                SUM(it.quantity) as total_out
-            ')
-            ->where('it.type', 'out')
-            ->where('it.source', 'sale')
-            ->whereNull('it.deleted_at')
-            ->groupBy('std.purchase_id');
-
-        $base = Purchase::query()
-            ->when($search, function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('code', 'like', "%$search%")
-                        ->orWhereHas('product', function ($q2) use ($search) {
-                            $q2->where('name', 'like', "%$search%");
-                        });
-                });
-            })
-            ->when($category_id !== 'all', function ($query) use ($category_id) {
-                $query->whereHas('product', function ($q) use ($category_id) {
-                    $q->where('category_id', $category_id);
-                });
-            });
-
-        $query = $base
-            ->leftJoinSub($stockIn, 'stock_in', function ($join) {
-                $join->on('stock_in.purchase_id', '=', 'purchases.id');
-            })
-            ->leftJoinSub($stockOut, 'stock_out', function ($join) {
-                $join->on('stock_out.purchase_id', '=', 'purchases.id');
-            })
-            ->selectRaw('
-                purchases.product_id,
-                purchases.code,
-                MAX(purchases.id) as id,
-
-                COALESCE(SUM(stock_in.total_in), 0) 
-                - COALESCE(SUM(stock_out.total_out), 0) 
-                as total_quantity,
-
-                MAX(purchases.purchase_price) as purchase_price,
-                MAX(purchases.selling_price) as selling_price,
-                MAX(purchases.expired_date) as expired_date,
-                MAX(purchases.purchase_date) as purchase_date,
-                MAX(purchases.updated_at) as updated_at
-            ')
-            ->groupBy('purchases.product_id', 'purchases.code')
-            ->orderByRaw('
+{
+    $search = request('search', '');
+    $category_id = request('product_category_id', 'all');
+    $stock = \DB::table('inventory_transactions as it')
+        ->leftJoin('purchases as p_in', 'p_in.id', '=', 'it.reference_id')
+        ->leftJoin('sale_transaction_details as std', 'std.id', '=', 'it.reference_id')
+        ->leftJoin('purchases as p_out', 'p_out.id', '=', 'std.purchase_id')
+        ->selectRaw('
+            COALESCE(p_in.code, p_out.code) as code,
+            SUM(
                 CASE 
-                    WHEN total_quantity > 0 THEN 0
-                    ELSE 1
+                    WHEN it.type = "in" THEN it.quantity
+                    WHEN it.type = "out" THEN -it.quantity
+                    ELSE 0
                 END
-            ')
-            ->orderByDesc('updated_at');
+            ) as total_quantity
+        ')
+        ->whereNull('it.deleted_at')
+        ->groupByRaw('COALESCE(p_in.code, p_out.code)');
 
-        return $query
-            ->with('product.category')
-            ->paginate(request('per_page', 20))
-            ->withQueryString();
-    }
+    $base = Purchase::query()
+        ->when($search, function ($query) use ($search) {
+    $query->where(function ($q) use ($search) {
+        $q->where('purchases.code', 'like', "%$search%")
+            ->orWhereHas('product', function ($q2) use ($search) {
+                $q2->where('name', 'like', "%$search%");
+            });
+    });
+})
+        ->when($category_id !== 'all', function ($query) use ($category_id) {
+            $query->whereHas('product', function ($q) use ($category_id) {
+                $q->where('category_id', $category_id);
+            });
+        });
+
+    $query = $base
+        ->leftJoinSub($stock, 'stock', function ($join) {
+            $join->on('stock.code', '=', 'purchases.code');
+        })
+        ->selectRaw('
+    purchases.code,
+    purchases.product_id,
+
+    MAX(purchases.id) as id,
+
+    COALESCE(MAX(stock.total_quantity), 0) as total_quantity,
+
+    MAX(purchases.purchase_price) as purchase_price,
+    MAX(purchases.selling_price) as selling_price,
+    MAX(purchases.expired_date) as expired_date,
+    MAX(purchases.purchase_date) as purchase_date,
+    MAX(purchases.updated_at) as updated_at
+')
+        ->groupBy('purchases.code', 'purchases.product_id')
+        ->orderByRaw('
+    CASE 
+        WHEN COALESCE(MAX(stock.total_quantity), 0) > 0 THEN 0
+        ELSE 1
+    END
+')
+->orderByDesc('updated_at');
+
+    return $query
+        ->with('product.category')
+        ->paginate(request('per_page', 20))
+        ->withQueryString();
+}
     public function getCategoryOptions()
     {
         $options = Category::all()->map(function ($category) {
@@ -206,25 +195,57 @@ class SellingService
     }
 
     
-public function pay(SaleTransaction $sale, array $input): SaleTransaction
-{
-    return DB::transaction(function () use ($sale, $input) {
+    public function pay(SaleTransaction $sale, array $input): SaleTransaction
+    {
+        return DB::transaction(function () use ($sale, $input) {
 
-        $sale = SaleTransaction::whereKey($sale->id)
-            ->where('payment_status', 'pending')
-            ->lockForUpdate()
-            ->firstOrFail();
-        $isPaid = $input['paid_amount'] >= $sale->grand_total;
+            $sale = SaleTransaction::whereKey($sale->id)
+                ->where('payment_status', 'pending')
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $sale->update([
-            'payment_method_id' => $input['payment_method_id'],
-            'total_amount'      => $input['paid_amount'],
-            'change'            => $input['change_amount'],
-            'payment_status'    => $isPaid ? 'paid' : $sale->payment_status,
-            'updated_by'        => auth()->id(),
-        ]);
+            $methodId = $input['purchase_method_id'];
+            $isCancelMethod = $methodId > 3;
+            $isPaid = $input['paid_amount'] >= $sale->grand_total;
+            $sale->update([
+                'payment_method_id' => $input['payment_method_id'] ?? null,
+                'total_amount'      => $input['paid_amount'],
+                'change'            => $input['change_amount'],
+                'purchasing_method_id' => $methodId,
+                'payment_status'    => $isCancelMethod
+                    ? 'canceled'
+                    : ($isPaid ? 'paid' : $sale->payment_status),
+                'updated_by'        => auth()->id(),
+            ]);
 
-        return $sale->fresh();
-    });
-}
+            if ($isCancelMethod) {
+
+                $sourceMap = [
+                    4 => 'damage',
+                    5 => 'expired',
+                    6 => 'other',
+                ];
+
+                $newSource = $sourceMap[$methodId] ?? 'other';
+
+                InventoryTransaction::where('source', 'sale')
+                    ->whereIn('reference_id', function ($q) use ($sale) {
+                        $q->select('id')
+                        ->from('sale_transaction_details')
+                        ->where('sale_transaction_id', $sale->id);
+                    })
+                    ->lockForUpdate()
+                    ->get()
+                    ->each(function ($inventory) use ($newSource, $input) {
+                        $inventory->update([
+                            'source'     => $newSource,
+                            'note'       => $input['reason'] ?? null,
+                            'updated_by' => auth()->id(),
+                        ]);
+                    });
+            }
+
+            return $sale->fresh();
+        });
+    }
 }

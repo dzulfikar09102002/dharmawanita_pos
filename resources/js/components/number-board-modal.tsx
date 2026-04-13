@@ -45,6 +45,7 @@ export default function NumberBoardModal({
     return (
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="top-[45%] max-w-md">
+                <DialogTitle className="sr-only">Number Board</DialogTitle>
                 <div className="space-y-4">
                     <Input
                         readOnly
