@@ -114,8 +114,8 @@ export default function Modal({
                     <DialogHeader>
                         <DialogTitle>
                             {modalState.dataId
-                                ? 'Edit Metode Pembayaran'
-                                : 'Metode Pembayaran Baru'}
+                                ? 'Edit Metode Pembelian'
+                                : 'Metode Pembelian Baru'}
                         </DialogTitle>
                     </DialogHeader>
                     <FieldSet>

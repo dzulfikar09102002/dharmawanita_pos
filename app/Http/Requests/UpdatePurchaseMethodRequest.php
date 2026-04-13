@@ -14,13 +14,13 @@ class UpdatePurchaseMethodRequest extends FormRequest
 
     public function rules(): array
     {
-        $id = $this->route('purchasing_method'); 
+        $id = $this->route('purchasing_methods'); 
         return [
             'name' => [
                 'required',
                 'string',
                 'max:255',
-                Rule::unique('purchasing_method', 'name')->ignore($id),
+                Rule::unique('purchasing_methods', 'name')->ignore($id),
             ],
         ];
     }

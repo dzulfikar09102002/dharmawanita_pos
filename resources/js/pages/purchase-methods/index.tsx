@@ -21,10 +21,10 @@ import { Pagination, PurchaseMethod } from '@/lib/model';
 import { useQuery } from '@/hooks/use-query';
 import { useState } from 'react';
 import Modal, { ModalState } from '@/components/purchase-method/modal';
-import Alert, { AlertState} from '@/components/purchase-method/alert';
+import Alert, { AlertState } from '@/components/purchase-method/alert';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-const title = 'Metode Pembayaran';
+const title = 'Metode Pembelian';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -54,7 +54,9 @@ const columns: ColumnDef<PurchaseMethod, any>[] = [
         id: 'action',
         header: 'Aksi',
         cell: (info) => {
-            const pmethod = info.row.original as PurchaseMethod & { id: number };
+            const pmethod = info.row.original as PurchaseMethod & {
+                id: number;
+            };
             const meta = info.table.options.meta as TableMeta;
 
             return (
