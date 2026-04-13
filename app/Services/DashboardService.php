@@ -51,7 +51,8 @@ class DashboardService
         return Purchase::query()
             ->whereMonth('purchase_date', $month)
             ->whereYear('purchase_date', $year) 
-            ->sum('purchase_price');
+            ->where('status_payment', 'paid')
+            ->sum('total_payment');
     }
 
     public function getProfit($month, $year)

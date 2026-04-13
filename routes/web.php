@@ -64,7 +64,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/reports/purchases/deleted', [PurchasesReportController::class, 'deleted'])
         ->name('reports.purchases.deleted');
         Route::post('/reports/purchases/{id}/restore', [PurchasesReportController::class, 'restore'])
-        ->name('reports.purchases.restore');  
+        ->name('reports.purchases.restore');
+        Route::post('/reports/purchases/{purchase}/pay', [PurchasesReportController::class, 'pay'])
+        ->name('reports.purchases.pay');  
 
 
         Route::get('reports/sales/deleted', [SalesReportController::class, 'deleted'])

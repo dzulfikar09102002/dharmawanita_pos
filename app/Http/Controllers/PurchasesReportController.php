@@ -59,4 +59,11 @@ class PurchasesReportController extends Controller
             'year' => (int) $year,
         ]);
     }
+
+    public function pay(Purchase $purchase)
+    {
+        $this->service->pay($purchase, request()->all());
+
+        return back()->with('success', 'Pembayaran berhasil');
+    }
 }
