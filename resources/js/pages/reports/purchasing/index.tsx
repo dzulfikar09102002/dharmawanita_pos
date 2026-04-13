@@ -341,7 +341,7 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
 
                         {/* 🔘 ACTION */}
                         <div className="flex gap-2">
-                            <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
+                            <Button>
                                 <Search size={16} />
                                 Filter
                             </Button>
@@ -349,7 +349,6 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                             <Button
                                 type="button"
                                 onClick={handleReset}
-                                className="bg-red-500 hover:bg-red-600 text-white flex items-center gap-2"
                             >
                                 <FilterX size={16} />
                                 Reset Filter
@@ -366,7 +365,6 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                                 <Button
                                     type="button"
                                     onClick={() => handlePrint('month')}
-                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white"
                                 >
                                     <Printer size={16} />
                                     Cetak Laporan Bulanan
@@ -375,7 +373,6 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                                 <Button
                                     type="button"
                                     onClick={() => handlePrint('year')}
-                                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white"
                                 >
                                     <Printer size={16} />
                                     Cetak Laporan Tahunan
