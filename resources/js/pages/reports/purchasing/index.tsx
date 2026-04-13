@@ -142,6 +142,46 @@ export default function Index({
             header: 'Harga',
             cell: (info) => formatRupiah(info.getValue() || 0),
         }),
+        columnHelper.display({
+            id: 'Total_Bayar',
+            header: 'Total Bayar',
+            cell: (info) => {
+                const row = info.row.original;
+
+                const TotalBayar =
+                    (row.quantity || 0) * (row.purchase_price || 0);
+
+                return TotalBayar > 0 ? (
+                    <span >
+                        {formatRupiah(TotalBayar)}
+                    </span>
+                ) : (
+                    <span>
+                        Rp 0
+                    </span>
+                );
+            },
+        }),
+        columnHelper.display({
+            id: 'kurang_bayar',
+            header: 'Kurang Bayar',
+            cell: (info) => {
+                const row = info.row.original;
+
+                const kurangBayar =
+                    (row.quantity * row.purchase_price || 0) - (row.total_payment || 0);
+
+                return kurangBayar > 0 ? (
+                    <span className="text-red-600 font-semibold">
+                        {formatRupiah(kurangBayar)}
+                    </span>
+                ) : (
+                    <span>
+                        0
+                    </span>
+                );
+            },
+        }),
         columnHelper.accessor('purchase_date', {
             header: 'Tanggal',
             cell: (info) =>

@@ -84,28 +84,44 @@ class PurchasesReportService
         return $purchasereport->restore();
     }
 
-    public function pay(Purchase $purchase, array $input): Purchase
-    {
-        return DB::transaction(function () use ($purchase, $input) {
+   public function pay(Purchase $purchase, array $input): Purchase
+{
+    return DB::transaction(function () use ($purchase, $input) {
 
-            $purchase = Purchase::whereKey($purchase->id)
-                ->where('status_payment', 'pending')
-                ->lockForUpdate()
-                ->firstOrFail();
+        $purchase = Purchase::whereKey($purchase->id)
+            ->where('status_payment', '!=', 'paid')
+            ->lockForUpdate()
+            ->firstOrFail();
 
-            $paidAmount = (int) ($input['total_payment'] ?? 0);
+        // total yang harus dibayar (system)
+        $orderTotal = $purchase->purchase_price * $purchase->quantity;
 
-            if ($paidAmount <= 0) {
-                throw new \Exception('Nominal pembayaran harus lebih dari 0');
-            }
+        // input user langsung masuk database
+        $payAmount = (float) ($input['total_payment'] ?? 0);
 
-            $purchase->update([
-                'total_payment' => $paidAmount,
-                'status_payment' => 'paid', 
-                'updated_by' => auth()->id(),
-            ]);
+        // akumulasi pembayaran sebelumnya
+        $alreadyPaid = (float) ($purchase->paid_amount ?? 0);
 
-            return $purchase->fresh();
-        });
-    }
+        $newPaid = $alreadyPaid + $payAmount;
+
+        // tidak boleh lebih dari total order
+        if ($newPaid > $orderTotal) {
+            $newPaid = $orderTotal;
+        }
+
+        $remaining = $orderTotal - $newPaid;
+
+        $purchase->update([
+            // ✅ sesuai request: langsung dari input user
+            'total_payment' => $payAmount,
+
+            'paid_amount' => $newPaid,
+            'remaining_payment' => $remaining,
+            'status_payment' => $remaining == 0 ? 'paid' : 'pending',
+            'updated_by' => auth()->id(),
+        ]);
+
+        return $purchase->fresh();
+    });
+}
 }
