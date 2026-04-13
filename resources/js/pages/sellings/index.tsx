@@ -312,10 +312,30 @@ export default function Index({ pagination, categoryOptions }: Props) {
                                 return (
                                     <Card
                                         key={purchase.id}
-                                        className="relative cursor-pointer transition hover:shadow-md"
-                                        onClick={() => addItem(purchase)}
+                                        className={`relative transition hover:shadow-md ${
+                                            purchase.total_quantity <= 0
+                                                ? 'cursor-not-allowed opacity-50'
+                                                : 'cursor-pointer'
+                                        }`}
+                                        onClick={() => {
+                                            if (purchase.total_quantity > 0) {
+                                                addItem(purchase);
+                                            }
+                                        }}
                                     >
                                         <CardContent className="pl-4">
+                                            <div className="absolute top-1 left-2">
+                                                <span
+                                                    className={`rounded px-2 py-0.5 text-[11px] font-medium text-white ${
+                                                        purchase.total_quantity >
+                                                        0
+                                                            ? 'bg-green-500'
+                                                            : 'bg-red-500'
+                                                    }`}
+                                                >
+                                                    {purchase.total_quantity}
+                                                </span>
+                                            </div>
                                             <div className="absolute top-1 right-2">
                                                 <span className="rounded bg-muted px-2 py-0.5 text-[11px] font-medium">
                                                     {purchase.code}
@@ -543,7 +563,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
                     </div>
                     <Button
                         className="mx-auto mt-4 w-[95%] cursor-pointer"
-                        disabled={processing}
+                        disabled={processing || data.items.length === 0}
                         onClick={() =>
                             post(sellings.store().url, {
                                 onSuccess: () => {

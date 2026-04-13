@@ -54,10 +54,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ->name('suppliers.restore');  
 
     Route::resource('/purchases', PurchaseController::class)->except('show');
-    Route::get('purchases/deleted', [PurchaseController::class, 'deleted'])
-    ->name('purchases.deleted');
-    Route::post('purchases/{id}/restore', [PurchaseController::class, 'restore'])
-    ->name('purchases.restore');  
+    Route::post('/purchases/generate-code', [PurchaseController::class, 'generateCode']);
 
         Route::resource('/reports/purchases', PurchasesReportController::class)->except('show')
         ->names('reports.purchases'); 
