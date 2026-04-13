@@ -3,6 +3,9 @@ import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Area, AreaChart, CartesianGrid } from 'recharts';
+import { Button } from '@/components/ui/button';
+import { Eye } from 'lucide-react';
+
 
 import {
     ChartContainer,
@@ -19,6 +22,7 @@ import {
     ResponsiveContainer,
 } from 'recharts';
 import { Purchase } from '@/lib/model';
+import { Link } from '@inertiajs/react';
 
 type Product = {
     id: number;
@@ -290,7 +294,21 @@ export default function Dashboard({
 
                 <div className="grid gap-4 md:grid-cols-2">
                     <Card>
-                        <CardHeader>Produk Mendekati Expired</CardHeader>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <span>Produk Mendekati Expired</span>
+
+                            <Link href="/dashboard/expired-detail">
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex items-center gap-1"
+                                >
+                                    <Eye size={14} />
+                                    Detail
+                                </Button>
+                            </Link>
+                        </CardHeader>
+
                         <CardContent>
                             {expiredProducts.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">
@@ -306,16 +324,14 @@ export default function Dashboard({
                                             <span>{p.name}</span>
                                             <span className="text-sm text-muted-foreground">
                                                 {p.expired_date
-                                                    ? new Date(
-                                                          p.expired_date,
-                                                      ).toLocaleDateString(
-                                                          'id-ID',
-                                                          {
-                                                              day: '2-digit',
-                                                              month: 'long',
-                                                              year: 'numeric',
-                                                          },
-                                                      )
+                                                    ? new Date(p.expired_date).toLocaleDateString(
+                                                        'id-ID',
+                                                        {
+                                                            day: '2-digit',
+                                                            month: 'long',
+                                                            year: 'numeric',
+                                                        }
+                                                    )
                                                     : '-'}
                                             </span>
                                         </div>
@@ -323,10 +339,23 @@ export default function Dashboard({
                                 </div>
                             )}
                         </CardContent>
-                    </Card>
+                    </Card>     
 
                     <Card>
-                        <CardHeader>Produk Terlaris</CardHeader>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <span>Produk Terlaris</span>
+                            <Link href="/dashboard/best-selling-products">
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex items-center gap-1"
+                                >
+                                    <Eye size={14} />
+                                    Detail
+                                </Button>
+                            </Link>
+                        </CardHeader>
+
                         <CardContent>
                             {bestSellingProducts.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">
@@ -340,8 +369,7 @@ export default function Dashboard({
                                             className="flex justify-between border-b pb-2"
                                         >
                                             <span>
-                                                {item.purchase?.product?.name ??
-                                                    '-'}
+                                                {item.purchase?.product?.name ?? '-'}
                                             </span>
                                             <span className="text-sm text-muted-foreground">
                                                 {item.total_sold} terjual

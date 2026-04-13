@@ -22,6 +22,9 @@ Route::inertia('/', 'welcome', [
 Route::middleware(['auth', 'verified'])->group(function () {
    Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
+    Route::get('/dashboard/expired-detail', [DashboardController::class, 'expiredDetail']);
+    Route::get('/dashboard/best-selling-products', [DashboardController::class, 'bestSellingDetail'])
+    ->name('dashboard.best-selling');
 
     Route::resource('/products', ProductController::class)->except('show');
     Route::get('products/deleted', [ProductController::class, 'deleted'])

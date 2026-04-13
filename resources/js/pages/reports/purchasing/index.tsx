@@ -270,7 +270,10 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
             data: undefined,
         })
     }
-    grandTotal={Number(payModal.data?.purchase_price ?? 0)}
+    grandTotal={
+    (payModal.data?.purchase_price ?? 0) *
+    (payModal.data?.quantity ?? 0)
+    }
     onConfirm={(amount) => {
         console.log('Jumlah bayar:', amount);
 

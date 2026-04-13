@@ -94,11 +94,12 @@ class DashboardService
     }
 
     public function getDebt($month, $year)
-    {
-        return \App\Models\Purchase::query()
-            ->where('status_payment', 'pending')
-            ->whereMonth('purchase_date', $month)
-            ->whereYear('purchase_date', $year)
-            ->sum('purchase_price');
-    }
+{
+    return \App\Models\Purchase::query()
+        ->where('status_payment', 'pending')
+        ->whereMonth('purchase_date', $month)
+        ->whereYear('purchase_date', $year)
+        ->selectRaw('SUM(purchase_price * quantity) as total')
+        ->value('total') ?? 0;
+}
 }

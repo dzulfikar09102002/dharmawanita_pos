@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Services\DashboardService;
 use Inertia\Inertia;
+use App\Models\Purchase;
+use App\Models\SaleTransactionDetail;
 
 class DashboardController extends Controller
 {
@@ -36,4 +38,28 @@ class DashboardController extends Controller
             'year' => (int) $year,
         ]);
     }
+
+public function expiredDetail()
+{
+    $products = Product::whereNotNull('expired_date')
+        ->orderBy('expired_date', 'asc')
+        ->get();
+
+    return inertia('dashboard/expired-detail', [
+        'products' => $products,
+    ]);
+}
+
+   public function bestSellingDetail()
+{
+    $products = SaleTransactionDetail::with('purchase.product')
+        ->selectRaw('purchase_id, SUM(quantity) as total_sold')
+        ->groupBy('purchase_id')
+        ->orderByDesc('total_sold')
+        ->get();
+
+    return inertia('dashboard/best-selling-detail', [
+        'products' => $products,
+    ]);
+}
 }
