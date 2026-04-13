@@ -216,24 +216,6 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
                         >
                             <Eye size={16} />
                         </Button>
-
-                        <Button
-                            size="icon"
-                            className={
-                                meta.isDeletedRoute
-                                    ? 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                                    : 'bg-red-600 hover:bg-red-700 text-white'
-                            }
-                            onClick={() =>
-                                meta.onDeleteOrRestore(row.id, !meta.isDeletedRoute)
-                            }
-                        >
-                            {meta.isDeletedRoute ? (
-                                <ArchiveRestore size={16} />
-                            ) : (
-                                <X size={16} />
-                            )}
-                        </Button>
                     </div>
                 );
             },
@@ -341,6 +323,25 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
                             Cetak Laporan Tahunan
                         </Button>
                     </div>
+
+                     <Tabs
+                        value={isDeletedRoute ? 'deleted' : 'active'}
+                        className="mb-4"
+                    >
+                        <TabsList>
+                            <TabsTrigger value="active" asChild>
+                                <Link href={salesReport.index().url}>
+                                    Aktif
+                                </Link>
+                            </TabsTrigger>
+
+                            <TabsTrigger value="deleted" asChild>
+                                <Link href={salesReport.deleted().url}>
+                                    Terhapus
+                                </Link>
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
 
                     <DataTable columns={columns} table={table} />
                     <TablePagination pagination={pagination} />

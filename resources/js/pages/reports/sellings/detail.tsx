@@ -301,7 +301,7 @@ export default function Index({ pagination, transaction }: Props) {
                                 className="bg-green-600 hover:bg-green-700 text-white"
                                 onClick={() =>
                                     router.visit(
-                                        `/reports/sales/${transaction.id}/payment`
+                                        `/sellings/${transaction.id}/payment`
                                     )
                                 }
                             >
@@ -312,7 +312,7 @@ export default function Index({ pagination, transaction }: Props) {
                         <Button
                             variant="destructive"
                             disabled={
-                                transaction.payment_status === 'canceled'
+                                transaction.payment_status === 'canceled'   
                             }
                             onClick={handleCancel}
                         >
