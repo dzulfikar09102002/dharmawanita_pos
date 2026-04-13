@@ -12,9 +12,10 @@ class StockReportController extends Controller
         protected StocksReportService $service
     ) {}
 
-     public function index()
+    public function index()
     {
         $pagination = $this->service->getStockReport();
         return Inertia::render('reports/stocks/index', compact('pagination'));
     }
+
 }

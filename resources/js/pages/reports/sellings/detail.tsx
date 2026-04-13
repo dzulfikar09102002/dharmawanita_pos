@@ -202,34 +202,49 @@ export default function Index({ pagination, transaction }: Props) {
                     <TablePagination pagination={pagination} />
 
                     {/* ✅ ACTION BUTTONS */}
-                    <div className="flex justify-end gap-2 mt-6">
-                        <Button
-                            variant="outline"
-                            onClick={() =>
-                                router.visit(salesReport.index().url)
-                            }
-                        >
-                            Kembali
-                        </Button>
+<div className="flex justify-end gap-2 mt-6">
+    <Button
+        variant="outline"
+        onClick={() =>
+            router.visit(salesReport.index().url)
+        }
+    >
+        Kembali
+    </Button>
 
-                       <Button
-                            variant="destructive"
-                            disabled={transaction.payment_status === 'canceled'}
-                            onClick={() => {
-                                router.post(
-                                    salesReport.cancel(transaction.id).url,
-                                    {},
-                                    {
-                                        onSuccess: () => {
-                                            router.visit(salesReport.index().url);
-                                        },
-                                    }
-                                );
-                            }}
-                        >
-                            Batalkan Transaksi
-                        </Button>
-                    </div>
+    {/* 🔥 Tombol Lunasi */}
+    {transaction.payment_status === 'pending' && (
+        <Button
+            className="bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => {
+                router.visit(
+                    `/reports/sales/${transaction.id}/payment`
+                );
+            }}
+        >
+            Lunasi
+        </Button>
+    )}
+
+    <Button
+        variant="destructive"
+        disabled={transaction.payment_status === 'canceled'}
+        onClick={() => {
+            router.post(
+                salesReport.cancel(transaction.id).url,
+                {},
+                {
+                    onSuccess: () => {
+                        router.visit(salesReport.index().url);
+                    },
+                }
+            );
+        }}
+    >
+        Batalkan Transaksi
+    </Button>
+</div>
+
                 </CardContent>
             </Card>
         </AppLayout>

@@ -108,4 +108,25 @@ class SalesReportService
         $salereport = SaleTransaction::withTrashed()->findOrFail($id);
         return $salereport->restore();
     }
+
+    public function getSaleTransaction(int $id): SaleTransaction
+    {
+        return SaleTransaction::where('id', $id)
+            ->where('payment_status', 'pending') // hanya bisa dilunasi kalau pending
+            ->firstOrFail();
+    }
+
+    public function getTransactionDetails(int $id)
+    {
+        return SaleTransactionDetail::with([
+            'purchase.product'
+        ])
+        ->where('sale_transaction_id', $id)
+        ->get();
+    }
+
+    public function getPaymentMethods()
+    {
+        return PaymentMethod::whereRaw('LOWER(kind) != ?', ['cash'])->get();
+    }
 }

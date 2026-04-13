@@ -4,7 +4,7 @@ import type { BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, X, ArchiveRestore, FilterX } from 'lucide-react';
+import { Search, X, ArchiveRestore, FilterX, Printer } from 'lucide-react';
 
 import {
     createColumnHelper,
@@ -54,8 +54,10 @@ const namaBulan = [
 ];
 
 export default function Index({ pagination, month: initialMonth, year: initialYear }: Props) {
-    const [month, setMonth] = useState(initialMonth);
-    const [year, setYear] = useState(initialYear);
+    const now = new Date();
+
+    const [month, setMonth] = useState(initialMonth ?? now.getMonth() + 1);
+    const [year, setYear] = useState(initialYear ?? now.getFullYear());
 
     const [alert, setAlert] = useState<AlertState>({
         delete: true,
@@ -220,6 +222,16 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
         },
     });
 
+    const handlePrint = (type: 'month' | 'year') => {
+    let url = `/reports/print-purchases-report?type=${type}&year=${year}`;
+
+    if (type === 'month') {
+        url += `&month=${month}`;
+    }
+
+    window.open(url, '_blank');
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
@@ -336,6 +348,30 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                 </CardHeader>
 
                 <CardContent>
+                    <div className="flex justify-between items-center mb-4">
+        
+                            {/* Kiri: tombol cetak */}
+                            <div className="flex gap-2">
+                                <Button
+                                    type="button"
+                                    onClick={() => handlePrint('month')}
+                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                    <Printer size={16} />
+                                    Cetak Laporan Bulanan
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    onClick={() => handlePrint('year')}
+                                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white"
+                                >
+                                    <Printer size={16} />
+                                    Cetak Laporan Tahunan
+                                </Button>
+                            </div>
+
+                        </div>
                     <Tabs
                         value={isDeletedRoute ? 'deleted' : 'available'}
                         className="mb-4"

@@ -167,12 +167,13 @@ public function pay(SaleTransaction $sale, array $input): SaleTransaction
             ->where('payment_status', 'pending')
             ->lockForUpdate()
             ->firstOrFail();
+        $isPaid = $input['paid_amount'] >= $sale->grand_total;
 
         $sale->update([
             'payment_method_id' => $input['payment_method_id'],
             'total_amount'      => $input['paid_amount'],
             'change'            => $input['change_amount'],
-            'payment_status'    => 'paid',
+            'payment_status'    => $isPaid ? 'paid' : $sale->payment_status,
             'updated_by'        => auth()->id(),
         ]);
 
