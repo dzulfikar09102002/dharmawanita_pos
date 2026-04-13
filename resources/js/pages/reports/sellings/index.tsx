@@ -280,27 +280,6 @@ export default function Index({
                         >
                             <Eye size={16} />
                         </Button>
-
-                        <Button
-                            size="icon"
-                            className={
-                                meta.isDeletedRoute
-                                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    : 'bg-red-600 text-white hover:bg-red-700'
-                            }
-                            onClick={() =>
-                                meta.onDeleteOrRestore(
-                                    row.id,
-                                    !meta.isDeletedRoute,
-                                )
-                            }
-                        >
-                            {meta.isDeletedRoute ? (
-                                <ArchiveRestore size={16} />
-                            ) : (
-                                <X size={16} />
-                            )}
-                        </Button>
                     </div>
                 );
             },
