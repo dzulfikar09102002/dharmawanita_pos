@@ -200,6 +200,7 @@ export default function Index({
     } = pagination;
     const sourceOptions: Option[] = [
         { value: 'purchase', label: 'Pembelian' },
+        { value: 'consignment', label: 'Titipan' },
         { value: 'return', label: 'Pengembalian' },
         { value: 'adjustment', label: 'Penyesuaian' },
         { value: 'transfer', label: 'Transfer Masuk' },
@@ -651,7 +652,14 @@ export default function Index({
                                                 )
                                             }
                                         />
-                                        <FieldLabel>Supplier</FieldLabel>
+                                        <FieldLabel>
+                                            Supplier{' '}
+                                            {item.source === 'consignment' && (
+                                                <span className="text-red-500">
+                                                    *
+                                                </span>
+                                            )}
+                                        </FieldLabel>
 
                                         <Combobox
                                             items={safeSupplierOptions}
@@ -674,14 +682,18 @@ export default function Index({
                                         >
                                             <ComboboxInput
                                                 placeholder="Pilih Supplier"
-                                                className="w-full"
+                                                className={`w-full ${
+                                                    item.source ===
+                                                        'consignment' &&
+                                                    !item.supplier_id
+                                                        ? 'border-red-500 focus:ring-red-500'
+                                                        : ''
+                                                }`}
                                             />
-
                                             <ComboboxContent>
                                                 <ComboboxEmpty>
                                                     Tidak ditemukan
                                                 </ComboboxEmpty>
-
                                                 <ComboboxList>
                                                     {(el) => (
                                                         <ComboboxItem
@@ -694,6 +706,14 @@ export default function Index({
                                                 </ComboboxList>
                                             </ComboboxContent>
                                         </Combobox>
+
+                                        {item.source === 'consignment' &&
+                                            !item.supplier_id && (
+                                                <p className="text-xs text-red-500">
+                                                    Supplier wajib untuk barang
+                                                    titipan
+                                                </p>
+                                            )}
                                     </div>
 
                                     <div className="mt-4 flex justify-end">

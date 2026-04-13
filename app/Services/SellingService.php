@@ -3,6 +3,7 @@
 namespace App\Services;
 use App\Models\PaymentMethod;
 use App\Models\Purchase;
+use App\Models\PurchasingMethod;
 use App\Models\SaleTransactionDetail;
 use App\Models\InventoryTransaction;
 use App\Models\Category;
@@ -40,7 +41,7 @@ class SellingService
 
         return $query
             ->orderByDesc('updated_at')
-            ->paginate(request('per_page', 25))
+            ->paginate(request('per_page', 20))
             ->withQueryString();
     }
     public function getCategoryOptions()
@@ -151,6 +152,10 @@ class SellingService
     public function getPaymentMethods()
     {
         return PaymentMethod::whereRaw('LOWER(kind) != ?', ['cash'])->get();
+    }
+    public function getPurchasingMethod()
+    {
+        return PurchasingMethod::all();
     }
 
     

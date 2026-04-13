@@ -187,7 +187,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
         router.get(first_page_url, { page }, inertiaOptions);
     };
 
-    const debounceRef = useRef<NodeJS.Timeout | null>(null);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const handleSearchChange = (value: string) => {
         setSearchValue(value);
 
@@ -213,14 +213,22 @@ export default function Index({ pagination, categoryOptions }: Props) {
         }, 300);
     };
     const autoAddedRef = useRef<string | null>(null);
+    const isFirstLoad = useRef(true);
     useEffect(() => {
+        if (isFirstLoad.current) {
+            isFirstLoad.current = false;
+            return;
+        }
+
         if (!searchValue) return;
+
         if (products.length !== 1) {
             autoAddedRef.current = null;
             return;
         }
 
         const purchase = products[0];
+
         if (autoAddedRef.current === purchase.id.toString()) {
             return;
         }
@@ -228,7 +236,23 @@ export default function Index({ pagination, categoryOptions }: Props) {
         addItem(purchase);
 
         autoAddedRef.current = purchase.id.toString();
+
         setSearchValue('');
+        setCategoryValue('all');
+
+        router.get(
+            sellings.index().url,
+            {
+                search: '',
+                product_category_id: '',
+                page: 1,
+            },
+            {
+                preserveState: true,
+                replace: true,
+                only: ['pagination'],
+            },
+        );
     }, [products]);
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

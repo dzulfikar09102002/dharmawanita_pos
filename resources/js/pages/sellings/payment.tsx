@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import {
     PaymentMethod,
+    PurchaseMethod,
     SaleTransaction,
     SaleTransactionDetail,
 } from '@/lib/model';
@@ -13,27 +14,45 @@ import { ShoppingBasket } from 'lucide-react';
 import NumberBoardModal from '@/components/number-board-modal';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
+import {
+    Combobox,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxList,
+} from '@/components/ui/combobox';
 
 type Props = {
     details: SaleTransactionDetail[];
     paymentMethods: PaymentMethod[];
     transaction: SaleTransaction;
+    purchasingMethods: PurchaseMethod[];
 };
-
+type Option = {
+    value: string;
+    label: string;
+};
 export default function Payment({
     details,
     paymentMethods,
     transaction,
+    purchasingMethods,
 }: Props) {
     const [selectedPayment, setSelectedPayment] =
         useState<PaymentMethod | null>(null);
+    const purchasingOptions: Option[] = purchasingMethods.map((m) => ({
+        value: String(m.id),
+        label: m.name,
+    }));
 
+    const [selectedPurchasing, setSelectedPurchasing] = useState<Option | null>(
+        purchasingOptions.find((opt) => Number(opt.value) === 1) ?? null,
+    );
     const [cashModalOpen, setCashModalOpen] = useState(false);
     const [cashAmount, setCashAmount] = useState(0);
 
     const grandTotal = Number(transaction.grand_total ?? 0);
-
-    /* ================= GROUP PAYMENT ================= */
 
     const groupedPayments = paymentMethods.reduce<
         Record<string, PaymentMethod[]>
@@ -42,8 +61,6 @@ export default function Payment({
         acc[method.kind].push(method);
         return acc;
     }, {});
-
-    /* ================= HELPER ================= */
 
     const formatIDR = (value: number) =>
         new Intl.NumberFormat('id-ID', {
@@ -58,9 +75,7 @@ export default function Payment({
     const showPaymentDetail =
         selectedPayment && (isCash ? cashAmount > 0 : true);
 
-    const change = Math.max(cashAmount - grandTotal, 0);
-
-    /* ================= SAFETY RESET ================= */
+    const change = cashAmount - grandTotal;
 
     useEffect(() => {
         if (!isCash) {
@@ -68,7 +83,6 @@ export default function Payment({
         }
     }, [selectedPayment]);
 
-    /* ================= RENDER ================= */
     const [processing, setProcessing] = useState(false);
     return (
         <AppLayout>
@@ -86,7 +100,6 @@ export default function Payment({
             />
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[65%_35%]">
-                {/* ================= LEFT : ORDER ================= */}
                 <Card>
                     <CardHeader>
                         <h2 className="text-lg font-semibold">
@@ -151,16 +164,25 @@ export default function Payment({
 
                                     {isCash && (
                                         <div className="flex justify-between text-sm">
-                                            <span>Kembalian</span>
-                                            <span className="font-semibold text-primary">
-                                                {formatIDR(change)}
+                                            <span>
+                                                {change >= 0
+                                                    ? 'Kembalian'
+                                                    : 'Kurang Bayar'}
+                                            </span>
+                                            <span
+                                                className={`font-semibold ${
+                                                    change >= 0
+                                                        ? 'text-primary'
+                                                        : 'text-red-500'
+                                                }`}
+                                            >
+                                                {formatIDR(Math.abs(change))}
                                             </span>
                                         </div>
                                     )}
                                 </>
                             )}
                         </div>
-
                         <div className="space-y-4">
                             <h4 className="font-medium">Metode Pembayaran</h4>
 
@@ -229,13 +251,49 @@ export default function Payment({
                                     </div>
                                 ))}
                         </div>
+                        <div className="space-y-4">
+                            <h4 className="font-medium">Metode Pembelian</h4>
+                            <Combobox
+                                items={purchasingOptions}
+                                value={selectedPurchasing}
+                                onValueChange={(val: Option | null) => {
+                                    setSelectedPurchasing(val);
+                                }}
+                            >
+                                <ComboboxInput
+                                    placeholder="Pilih Metode Pembelian"
+                                    className={`w-full ${
+                                        !selectedPurchasing
+                                            ? 'border-red-500 focus:ring-red-500'
+                                            : ''
+                                    }`}
+                                />
+                                <ComboboxContent>
+                                    <ComboboxEmpty>
+                                        Tidak ditemukan
+                                    </ComboboxEmpty>
+                                    <ComboboxList>
+                                        {(el) => (
+                                            <ComboboxItem
+                                                key={el.value}
+                                                value={el}
+                                            >
+                                                {el.label}
+                                            </ComboboxItem>
+                                        )}
+                                    </ComboboxList>
+                                </ComboboxContent>
+                            </Combobox>
+
+                            {!selectedPurchasing && (
+                                <p className="text-xs text-red-500">
+                                    Metode pembelian wajib dipilih
+                                </p>
+                            )}
+                        </div>
                         <Button
                             className="w-full cursor-pointer"
-                            disabled={
-                                processing ||
-                                !selectedPayment ||
-                                (isCash && cashAmount < grandTotal)
-                            }
+                            disabled={processing || !selectedPayment}
                             onClick={() => {
                                 setProcessing(true);
 

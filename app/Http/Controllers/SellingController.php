@@ -36,7 +36,8 @@ class SellingController extends Controller
         $transaction = $this->service->getSaleTransaction($id);
         $details = $this->service->getTransactionDetails($id);
         $paymentMethods = $this->service->getPaymentMethods();
-        return Inertia::render('sellings/payment', compact('transaction', 'details', 'paymentMethods'));
+        $purchasingMethods = $this->service->getPurchasingMethod();
+        return Inertia::render('sellings/payment', compact('transaction', 'details', 'paymentMethods','purchasingMethods'));
     }
 
     public function pay(StorePaymentRequest $request, SaleTransaction $sale)
