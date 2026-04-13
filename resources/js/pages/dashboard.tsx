@@ -245,45 +245,44 @@ export default function Dashboard({
                     </CardHeader>
 
                     <CardContent className="h-[300px] w-full">
-                        {dailySales.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">
-                                Tidak ada data
-                            </p>
-                        ) : (
-                            <ChartContainer
-                                config={chartConfig}
+                        <ChartContainer
+                            config={chartConfig}
+                            className="h-full w-full"
+                        >
+                            <AreaChart
+                                data={chartData}
+                                margin={{ left: 12, right: 12 }}
                                 className="h-full w-full"
                             >
-                                <AreaChart
-                                    data={chartData}
-                                    margin={{ left: 12, right: 12 }}
-                                    className="h-full w-full"
-                                >
-                                    <CartesianGrid vertical={false} />
+                                <CartesianGrid vertical={false} />
 
-                                    <XAxis
-                                        dataKey="day"
-                                        tickLine={false}
-                                        axisLine={false}
-                                        tickMargin={8}
-                                    />
+                                <XAxis
+                                    dataKey="day"
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickMargin={8}
+                                />
 
-                                    <ChartTooltip
-                                        cursor={false}
-                                        content={
-                                            <ChartTooltipContent indicator="line" />
-                                        }
-                                    />
+                                <ChartTooltip
+                                    cursor={false}
+                                    content={
+                                        <ChartTooltipContent indicator="line" />
+                                    }
+                                />
 
-                                    <Area
-                                        dataKey="total"
-                                        type="natural"
-                                        fill="var(--color-total)"
-                                        fillOpacity={0.4}
-                                        stroke="var(--color-total)"
-                                    />
-                                </AreaChart>
-                            </ChartContainer>
+                                <Area
+                                    dataKey="total"
+                                    type="monotone"
+                                    fill="var(--color-total)"
+                                    fillOpacity={0.4}
+                                    stroke="var(--color-total)"
+                                />
+                            </AreaChart>
+                        </ChartContainer>
+                        {dailySales.length === 0 && (
+                            <p className="mt-2 text-center text-sm text-muted-foreground">
+                                Tidak ada transaksi bulan ini
+                            </p>
                         )}
                     </CardContent>
                 </Card>
