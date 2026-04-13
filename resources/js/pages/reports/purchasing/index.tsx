@@ -13,6 +13,8 @@ import {
     type ColumnDef,
 } from '@tanstack/react-table';
 
+import NumberBoardModal from '@/components/number-board-modal';
+import { toast } from 'sonner';
 import DataTable from '@/components/data-table';
 import TablePagination from '@/components/table-pagination';
 import { Pagination, Purchase } from '@/lib/model';
@@ -134,30 +136,81 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                 new Date(info.getValue()).toLocaleDateString('id-ID'),
         }),
         {
-            id: 'action',
-            header: 'Aksi',
-            cell: (info) => {
-                const row = info.row.original;
-                const meta = info.table.options.meta as TableMeta;
+    accessorKey: 'status_payment',
+    header: 'Status',
+    cell: (info) => {
+        const status = info.getValue();
 
-                return (
+        if (!status) return '-';
+
+        return (
+            <span
+                className={`px-2 py-1 rounded text-xs font-semibold ${
+                    status === 'paid'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
+                }`}
+            >
+                {status === 'paid' ? 'Paid' : 'Pending'}
+            </span>
+        );
+    },
+},
+        {
+    id: 'action',
+    header: 'Aksi',
+    cell: (info) => {
+        const row = info.row.original;
+        const meta = info.table.options.meta as TableMeta;
+
+        return (
+            <div className="flex gap-2">
+                {/* ✅ PAYMENT BUTTON */}
+                {row.status_payment === 'pending' && !meta.isDeletedRoute && (
                     <Button
                         size="icon"
-                        variant={meta.isDeletedRoute ? 'outline' : 'destructive'}
+                        variant="default"
+                        className="bg-green-600 hover:bg-green-700"
                         onClick={() =>
-                            meta.onDeleteOrRestore(row.id, !meta.isDeletedRoute)
+                            setPayModal({
+                                open: true,
+                                data: row,
+                            })
                         }
                     >
-                        {meta.isDeletedRoute ? (
-                            <ArchiveRestore size={16} />
-                        ) : (
-                            <X size={16} />
-                        )}
+                        💰
                     </Button>
-                );
-            },
-        },
+                )}
+
+                {/* ❌ DELETE / RESTORE */}
+                <Button
+                    size="icon"
+                    variant={meta.isDeletedRoute ? 'outline' : 'destructive'}
+                    onClick={() =>
+                        meta.onDeleteOrRestore(
+                            row.id,
+                            !meta.isDeletedRoute
+                        )
+                    }
+                >
+                    {meta.isDeletedRoute ? (
+                        <ArchiveRestore size={16} />
+                    ) : (
+                        <X size={16} />
+                    )}
+                </Button>
+            </div>
+        );
+    },
+},
     ];
+
+    const [payModal, setPayModal] = useState<{
+    open: boolean;
+    data?: Purchase;
+    }>({
+        open: false,
+    });
 
     const table = useReactTable<Purchase>({
         data: pagination.data,
@@ -197,6 +250,36 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                     setAlert((prev) => ({ ...prev, proccessing: true }))
                 }
             />
+
+            <NumberBoardModal
+    open={payModal.open}
+    onClose={() =>
+        setPayModal({
+            open: false,
+            data: undefined,
+        })
+    }
+    grandTotal={Number(payModal.data?.purchase_price ?? 0)}
+    onConfirm={(amount) => {
+        console.log('Jumlah bayar:', amount);
+
+        router.post(
+    purchases.pay(payModal.data!.id).url,
+    {
+        total_payment: amount,
+    },
+    {
+        onSuccess: () => toast.success('Pembayaran berhasil'),
+        onError: () => toast.error('Pembayaran gagal'),
+    }
+    );
+
+        setPayModal({
+            open: false,
+            data: undefined,
+        });
+    }}
+/>
 
             <Card>
                 <CardHeader>

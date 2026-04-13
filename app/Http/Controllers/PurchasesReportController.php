@@ -108,4 +108,11 @@ class PurchasesReportController extends Controller
 
     return $pdf->stream('laporan-pembelian.pdf');
 }
+
+public function pay(Purchase $purchase)
+    {
+        $this->service->pay($purchase, request()->all());
+
+        return back()->with('success', 'Pembayaran berhasil');
+    }
 }

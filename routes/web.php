@@ -67,6 +67,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     ->name('reports.purchases.restore');  
     Route::get('/reports/print-purchases-report', [PurchasesReportController::class, 'printPurchasesReport'])
     ->name('purchases-reports.print.pdf');
+     Route::post('/reports/purchases/{purchase}/pay', [PurchasesReportController::class, 'pay'])
+        ->name('reports.purchases.pay');  
 
     Route::get('reports/sales/deleted', [SalesReportController::class, 'deleted'])
         ->name('reports.sales.deleted');

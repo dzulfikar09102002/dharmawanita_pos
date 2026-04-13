@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Purchase;
+use Illuminate\Support\Facades\DB;
 
 class PurchasesReportService
 {
@@ -81,5 +82,30 @@ class PurchasesReportService
     {
         $purchasereport = Purchase::withTrashed()->findOrFail($id);
         return $purchasereport->restore();
+    }
+
+    public function pay(Purchase $purchase, array $input): Purchase
+    {
+        return DB::transaction(function () use ($purchase, $input) {
+
+            $purchase = Purchase::whereKey($purchase->id)
+                ->where('status_payment', 'pending')
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $paidAmount = (int) ($input['total_payment'] ?? 0);
+
+            if ($paidAmount <= 0) {
+                throw new \Exception('Nominal pembayaran harus lebih dari 0');
+            }
+
+            $purchase->update([
+                'total_payment' => $paidAmount,
+                'status_payment' => 'paid', 
+                'updated_by' => auth()->id(),
+            ]);
+
+            return $purchase->fresh();
+        });
     }
 }
