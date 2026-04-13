@@ -53,7 +53,8 @@ export default function Payment({
     const [cashAmount, setCashAmount] = useState(0);
 
     const grandTotal = Number(transaction.grand_total ?? 0);
-
+    const paidSoFar = Number(transaction.total_amount ?? 0);
+    const remaining = Math.max(grandTotal - paidSoFar, 0);
     const groupedPayments = paymentMethods.reduce<
         Record<string, PaymentMethod[]>
     >((acc, method) => {
@@ -72,7 +73,7 @@ export default function Payment({
 
     const isCash = selectedPayment?.kind === 'cash';
 
-    const change = cashAmount - grandTotal;
+    const change = cashAmount - remaining;
     const [reason, setReason] = useState('');
     const showReason = selectedPurchasing
         ? Number(selectedPurchasing.value) > 3
@@ -89,13 +90,12 @@ export default function Payment({
         <AppLayout>
             <Head title="Pembayaran" />
 
-            {/* ===== CASH MODAL ===== */}
             <NumberBoardModal
                 open={cashModalOpen}
                 onClose={() => setCashModalOpen(false)}
-                grandTotal={grandTotal}
-                onConfirm={(amount) => {
-                    setCashAmount(amount);
+                grandTotal={remaining}
+                onConfirm={(remaining) => {
+                    setCashAmount(remaining);
                     setCashModalOpen(false);
                 }}
             />
@@ -141,7 +141,6 @@ export default function Payment({
                     </CardHeader>
 
                     <CardContent className="space-y-6">
-                        {/* ===== PAYMENT SUMMARY ===== */}
                         <div className="space-y-2 rounded-md bg-muted p-4">
                             <div className="flex justify-between text-sm">
                                 <span>Total Pesanan</span>
@@ -150,14 +149,31 @@ export default function Payment({
                                 </span>
                             </div>
 
+                            {paidSoFar > 0 && (
+                                <>
+                                    <div className="flex justify-between text-sm">
+                                        <span>Sudah Dibayar</span>
+                                        <span className="font-semibold text-green-600">
+                                            {formatIDR(paidSoFar)}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex justify-between text-sm">
+                                        <span>Sisa Pembayaran</span>
+                                        <span className="font-semibold text-red-500">
+                                            {formatIDR(remaining)}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
+
                             {(showReason || showPaymentDetail) && (
                                 <>
                                     {showReason ? (
-                                        // 🔴 LANGSUNG MUNCUL TANPA NUNGGU PAYMENT
                                         <div className="flex justify-between text-sm">
                                             <span>Kerugian</span>
                                             <span className="font-semibold text-red-500">
-                                                {formatIDR(grandTotal)}
+                                                {formatIDR(remaining)}
                                             </span>
                                         </div>
                                     ) : (
@@ -168,7 +184,7 @@ export default function Payment({
                                                     {formatIDR(
                                                         isCash
                                                             ? cashAmount
-                                                            : grandTotal,
+                                                            : remaining,
                                                     )}
                                                 </span>
                                             </div>
@@ -342,10 +358,10 @@ export default function Payment({
                                                 : selectedPayment?.id,
 
                                         paid_amount: showReason
-                                            ? grandTotal
+                                            ? remaining
                                             : isCash
                                               ? cashAmount
-                                              : grandTotal,
+                                              : remaining,
 
                                         change_amount: showReason
                                             ? 0
