@@ -56,42 +56,47 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('/purchases', PurchaseController::class)->except('show');
     Route::post('/purchases/generate-code', [PurchaseController::class, 'generateCode']);
 
-        Route::resource('/reports/purchases', PurchasesReportController::class)->except('show')
-        ->names('reports.purchases'); 
-        Route::get('/reports/purchases/deleted', [PurchasesReportController::class, 'deleted'])
-        ->name('reports.purchases.deleted');
-        Route::post('/reports/purchases/{id}/restore', [PurchasesReportController::class, 'restore'])
-        ->name('reports.purchases.restore');  
+    Route::resource('/reports/purchases', PurchasesReportController::class)->except('show')
+    ->names('reports.purchases'); 
+    Route::get('/reports/purchases/deleted', [PurchasesReportController::class, 'deleted'])
+    ->name('reports.purchases.deleted');
+    Route::post('/reports/purchases/{id}/restore', [PurchasesReportController::class, 'restore'])
+    ->name('reports.purchases.restore');  
+    Route::get('/reports/print-purchases-report', [PurchasesReportController::class, 'printPurchasesReport'])
+    ->name('purchases-reports.print.pdf');
+     Route::post('/reports/purchases/{purchase}/pay', [PurchasesReportController::class, 'pay'])
+        ->name('reports.purchases.pay');  
 
+    Route::get('reports/sales/deleted', [SalesReportController::class, 'deleted'])
+        ->name('reports.sales.deleted');
 
-        Route::get('reports/sales/deleted', [SalesReportController::class, 'deleted'])
-            ->name('reports.sales.deleted');
+    Route::post('/reports/sales/{id}/restore', [SalesReportController::class, 'restore'])
+        ->name('reports.sales.restore');  
 
-        Route::post('/reports/sales/{id}/restore', [SalesReportController::class, 'restore'])
-            ->name('reports.sales.restore');  
+    Route::post('/reports/sales/{id}/cancel', [SalesReportController::class, 'cancel'])
+        ->name('reports.sales.cancel');
 
-        Route::post('/reports/sales/{id}/cancel', [SalesReportController::class, 'cancel'])
-            ->name('reports.sales.cancel');
+    Route::resource('/reports/sales', SalesReportController::class)
+        ->names('reports.sales');
 
-        Route::resource('/reports/sales', SalesReportController::class)
-            ->names('reports.sales');
+    Route::get('/reports/print-sales-report', [SalesReportController::class, 'printSalesReport'])
+        ->name('sales-reports.print.pdf');
 
-        Route::resource('/reports/stocks', StockReportController::class)
+    Route::get('/reports/sales/{id}/payment', [SalesReportController::class, 'payment'])
+    ->name('reports.sales.payment');
+
+    Route::resource('/reports/stocks', StockReportController::class)
     ->names('reportsStocks');
-        Route::resource('/sellings', SellingController::class)
+
+    Route::resource('/sellings', SellingController::class)
     ->names('sellings');
-        Route::get(
-                'sellings/{sale}/payment',
-                [SellingController::class, 'payment']
-            )->name('sellings.payment');
-        Route::post(
-        'sellings/{sale}/payment',
-        [SellingController::class, 'pay']
-    )->name('sellings.pay');
-      Route::resource('/reports/laba-rugi', LabaRugiController::class)
-    ->names('reports.laba-rugi');
-    Route::get('/laba-rugi/{bulan?}/{tahun?}', [LabaRugiController::class, 'index'])
-    ->name('laba-rugi.index');
+
+    Route::get('sellings/{sale}/payment', [SellingController::class, 'payment'])->name('sellings.payment');
+
+    Route::post('sellings/{sale}/payment', [SellingController::class, 'pay'])->name('sellings.pay');
+    Route::resource('/reports/laba-rugi', LabaRugiController::class)->names('reports.laba-rugi');
+    Route::get('/laba-rugi/{bulan?}/{tahun?}', [LabaRugiController::class, 'index'])->name('laba-rugi.index');
+    
     });
 
 

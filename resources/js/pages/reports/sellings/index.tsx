@@ -3,7 +3,7 @@ import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import salesReport from '@/routes/reports/sales';
-import { Eye, Search, X, ArchiveRestore, FilterX } from 'lucide-react';
+import { Eye, Search, X, ArchiveRestore, FilterX, Printer  } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -91,6 +91,16 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
     };
 
     const [alert, setAlert] = useState<AlertState>(initialAlertState);
+
+   const handlePrint = (type: 'month' | 'year') => {
+    let url = `/reports/print-sales-report?type=${type}&tahun=${tahun}`;
+
+    if (type === 'month') {
+        url += `&bulan=${bulan}`;
+    }
+
+    window.open(url, '_blank');
+    };
 
     const onAlertClose = () => setAlert(initialAlertState);
 
@@ -325,6 +335,30 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
                 </CardHeader>
 
                 <CardContent>
+                     <div className="flex justify-between items-center mb-4">
+        
+                            {/* Kiri: tombol cetak */}
+                            <div className="flex gap-2">
+                                <Button
+                                    type="button"
+                                    onClick={() => handlePrint('month')}
+                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                    <Printer size={16} />
+                                    Cetak Laporan Bulanan
+                                </Button>
+
+                                <Button
+                                    type="button"
+                                    onClick={() => handlePrint('year')}
+                                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white"
+                                >
+                                    <Printer size={16} />
+                                    Cetak Laporan Tahunan
+                                </Button>
+                            </div>
+
+                        </div>
                     <Tabs
                         value={isDeletedRoute ? 'deleted' : 'active'}
                         className="mb-4"
