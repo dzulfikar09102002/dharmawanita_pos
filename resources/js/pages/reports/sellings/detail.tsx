@@ -1,10 +1,20 @@
 import { Head, router } from '@inertiajs/react';
+import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import salesReport from '@/routes/reports/sales';
-
+import Swal from 'sweetalert2';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+    AlertDialog,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 import {
     createColumnHelper,
@@ -16,6 +26,9 @@ import {
 import DataTable from '@/components/data-table';
 import TablePagination from '@/components/table-pagination';
 import { Pagination, SaleTransactionDetail } from '@/lib/model';
+import { toast } from 'sonner';
+import { Spinner } from '@/components/ui/spinner';
+import { AlertTriangle } from 'lucide-react';
 
 const title = 'Detail Laporan Penjualan';
 
@@ -45,6 +58,59 @@ export default function Index({ pagination, transaction }: Props) {
         },
     ];
 
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [processing, setProcessing] = useState(false);
+
+    const handleCancel = () => {
+    Swal.fire({
+        title: 'Batalkan Transaksi?',
+        text: 'Tindakan ini tidak dapat dibatalkan!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Ya, Batalkan!',
+        cancelButtonText: 'Batal',
+        reverseButtons: true,
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Memproses...',
+                text: 'Sedang membatalkan transaksi',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+            });
+
+            router.post(
+                salesReport.cancel(transaction.id).url,
+                {},
+                {
+                    onSuccess: () => {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: 'Transaksi berhasil dibatalkan',
+                            timer: 2000,
+                            showConfirmButton: false,
+                        });
+
+                        router.visit(salesReport.index().url);
+                    },
+                    onError: () => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal!',
+                            text: 'Terjadi kesalahan saat membatalkan transaksi',
+                        });
+                    },
+                }
+            );
+        }
+    });
+};
+
     const { data } = pagination;
 
     const grandTotal = (data ?? []).reduce((acc, item) => {
@@ -70,7 +136,6 @@ export default function Index({ pagination, transaction }: Props) {
             cell: (info) => {
                 const row = info.row.original as any;
                 if (row.isTotal) return '';
-
                 return (
                     (pagination.current_page - 1) * pagination.per_page +
                     info.row.index +
@@ -83,11 +148,9 @@ export default function Index({ pagination, transaction }: Props) {
             header: 'Produk',
             cell: (info) => {
                 const row = info.row.original as any;
-
                 if (row.isTotal) {
                     return <span className="font-bold">Grand Total</span>;
                 }
-
                 return info.getValue()?.name ?? '-';
             },
         }),
@@ -97,7 +160,6 @@ export default function Index({ pagination, transaction }: Props) {
             cell: (info) => {
                 const row = info.row.original as any;
                 if (row.isTotal) return null;
-
                 return (
                     <span className="block text-center">{info.getValue()}</span>
                 );
@@ -109,7 +171,6 @@ export default function Index({ pagination, transaction }: Props) {
             cell: (info) => {
                 const row = info.row.original as any;
                 if (row.isTotal) return null;
-
                 return (
                     <span className="block text-right">
                         {new Intl.NumberFormat('id-ID', {
@@ -126,7 +187,6 @@ export default function Index({ pagination, transaction }: Props) {
             cell: (info) => {
                 const row = info.row.original as any;
                 if (row.isTotal) return null;
-
                 return (
                     <span className="block text-right">
                         {new Intl.NumberFormat('id-ID', {
@@ -143,7 +203,6 @@ export default function Index({ pagination, transaction }: Props) {
             header: () => <div className="text-right">Subtotal</div>,
             cell: (info) => {
                 const row = info.row.original as any;
-
                 if (row.isTotal) {
                     return (
                         <span className="block text-right font-bold">
@@ -154,9 +213,7 @@ export default function Index({ pagination, transaction }: Props) {
                         </span>
                     );
                 }
-
                 const subtotal = row.quantity * row.selling_price;
-
                 return (
                     <span className="block text-right">
                         {new Intl.NumberFormat('id-ID', {
@@ -178,6 +235,48 @@ export default function Index({ pagination, transaction }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
+
+            {/* 🔥 MODERN ALERT */}
+            <AlertDialog
+                open={confirmOpen}
+                onOpenChange={(open) => {
+                    if (!processing) setConfirmOpen(open);
+                }}
+            >
+                <AlertDialogContent className="sm:max-w-md">
+                    <AlertDialogHeader>
+                        <div className="flex items-start gap-3">
+                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100">
+                                <AlertTriangle className="w-5 h-5 text-red-600" />
+                            </div>
+                            <div>
+                                <AlertDialogTitle className="text-lg font-semibold text-gray-900">
+                                    Batalkan Transaksi?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription className="text-sm text-gray-500">
+                                    Tindakan ini tidak dapat dibatalkan. Data transaksi akan dibatalkan secara permanen.
+                                </AlertDialogDescription>
+                            </div>
+                        </div>
+                    </AlertDialogHeader>
+
+                    <AlertDialogFooter className="mt-4">
+                        <AlertDialogCancel disabled={processing}>
+                            Batal
+                        </AlertDialogCancel>
+
+                        <Button
+                            variant="destructive"
+                            disabled={processing}
+                            onClick={handleCancel}
+                            className="flex items-center gap-2"
+                        >
+                            {processing && <Spinner />}
+                            Ya, Batalkan
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             <Card>
                 <CardContent>
@@ -201,50 +300,38 @@ export default function Index({ pagination, transaction }: Props) {
                     <DataTable columns={columns} table={table} />
                     <TablePagination pagination={pagination} />
 
-                    {/* ✅ ACTION BUTTONS */}
-<div className="flex justify-end gap-2 mt-6">
-    <Button
-        variant="outline"
-        onClick={() =>
-            router.visit(salesReport.index().url)
-        }
-    >
-        Kembali
-    </Button>
+                    <div className="flex justify-end gap-2 mt-6">
+                        <Button
+                            variant="outline"
+                            onClick={() => router.visit(salesReport.index().url)}
+                        >
+                            Kembali
+                        </Button>
 
-    {/* 🔥 Tombol Lunasi */}
-    {transaction.payment_status === 'pending' && (
-        <Button
-            className="bg-green-600 hover:bg-green-700 text-white"
-            onClick={() => {
-                router.visit(
-                    `/reports/sales/${transaction.id}/payment`
-                );
-            }}
-        >
-            Lunasi
-        </Button>
-    )}
+                        {transaction.payment_status === 'pending' && (
+                            <Button
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                                onClick={() => {
+                                    router.visit(
+                                        `/reports/sales/${transaction.id}/payment`
+                                    );
+                                }}
+                            >
+                                Lunasi
+                            </Button>
+                        )}
 
-    <Button
-        variant="destructive"
-        disabled={transaction.payment_status === 'canceled'}
-        onClick={() => {
-            router.post(
-                salesReport.cancel(transaction.id).url,
-                {},
-                {
-                    onSuccess: () => {
-                        router.visit(salesReport.index().url);
-                    },
-                }
-            );
-        }}
-    >
-        Batalkan Transaksi
-    </Button>
-</div>
-
+                       <Button
+                            variant="destructive"
+                            disabled={
+                                transaction.payment_status === 'canceled' ||
+                                transaction.payment_status === 'paid'
+                            }
+                            onClick={handleCancel}
+                        >
+                            Batalkan Transaksi
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
         </AppLayout>

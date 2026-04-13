@@ -3,10 +3,10 @@ import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Filter, Printer } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-// ✅ TYPE
 type LabaRugiData = {
-    bulan: number;
+    bulan: number | null;
     tahun: number;
     total_pendapatan: number;
     total_pendapatan_piutang: number;
@@ -32,166 +32,165 @@ const breadcrumbs = [
 ];
 
 export default function LabaRugi({ data }: Props) {
-    const [bulan, setBulan] = useState<number>(data.bulan);
+    const [bulan, setBulan] = useState<number>(data.bulan ?? 1);
     const [tahun, setTahun] = useState<number>(data.tahun);
 
     const handleFilter = () => {
         router.get(`/laba-rugi/${bulan}/${tahun}`);
     };
 
+    const handlePrint = (type: 'month' | 'year') => {
+        const params = new URLSearchParams({
+            type,
+            tahun: String(tahun),
+        });
+
+        if (type === 'month') {
+            params.append('bulan', String(bulan));
+        }
+
+        window.open(`/laba-rugi/print?${params.toString()}`, '_blank');
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Laba Rugi" />
 
-            {/* ✅ PRINT STYLE (ISOLATE CONTAINER) */}
-            <style>
-                {`
-                @media print {
-                    body * {
-                        visibility: hidden;
-                    }
-
-                    #print-area, #print-area * {
-                        visibility: visible;
-                    }
-
-                    #print-area {
-                        position: absolute;
-                        left: 0;
-                        top: 0;
-                        width: 100%;
-                    }
-
-                    @page {
-                        margin: 20mm;
-                    }
-                }
-                `}
-            </style>
-
             <div className="p-4 flex flex-col gap-4">
 
-                {/* 🔽 FILTER + BUTTON */}
+                {/* FILTER */}
                 <Card>
-                    <CardHeader>Filter Laporan</CardHeader>
-                    <CardContent className="flex gap-4">
-                        <select
-                            value={bulan}
-                            onChange={(e) => setBulan(Number(e.target.value))}
-                            className="border rounded px-3 py-2"
-                        >
-                            {namaBulan.map((nama, i) => (
-                                <option key={i} value={i + 1}>
-                                    {nama}
-                                </option>
-                            ))}
-                        </select>
+                    <CardContent className="flex flex-wrap items-end gap-4">
 
-                        <input
-                            type="number"
-                            value={tahun}
-                            onChange={(e) => setTahun(Number(e.target.value))}
-                            className="border rounded px-3 py-2"
-                        />
+                        <div className="flex flex-col">
+                            <label className="text-xs text-gray-500 mb-1">Bulan</label>
+                            <select
+                                value={bulan}
+                                onChange={(e) => setBulan(Number(e.target.value))}
+                                className="border rounded px-3 py-2 min-w-[150px]"
+                            >
+                                {namaBulan.map((nama, i) => (
+                                    <option key={i} value={i + 1}>
+                                        {nama}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                        <button
-                            onClick={handleFilter}
-                            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2"
-                        >
-                            <Filter size={16} />
-                            Filter
-                        </button>
+                        <div className="flex flex-col">
+                            <label className="text-xs text-gray-500 mb-1">Tahun</label>
+                            <input
+                                type="number"
+                                value={tahun}
+                                onChange={(e) => setTahun(Number(e.target.value))}
+                                className="border rounded px-3 py-2 w-[120px]"
+                            />
+                        </div>
 
-                        <button
-                            onClick={() => window.print()}
-                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
-                        >
-                            <Printer size={16} />
-                            Cetak Laporan
-                        </button>
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                onClick={handleFilter}
+                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 h-[42px]"
+                            >
+                                <Filter size={16} />
+                                Filter
+                            </Button>
+
+                            <Button
+                                onClick={() => handlePrint('month')}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded flex items-center gap-2 h-[42px]"
+                            >
+                                <Printer size={16} />
+                                Bulanan
+                            </Button>
+
+                            <Button
+                                onClick={() => handlePrint('year')}
+                                className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded flex items-center gap-2 h-[42px]"
+                            >
+                                <Printer size={16} />
+                                Tahunan
+                            </Button>
+                        </div>
+
                     </CardContent>
                 </Card>
 
-                {/* 🔽 LAPORAN (YANG AKAN DIPRINT) */}
-                <div id="print-area">
-                    <Card>
-                        <CardHeader className='text-center'>
-                            <CardTitle>
-                                Laporan Laba Rugi - {namaBulan[data.bulan - 1]} {data.tahun}
-                            </CardTitle>
-                        </CardHeader>
+                {/* RESULT */}
+                <Card>
+                    <CardHeader className="text-center">
+                        <CardTitle>
+                            Laporan Laba Rugi -{' '}
+                            {data.bulan
+                                ? `${namaBulan[data.bulan - 1]} ${data.tahun}`
+                                : `Tahun ${data.tahun}`}
+                        </CardTitle>
+                    </CardHeader>
 
-                        <CardContent className="space-y-4 text-sm">
+                    <CardContent className="space-y-4 text-sm">
 
-                            {/* 🔽 PENDAPATAN */}
-                            <div>
-                                <h3 className="font-semibold border-b pb-1">Pendapatan</h3>
+                        <div>
+                            <h3 className="font-semibold border-b pb-1">Pendapatan</h3>
 
-                                <div className="flex justify-between mt-2">
-                                    <span className="pl-4">Pendapatan Tunai</span>
-                                    <span>
-                                        Rp {Number(data.total_pendapatan).toLocaleString('id-ID')}
-                                    </span>
-                                </div>
-
-                                <div className="flex justify-between">
-                                    <span className="pl-4">Pendapatan Piutang</span>
-                                    <span>
-                                        Rp {Number(data.total_pendapatan_piutang).toLocaleString('id-ID')}
-                                    </span>
-                                </div>
-
-                                <div className="flex justify-between font-semibold border-t mt-2 pt-2">
-                                    <span>Total Pendapatan</span>
-                                    <span>
-                                        Rp {Number(
-                                            data.total_pendapatan + data.total_pendapatan_piutang
-                                        ).toLocaleString('id-ID')}
-                                    </span>
-                                </div>
+                            <div className="flex justify-between mt-2">
+                                <span className="pl-4">Pendapatan Tunai</span>
+                                <span>
+                                    Rp {data.total_pendapatan.toLocaleString('id-ID')}
+                                </span>
                             </div>
 
-                            {/* 🔽 PEMBELIAN */}
-                            <div>
-                                <h3 className="font-semibold border-b pb-1">Pembelian</h3>
-
-                                <div className="flex justify-between mt-2">
-                                    <span className="pl-4">Pembelian</span>
-                                    <span>
-                                        Rp {Number(data.total_pembelian).toLocaleString('id-ID')}
-                                    </span>
-                                </div>
-
-                                <div className="flex justify-between font-semibold border-t mt-2 pt-2">
-                                    <span>Total Pembelian</span>
-                                    <span>
-                                        Rp {Number(data.total_pembelian).toLocaleString('id-ID')}
-                                    </span>
-                                </div>
+                            <div className="flex justify-between">
+                                <span className="pl-4">Pendapatan Piutang</span>
+                                <span>
+                                    Rp {data.total_pendapatan_piutang.toLocaleString('id-ID')}
+                                </span>
                             </div>
 
-                            {/* 🔽 LABA */}
-                            <div className="border-t pt-4">
-                                <div className="flex justify-between text-lg font-bold">
-                                    <span>Laba / Rugi </span>
-                                    <span
-                                        className={
-                                            data.laba_rugi >= 0
-                                                ? 'text-green-600'
-                                                : 'text-red-600'
-                                        }
-                                    >
-                                        {Number(data.laba_rugi) < 0
-                                            ? `(Rp ${Math.abs(Number(data.laba_rugi)).toLocaleString('id-ID')})`
-                                            : `Rp ${Number(data.laba_rugi).toLocaleString('id-ID')}`
-                                        }
-                                    </span>
-                                </div>
+                            <div className="flex justify-between font-semibold border-t mt-2 pt-2">
+                                <span>Total Pendapatan</span>
+                                <span>
+                                    Rp {(data.total_pendapatan + data.total_pendapatan_piutang).toLocaleString('id-ID')}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 className="font-semibold border-b pb-1">Pembelian</h3>
+
+                            <div className="flex justify-between mt-2">
+                                <span className="pl-4">Pembelian</span>
+                                <span>
+                                    Rp {data.total_pembelian.toLocaleString('id-ID')}
+                                </span>
                             </div>
 
-                        </CardContent>
-                    </Card>
-                </div>
+                            <div className="flex justify-between font-semibold border-t mt-2 pt-2">
+                                <span>Total Pembelian</span>
+                                <span>
+                                    Rp {data.total_pembelian.toLocaleString('id-ID')}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="border-t pt-4">
+                            <div className="flex justify-between text-lg font-bold">
+                                <span>Laba / Rugi</span>
+                                <span
+                                    className={
+                                        data.laba_rugi >= 0
+                                            ? 'text-green-600'
+                                            : 'text-red-600'
+                                    }
+                                >
+                                    {data.laba_rugi < 0
+                                        ? `(Rp ${Math.abs(data.laba_rugi).toLocaleString('id-ID')})`
+                                        : `Rp ${data.laba_rugi.toLocaleString('id-ID')}`}
+                                </span>
+                            </div>
+                        </div>
+
+                    </CardContent>
+                </Card>
             </div>
         </AppLayout>
     );
