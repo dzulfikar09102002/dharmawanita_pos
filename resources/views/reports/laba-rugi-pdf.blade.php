@@ -1,5 +1,21 @@
 <!DOCTYPE html>
 <html lang="id">
+    @php
+    $namaBulan = [
+        1 => 'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember'
+    ];
+@endphp
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -161,7 +177,7 @@
         <div class="report-title">Laporan Laba Rugi</div>
         <div class="report-period">
             @if($type === 'month')
-                Periode: {{ $bulan }} {{ $tahun }}
+                Periode: {{ $namaBulan[$bulan] }} {{ $tahun }}
             @else
                 Periode: Tahun {{ $tahun }}
             @endif
