@@ -203,13 +203,13 @@ class SellingService
                 ->where('payment_status', 'pending')
                 ->lockForUpdate()
                 ->firstOrFail();
-
+            $total_amount = $sale->total_amount + $input['paid_amount'];
             $methodId = $input['purchase_method_id'];
             $isCancelMethod = $methodId > 3;
-            $isPaid = $input['paid_amount'] >= $sale->grand_total;
+            $isPaid = $total_amount >= $sale->grand_total;
             $sale->update([
                 'payment_method_id' => $input['payment_method_id'] ?? null,
-                'total_amount'      => $input['paid_amount'],
+                'total_amount'      => $total_amount,
                 'change'            => $input['change_amount'],
                 'purchasing_method_id' => $methodId,
                 'payment_status'    => $isCancelMethod
