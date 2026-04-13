@@ -307,7 +307,11 @@ export default function Payment({
                                         paid_amount: isCash
                                             ? cashAmount
                                             : grandTotal,
-                                        change_amount: isCash ? change : 0,
+                                        change_amount: isCash
+                                            ? change > 0
+                                                ? change
+                                                : 0
+                                            : 0,
                                     },
                                     {
                                         onSuccess: () => {
