@@ -24,6 +24,15 @@ import { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import purchases from '@/routes/reports/purchases';
 import Alert, { AlertState } from '@/components/purchase-report/alert';
+import { Field, FieldLabel } from '@/components/ui/field';
+import {
+    Combobox,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxList,
+} from '@/components/ui/combobox';
 
 const title = 'Laporan Pembelian';
 
@@ -58,16 +67,29 @@ const formatRupiah = (value: number) =>
     }).format(value || 0);
 
 const namaBulan = [
-    'Januari','Februari','Maret','April','Mei','Juni',
-    'Juli','Agustus','September','Oktober','November','Desember'
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
 ];
 
 export default function Index({
     pagination,
     month: initialMonth,
-    year: initialYear
+    year: initialYear,
 }: Props) {
-
+    const bulanOptions = namaBulan.map((nama, i) => ({
+        value: String(i + 1),
+        label: nama,
+    }));
     const now = new Date();
 
     const [month, setMonth] = useState(initialMonth ?? now.getMonth() + 1);
@@ -103,7 +125,7 @@ export default function Index({
         router.get(
             purchases.index().url,
             { search: '', month: m, year: y, page: 1 },
-            { preserveState: true, replace: true }
+            { preserveState: true, replace: true },
         );
     };
 
@@ -127,7 +149,8 @@ export default function Index({
             header: 'No',
             cell: (info) =>
                 (pagination.current_page - 1) * pagination.per_page +
-                info.row.index + 1,
+                info.row.index +
+                1,
         },
         columnHelper.accessor('code', { header: 'Kode' }),
         columnHelper.accessor('product_id', {
@@ -162,7 +185,7 @@ export default function Index({
 
                 return (
                     <span
-                        className={`px-2 py-1 rounded text-xs font-semibold ${
+                        className={`rounded px-2 py-1 text-xs font-semibold ${
                             status === 'paid'
                                 ? 'bg-green-100 text-green-700'
                                 : 'bg-yellow-100 text-yellow-700'
@@ -183,31 +206,35 @@ export default function Index({
                 return (
                     <div className="flex gap-2">
                         {/* PAYMENT */}
-                        {row.status_payment === 'pending' && !meta.isDeletedRoute && (
-                            <Button
-                                size="icon"
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                                onClick={() =>
-                                    setPayModal({
-                                        open: true,
-                                        data: row,
-                                    })
-                                }
-                            >
-                                💰
-                            </Button>
-                        )}
+                        {row.status_payment === 'pending' &&
+                            !meta.isDeletedRoute && (
+                                <Button
+                                    size="icon"
+                                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                    onClick={() =>
+                                        setPayModal({
+                                            open: true,
+                                            data: row,
+                                        })
+                                    }
+                                >
+                                    💰
+                                </Button>
+                            )}
 
                         {/* DELETE / RESTORE */}
                         <Button
                             size="icon"
                             className={
                                 meta.isDeletedRoute
-                                    ? 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                                    : 'bg-red-600 hover:bg-red-700 text-white'
+                                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    : 'bg-red-600 text-white hover:bg-red-700'
                             }
                             onClick={() =>
-                                meta.onDeleteOrRestore(row.id, !meta.isDeletedRoute)
+                                meta.onDeleteOrRestore(
+                                    row.id,
+                                    !meta.isDeletedRoute,
+                                )
                             }
                         >
                             {meta.isDeletedRoute ? (
@@ -253,43 +280,72 @@ export default function Index({
 
             <Card>
                 <CardHeader>
-                    <Form method="GET" className="flex flex-wrap items-end gap-3">
-
-                        <div className="flex flex-col flex-1 min-w-[250px]">
-                            <label className="text-xs text-gray-500 mb-1">
+                    <Form
+                        method="GET"
+                        className="flex flex-wrap items-end gap-3"
+                    >
+                        <div className="flex min-w-[250px] flex-1 flex-col">
+                            <label className="mb-1 text-xs text-gray-500">
                                 Cari Produk / Supplier
                             </label>
                             <Input name="search" defaultValue={search} />
                         </div>
 
                         <div className="flex flex-col">
-                            <label className="text-xs text-gray-500 mb-1">Bulan</label>
-                            <select
-                                value={month}
-                                onChange={(e) => setMonth(Number(e.target.value))}
-                                className="border rounded px-3 py-2 w-[160px]"
-                            >
-                                {namaBulan.map((b, i) => (
-                                    <option key={i} value={i + 1}>
-                                        {b}
-                                    </option>
-                                ))}
-                            </select>
+                            <Field className="min-w-[180px]">
+                                <FieldLabel>Bulan</FieldLabel>
+
+                                <Combobox
+                                    items={bulanOptions}
+                                    value={
+                                        bulanOptions.find(
+                                            (b) => Number(b.value) === month,
+                                        ) ?? null
+                                    }
+                                    onValueChange={(val) => {
+                                        if (val) setMonth(Number(val.value));
+                                    }}
+                                >
+                                    <ComboboxInput placeholder="Pilih bulan" />
+
+                                    <ComboboxContent>
+                                        <ComboboxEmpty>
+                                            Tidak ditemukan
+                                        </ComboboxEmpty>
+                                        <ComboboxList>
+                                            {(item) => (
+                                                <ComboboxItem
+                                                    key={item.value}
+                                                    value={item}
+                                                >
+                                                    {item.label}
+                                                </ComboboxItem>
+                                            )}
+                                        </ComboboxList>
+                                    </ComboboxContent>
+                                </Combobox>
+                            </Field>
                         </div>
 
                         <div className="flex flex-col">
-                            <label className="text-xs text-gray-500 mb-1">Tahun</label>
-                            <Input
-                                type="number"
-                                value={year}
-                                onChange={(e) => setYear(Number(e.target.value))}
-                                className="w-[110px]"
-                            />
+                            <Field>
+                                <FieldLabel>Tahun</FieldLabel>
+
+                                <Input
+                                    type="number"
+                                    value={year}
+                                    onChange={(e) =>
+                                        setYear(Number(e.target.value))
+                                    }
+                                    min={2000}
+                                    max={2100}
+                                />
+                            </Field>
                         </div>
 
                         {/* BUTTON FILTER */}
                         <div className="flex gap-2">
-                            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                            <Button className="bg-blue-600 text-white hover:bg-blue-700">
                                 <Search size={16} />
                                 Filter
                             </Button>
@@ -297,7 +353,7 @@ export default function Index({
                             <Button
                                 type="button"
                                 onClick={handleReset}
-                                className="bg-red-600 hover:bg-red-700 text-white"
+                                className="bg-red-600 text-white hover:bg-red-700"
                             >
                                 <FilterX size={16} />
                                 Reset Filter
@@ -308,10 +364,10 @@ export default function Index({
 
                 <CardContent>
                     {/* PRINT BUTTON */}
-                    <div className="flex gap-2 mb-4">
+                    <div className="mb-4 flex gap-2">
                         <Button
                             onClick={() => handlePrint('month')}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                            className="bg-emerald-600 text-white hover:bg-emerald-700"
                         >
                             <Printer size={16} />
                             Cetak Laporan Bulanan
@@ -319,7 +375,7 @@ export default function Index({
 
                         <Button
                             onClick={() => handlePrint('year')}
-                            className="bg-purple-600 hover:bg-purple-700 text-white"
+                            className="bg-purple-600 text-white hover:bg-purple-700"
                         >
                             <Printer size={16} />
                             Cetak Laporan Tahunan

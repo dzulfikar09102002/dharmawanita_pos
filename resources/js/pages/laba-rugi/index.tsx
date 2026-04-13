@@ -2,8 +2,18 @@ import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Filter, Printer } from 'lucide-react';
+import { Filter, Printer, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Field, FieldLabel } from '@/components/ui/field';
+import {
+    Combobox,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxList,
+} from '@/components/ui/combobox';
+import { Input } from '@/components/ui/input';
 
 type LabaRugiData = {
     bulan: number | null;
@@ -19,12 +29,20 @@ type Props = {
 };
 
 const namaBulan = [
-    'Januari', 'Februari', 'Maret', 'April',
-    'Mei', 'Juni', 'Juli', 'Agustus',
-    'September', 'Oktober', 'November', 'Desember'
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
 ];
 
-// ✅ GLOBAL FORMAT RUPIAH
 const formatRupiah = (value: number | string | null | undefined) =>
     new Intl.NumberFormat('id-ID', {
         style: 'currency',
@@ -47,7 +65,10 @@ export default function LabaRugi({ data }: Props) {
     const handleFilter = () => {
         router.get(`/laba-rugi/${bulan}/${tahun}`);
     };
-
+    const bulanOptions = namaBulan.map((nama, i) => ({
+        value: String(i + 1),
+        label: nama,
+    }));
     const handlePrint = (type: 'month' | 'year') => {
         const params = new URLSearchParams({
             type,
@@ -68,49 +89,73 @@ export default function LabaRugi({ data }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Laba Rugi" />
 
-            <div className="p-4 flex flex-col gap-4">
-
-                {/* FILTER */}
+            <div className="flex flex-col gap-4 p-4">
                 <Card>
                     <CardContent className="flex flex-wrap items-end gap-4">
-
                         <div className="flex flex-col">
-                            <label className="text-xs text-gray-500 mb-1">Bulan</label>
-                            <select
-                                value={bulan}
-                                onChange={(e) => setBulan(Number(e.target.value))}
-                                className="border rounded px-3 py-2 min-w-[150px]"
-                            >
-                                {namaBulan.map((nama, i) => (
-                                    <option key={i} value={i + 1}>
-                                        {nama}
-                                    </option>
-                                ))}
-                            </select>
+                            <Field className="min-w-[180px]">
+                                <FieldLabel>Bulan</FieldLabel>
+
+                                <Combobox
+                                    items={bulanOptions}
+                                    value={
+                                        bulanOptions.find(
+                                            (b) => Number(b.value) === bulan,
+                                        ) ?? null
+                                    }
+                                    onValueChange={(val) => {
+                                        if (val) setBulan(Number(val.value));
+                                    }}
+                                >
+                                    <ComboboxInput placeholder="Pilih bulan" />
+
+                                    <ComboboxContent>
+                                        <ComboboxEmpty>
+                                            Tidak ditemukan
+                                        </ComboboxEmpty>
+                                        <ComboboxList>
+                                            {(item) => (
+                                                <ComboboxItem
+                                                    key={item.value}
+                                                    value={item}
+                                                >
+                                                    {item.label}
+                                                </ComboboxItem>
+                                            )}
+                                        </ComboboxList>
+                                    </ComboboxContent>
+                                </Combobox>
+                            </Field>
                         </div>
 
                         <div className="flex flex-col">
-                            <label className="text-xs text-gray-500 mb-1">Tahun</label>
-                            <input
-                                type="number"
-                                value={tahun}
-                                onChange={(e) => setTahun(Number(e.target.value))}
-                                className="border rounded px-3 py-2 w-[120px]"
-                            />
+                            <Field className="w-[120px]">
+                                <FieldLabel>Tahun</FieldLabel>
+
+                                <Input
+                                    type="number"
+                                    value={tahun}
+                                    onChange={(e) =>
+                                        setTahun(Number(e.target.value))
+                                    }
+                                    min={2000}
+                                    max={2100}
+                                />
+                            </Field>
                         </div>
 
-                       <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-2">
                             <Button
                                 onClick={handleFilter}
-                                className="bg-blue-600 hover:bg-blue-700 text-white"
+                                className="bg-blue-600 text-white hover:bg-blue-700"
                             >
-                                <Filter size={16} />
+                                <Search size={16} />
                                 Filter
                             </Button>
 
                             <Button
                                 onClick={() => handlePrint('month')}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                                className="bg-emerald-600 text-white hover:bg-emerald-700"
                             >
                                 <Printer size={16} />
                                 Cetak Laporan Bulanan
@@ -118,13 +163,12 @@ export default function LabaRugi({ data }: Props) {
 
                             <Button
                                 onClick={() => handlePrint('year')}
-                                className="bg-purple-600 hover:bg-purple-700 text-white"
+                                className="bg-purple-600 text-white hover:bg-purple-700"
                             >
                                 <Printer size={16} />
-                                 Cetak Laporan Tahunan
+                                Cetak Laporan Tahunan
                             </Button>
                         </div>
-
                     </CardContent>
                 </Card>
 
@@ -140,22 +184,29 @@ export default function LabaRugi({ data }: Props) {
                     </CardHeader>
 
                     <CardContent className="space-y-4 text-sm">
-
                         {/* PENDAPATAN */}
                         <div>
-                            <h3 className="font-semibold border-b pb-1">Pendapatan</h3>
+                            <h3 className="border-b pb-1 font-semibold">
+                                Pendapatan
+                            </h3>
 
-                            <div className="flex justify-between mt-2">
+                            <div className="mt-2 flex justify-between">
                                 <span className="pl-4">Pendapatan Tunai</span>
-                                <span>{formatRupiah(data.total_pendapatan)}</span>
+                                <span>
+                                    {formatRupiah(data.total_pendapatan)}
+                                </span>
                             </div>
 
                             <div className="flex justify-between">
                                 <span className="pl-4">Pendapatan Piutang</span>
-                                <span>{formatRupiah(data.total_pendapatan_piutang)}</span>
+                                <span>
+                                    {formatRupiah(
+                                        data.total_pendapatan_piutang,
+                                    )}
+                                </span>
                             </div>
 
-                            <div className="flex justify-between font-semibold border-t mt-2 pt-2">
+                            <div className="mt-2 flex justify-between border-t pt-2 font-semibold">
                                 <span>Total Pendapatan</span>
                                 <span>{formatRupiah(totalPendapatan)}</span>
                             </div>
@@ -163,16 +214,22 @@ export default function LabaRugi({ data }: Props) {
 
                         {/* PEMBELIAN */}
                         <div>
-                            <h3 className="font-semibold border-b pb-1">Pembelian</h3>
+                            <h3 className="border-b pb-1 font-semibold">
+                                Pembelian
+                            </h3>
 
-                            <div className="flex justify-between mt-2">
+                            <div className="mt-2 flex justify-between">
                                 <span className="pl-4">Pembelian</span>
-                                <span>{formatRupiah(data.total_pembelian)}</span>
+                                <span>
+                                    {formatRupiah(data.total_pembelian)}
+                                </span>
                             </div>
 
-                            <div className="flex justify-between font-semibold border-t mt-2 pt-2">
+                            <div className="mt-2 flex justify-between border-t pt-2 font-semibold">
                                 <span>Total Pembelian</span>
-                                <span>{formatRupiah(data.total_pembelian)}</span>
+                                <span>
+                                    {formatRupiah(data.total_pembelian)}
+                                </span>
                             </div>
                         </div>
 
@@ -193,7 +250,6 @@ export default function LabaRugi({ data }: Props) {
                                 </span>
                             </div>
                         </div>
-
                     </CardContent>
                 </Card>
             </div>
