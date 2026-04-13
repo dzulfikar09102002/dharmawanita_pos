@@ -1,8 +1,19 @@
 <!DOCTYPE html>
 <html>
+    @php
+    $namaBulan = [
+        1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
+        4 => 'April',   5 => 'Mei',      6 => 'Juni',
+        7 => 'Juli',    8 => 'Agustus',  9 => 'September',
+        10 => 'Oktober',11 => 'November',12 => 'Desember'
+    ];
+    $now = \Carbon\Carbon::now();
+@endphp
 <head>
     <meta charset="utf-8">
-    <title>Laporan Penjualan</title>
+    <title>
+        Laporan Penjualan - @if ($type === 'month') {{ $namaBulan[$bulan] }} {{ $tahun }} @else {{ $tahun }} @endif
+    </title>
     <style>
         * {
             margin: 0;
@@ -111,15 +122,7 @@
 </head>
 <body>
 
-@php
-    $namaBulan = [
-        1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
-        4 => 'April',   5 => 'Mei',      6 => 'Juni',
-        7 => 'Juli',    8 => 'Agustus',  9 => 'September',
-        10 => 'Oktober',11 => 'November',12 => 'Desember'
-    ];
-    $now = \Carbon\Carbon::now();
-@endphp
+
 
 <div class="header">
     <h1>LAPORAN PENJUALAN</h1>
@@ -127,10 +130,10 @@
         @if ($type === 'month')
             Periode: {{ $namaBulan[$bulan] }} {{ $tahun }}
         @else
-            Periode: Tahun {{ $tahun }}
+            Periode: {{ $tahun }}
         @endif
     </p>
-    <p>Dicetak pada: {{ $now->format('d') }} {{ $namaBulan[$now->month] }} {{ $now->format('Y') }}, pukul {{ $now->format('H:i') }}</p>
+    <p>Dicetak pada: {{ $now->format('d') }} {{ $namaBulan[$now->month] }} {{ $now->format('Y') }}</p>
 </div>
 
 <table>
@@ -139,7 +142,7 @@
             <th style="width:5%">No</th>
             <th style="width:30%">Invoice</th>
             <th style="width:12%" class="text-center">Status</th>
-            <th style="width:20%">Tanggal</th>
+            <th style="width:20%">Tanggal Transaksi</th>
             <th style="width:33%" class="text-right">Total</th>
         </tr>
     </thead>

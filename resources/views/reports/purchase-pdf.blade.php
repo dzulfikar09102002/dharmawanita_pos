@@ -1,8 +1,19 @@
 <!DOCTYPE html>
 <html>
+    @php
+    $namaBulan = [
+        1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
+        4 => 'April',   5 => 'Mei',      6 => 'Juni',
+        7 => 'Juli',    8 => 'Agustus',  9 => 'September',
+        10 => 'Oktober',11 => 'November',12 => 'Desember'
+    ];
+    $now = \Carbon\Carbon::now();
+@endphp
 <head>
     <meta charset="utf-8">
-    <title>Laporan Pembelian</title>
+      <title>
+        Laporan Pembelian - @if ($type === 'month') {{ $namaBulan[$bulan] }} {{ $tahun }} @else {{ $tahun }} @endif
+    </title>
     <style>
         * {
             margin: 0;
@@ -116,16 +127,6 @@
     </style>
 </head>
 <body>
-
-@php
-    $namaBulan = [
-        1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
-        4 => 'April',   5 => 'Mei',      6 => 'Juni',
-        7 => 'Juli',    8 => 'Agustus',  9 => 'September',
-        10 => 'Oktober',11 => 'November',12 => 'Desember'
-    ];
-    $now = \Carbon\Carbon::now();
-@endphp
 
 <div class="header">
     <h1>LAPORAN PEMBELIAN</h1>
