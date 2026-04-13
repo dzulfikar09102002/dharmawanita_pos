@@ -72,17 +72,18 @@ export default function Payment({
 
     const isCash = selectedPayment?.kind === 'cash';
 
-    const showPaymentDetail =
-        selectedPayment && (isCash ? cashAmount > 0 : true);
-
     const change = cashAmount - grandTotal;
-
+    const [reason, setReason] = useState('');
+    const showReason = selectedPurchasing
+        ? Number(selectedPurchasing.value) > 3
+        : false;
     useEffect(() => {
         if (!isCash) {
             setCashModalOpen(false);
         }
     }, [selectedPayment]);
-
+    const showPaymentDetail =
+        showReason || (selectedPayment && (isCash ? cashAmount > 0 : true));
     const [processing, setProcessing] = useState(false);
     return (
         <AppLayout>
@@ -149,36 +150,50 @@ export default function Payment({
                                 </span>
                             </div>
 
-                            {showPaymentDetail && (
+                            {(showReason || showPaymentDetail) && (
                                 <>
-                                    <div className="flex justify-between text-sm">
-                                        <span>Pembayaran</span>
-                                        <span className="font-semibold">
-                                            {formatIDR(
-                                                isCash
-                                                    ? cashAmount
-                                                    : grandTotal,
-                                            )}
-                                        </span>
-                                    </div>
-
-                                    {isCash && (
+                                    {showReason ? (
+                                        // 🔴 LANGSUNG MUNCUL TANPA NUNGGU PAYMENT
                                         <div className="flex justify-between text-sm">
-                                            <span>
-                                                {change >= 0
-                                                    ? 'Kembalian'
-                                                    : 'Kurang Bayar'}
-                                            </span>
-                                            <span
-                                                className={`font-semibold ${
-                                                    change >= 0
-                                                        ? 'text-primary'
-                                                        : 'text-red-500'
-                                                }`}
-                                            >
-                                                {formatIDR(Math.abs(change))}
+                                            <span>Kerugian</span>
+                                            <span className="font-semibold text-red-500">
+                                                {formatIDR(grandTotal)}
                                             </span>
                                         </div>
+                                    ) : (
+                                        <>
+                                            <div className="flex justify-between text-sm">
+                                                <span>Pembayaran</span>
+                                                <span className="font-semibold">
+                                                    {formatIDR(
+                                                        isCash
+                                                            ? cashAmount
+                                                            : grandTotal,
+                                                    )}
+                                                </span>
+                                            </div>
+
+                                            {isCash && (
+                                                <div className="flex justify-between text-sm">
+                                                    <span>
+                                                        {change >= 0
+                                                            ? 'Kembalian'
+                                                            : 'Kurang Bayar'}
+                                                    </span>
+                                                    <span
+                                                        className={`font-semibold ${
+                                                            change >= 0
+                                                                ? 'text-primary'
+                                                                : 'text-red-500'
+                                                        }`}
+                                                    >
+                                                        {formatIDR(
+                                                            Math.abs(change),
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </>
                             )}
@@ -291,9 +306,30 @@ export default function Payment({
                                 </p>
                             )}
                         </div>
+                        {showReason && (
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">
+                                    Alasan
+                                </label>
+                                <textarea
+                                    className="w-full rounded-md border p-2 text-sm"
+                                    placeholder="Masukkan alasan..."
+                                    value={reason}
+                                    onChange={(e) => setReason(e.target.value)}
+                                />
+                                {reason === '' && (
+                                    <p className="text-xs text-red-500">
+                                        Alasan wajib diisi
+                                    </p>
+                                )}
+                            </div>
+                        )}
                         <Button
                             className="w-full cursor-pointer"
-                            disabled={processing || !selectedPayment}
+                            disabled={
+                                processing ||
+                                (showReason ? !reason : !selectedPayment)
+                            }
                             onClick={() => {
                                 setProcessing(true);
 
@@ -304,25 +340,48 @@ export default function Payment({
                                             selectedPayment?.id === 0
                                                 ? 1
                                                 : selectedPayment?.id,
-                                        paid_amount: isCash
-                                            ? cashAmount
-                                            : grandTotal,
-                                        change_amount: isCash
-                                            ? change > 0
-                                                ? change
-                                                : 0
-                                            : 0,
+
+                                        paid_amount: showReason
+                                            ? grandTotal
+                                            : isCash
+                                              ? cashAmount
+                                              : grandTotal,
+
+                                        change_amount: showReason
+                                            ? 0
+                                            : isCash
+                                              ? change > 0
+                                                  ? change
+                                                  : 0
+                                              : 0,
+                                        purchase_method_id: selectedPurchasing
+                                            ? Number(selectedPurchasing.value)
+                                            : null,
+
+                                        reason: showReason ? reason : null,
                                     },
                                     {
+                                        onStart: () => {
+                                            toast.loading('Memproses...', {
+                                                id: 'pay',
+                                            });
+                                        },
+
                                         onSuccess: () => {
-                                            toast.success(
-                                                'Pembayaran berhasil',
-                                            );
+                                            toast.success('Berhasil!', {
+                                                id: 'pay',
+                                            });
                                         },
-                                        onError: () => {
-                                            toast.error('Pembayaran gagal');
+
+                                        onError: (err) => {
+                                            console.log(err);
+                                            toast.error('Gagal!', {
+                                                id: 'pay',
+                                            });
                                         },
-                                        onFinish: () => setProcessing(false),
+                                        onFinish: () => {
+                                            setProcessing(false);
+                                        },
                                     },
                                 );
                             }}

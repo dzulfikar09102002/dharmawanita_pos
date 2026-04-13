@@ -33,12 +33,13 @@ import {
 import DataTable from '@/components/data-table';
 import { Pagination, Product, Purchase } from '@/lib/model';
 import { useQuery } from '@/hooks/use-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import purchases from '@/routes/purchases';
 import TablePagination from '@/components/table-pagination';
 import { FieldLabel } from '@/components/ui/field';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
+import axios from 'axios';
 
 const title = 'Barang Masuk';
 
@@ -104,7 +105,19 @@ export default function Index({
     const query = useQuery();
     const search = query.search || '';
     const product_category_id = query.product_category_id || 'all';
+    const generateCode = async (index: number, item: Item) => {
+        try {
+            const res = await axios.post('/purchases/generate-code', {
+                product_id: item.product_id,
+                year: item.year,
+                expired_date: item.expired_date,
+            });
 
+            updateItem(index, 'code', res.data.code);
+        } catch (err) {
+            toast.error('Gagal generate kode');
+        }
+    };
     const [categoryValue, setCategoryValue] = useState(product_category_id);
 
     const safeCategoryOptions = Array.isArray(categoryOptions)
@@ -414,20 +427,56 @@ export default function Index({
                                                 *
                                             </span>
                                         </FieldLabel>
-                                        <Input
-                                            type="text"
-                                            value={item.code}
-                                            className={err(
-                                                `items.${index}.code`,
-                                            )}
-                                            onChange={(e) =>
-                                                updateItem(
-                                                    index,
-                                                    'code',
-                                                    e.target.value,
-                                                )
-                                            }
-                                        />
+                                        <div className="flex gap-2">
+                                            <Input
+                                                type="text"
+                                                value={item.code}
+                                                className={err(
+                                                    `items.${index}.code`,
+                                                )}
+                                                onChange={(e) =>
+                                                    updateItem(
+                                                        index,
+                                                        'code',
+                                                        e.target.value,
+                                                    )
+                                                }
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="secondary"
+                                                onClick={async () => {
+                                                    try {
+                                                        const res =
+                                                            await axios.post(
+                                                                '/purchases/generate-code',
+                                                                {
+                                                                    product_id:
+                                                                        item.product_id,
+                                                                    year: item.year,
+                                                                    expired_date:
+                                                                        item.expired_date,
+                                                                },
+                                                            );
+
+                                                        const code =
+                                                            res.data.code;
+
+                                                        updateItem(
+                                                            index,
+                                                            'code',
+                                                            code,
+                                                        );
+                                                    } catch (err) {
+                                                        toast.error(
+                                                            'Gagal generate kode',
+                                                        );
+                                                    }
+                                                }}
+                                            >
+                                                Generate
+                                            </Button>
+                                        </div>
                                         <FieldLabel>
                                             Jumlah{' '}
                                             <span className="text-red-500">
@@ -502,18 +551,18 @@ export default function Index({
 
                                                 const shortYear =
                                                     String(newYear).slice(-2);
-                                                const newCode = `${shortYear}${String(item.product_id).padStart(4, '0')}`;
-
                                                 const updated = data.items.map(
                                                     (x, i) =>
                                                         i === index
                                                             ? {
                                                                   ...x,
                                                                   year: newYear,
-                                                                  code: newCode,
+                                                                  code: '',
                                                               }
                                                             : x,
                                                 );
+
+                                                setData('items', updated);
 
                                                 setData('items', updated);
                                             }}
@@ -644,13 +693,21 @@ export default function Index({
                                         <FieldLabel>Tanggal Expired</FieldLabel>
                                         <DatePicker
                                             value={item.expired_date}
-                                            onChange={(val) =>
-                                                updateItem(
-                                                    index,
-                                                    'expired_date',
-                                                    val,
-                                                )
-                                            }
+                                            onChange={(val) => {
+                                                const updated = data.items.map(
+                                                    (x, i) =>
+                                                        i === index
+                                                            ? {
+                                                                  ...x,
+                                                                  expired_date:
+                                                                      val,
+                                                                  code: '',
+                                                              }
+                                                            : x,
+                                                );
+
+                                                setData('items', updated);
+                                            }}
                                         />
                                         <FieldLabel>
                                             Supplier{' '}

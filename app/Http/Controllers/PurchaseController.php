@@ -30,26 +30,15 @@ class PurchaseController extends Controller
         $this->service->store($request->validated());
         return to_route('purchases.index')->with('success', 'Metode pembayaran berhasil diperbarui');
     }
-    public function update(UpdatePurchaseRequest $request, Purchase $purchase)
+    public function generateCode(Request $request)
     {
-        $this->service->update($purchase, $request->validated());
-        return to_route('purchases.index')->with('success', 'Metode pembayaran berhasil diperbarui');
+        $code = $this->service->generateCode(
+            productId: $request->product_id,
+            year: $request->year,
+            expiredDate: $request->expired_date
+        );
+        return response()->json([
+            'code' => $code
+        ]);
     }
-    public function destroy(Purchase $purchase)
-    {
-        $this->service->delete($purchase);
-        return to_route('purchases.index')->with('success', 'Metode pembayaran berhasil dihapus');
-    }
-
-    public function restore(int $id)
-    {
-        $this->service->restore($id);
-        return to_route('purchases.index')->with('success', 'Metode pembayaran berhasil dipulihkan');
-    }
-
-    // public function deleted(){
-    //     $onlyTrashed = true;
-    //     $pagination = $this->service->getDeletedMethod();
-    //     return Inertia::render('purchases/index', compact('pagination', 'onlyTrashed'));
-    // }
 }

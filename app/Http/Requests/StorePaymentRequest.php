@@ -15,21 +15,23 @@ class StorePaymentRequest extends FormRequest
     {
         return [
             'payment_method_id' => [
-                'required',
                 'exists:payment_methods,id',
             ],
-
             'paid_amount' => [
-                'required',
                 'numeric',
                 'min:0',
             ],
-
+            'purchase_method_id' => [
+                'numeric',
+                'min:0',
+            ],
             'change_amount' => [
-                'required',
                 'numeric',
                 'min:0',
             ],
+            'reason' => [
+                'nullable'
+            ]
         ];
     }
 

@@ -2,7 +2,14 @@ import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Area, AreaChart, CartesianGrid } from 'recharts';
 
+import {
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+    type ChartConfig,
+} from '@/components/ui/chart';
 import {
     LineChart,
     Line,
@@ -45,6 +52,14 @@ type Props = {
 };
 
 const years = [2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030];
+
+const formatRupiah = (value: any) =>
+    new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(Number(value) || 0);
 
 const monthLabels: Record<number, string> = {
     1: 'Januari',
@@ -97,6 +112,25 @@ export default function Dashboard({
     month = new Date().getMonth() + 1,
     year = new Date().getFullYear(),
 }: Props) {
+    const chartData = Array.from({ length: 31 }, (_, i) => {
+        const day = i + 1;
+
+        const total = dailySales
+            .filter((d) => new Date(d.date).getDate() === day)
+            .reduce((sum, d) => sum + Number(d.total), 0);
+
+        return {
+            day,
+            total,
+        };
+    });
+
+    const chartConfig = {
+        total: {
+            label: 'Penjualan',
+            color: 'var(--chart-1)',
+        },
+    } satisfies ChartConfig;
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
@@ -160,16 +194,12 @@ export default function Dashboard({
                 <div className="grid gap-4 md:grid-cols-5">
                     <Card>
                         <CardHeader>Penerimaan</CardHeader>
-                        <CardContent>
-                            Rp {income.toLocaleString('id-ID')}
-                        </CardContent>
+                        <CardContent>{formatRupiah(income)}</CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>Pengeluaran</CardHeader>
-                        <CardContent>
-                            Rp {expense.toLocaleString('id-ID')}
-                        </CardContent>
+                        <CardContent>{formatRupiah(expense)}</CardContent>
                     </Card>
 
                     <Card>
@@ -179,45 +209,81 @@ export default function Dashboard({
                                 profit >= 0 ? 'text-green-500' : 'text-red-500'
                             }
                         >
-                            Rp {profit.toLocaleString('id-ID')}
+                            {formatRupiah(profit)}
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>Piutang</CardHeader>
-                        <CardContent>
-                            Rp {receivable.toLocaleString('id-ID')}
-                        </CardContent>
+                        <CardContent>{formatRupiah(receivable)}</CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>Utang</CardHeader>
-                        <CardContent className="text-red-500 font-bold">
-                            Rp {debt?.toLocaleString('id-ID') ?? 0}
+                        <CardContent
+                            className={
+                                debt > 0
+                                    ? 'font-bold text-red-500'
+                                    : 'text-black-500'
+                            }
+                        >
+                            {formatRupiah(debt)}
                         </CardContent>
-                    </Card>                                                                         
+                    </Card>
                 </div>
 
                 <Card>
-                    <CardHeader>Penjualan Harian</CardHeader>
-                    <CardContent style={{ height: 300 }}>
+                    <CardHeader>
+                        <div>
+                            <div className="font-semibold">
+                                Penjualan Harian
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                                Tanggal 1 - 31
+                            </div>
+                        </div>
+                    </CardHeader>
+
+                    <CardContent className="h-[300px] w-full">
                         {dailySales.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
                                 Tidak ada data
                             </p>
                         ) : (
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={dailySales}>
-                                    <XAxis dataKey="date" />
-                                    <YAxis />
-                                    <Tooltip />
-                                    <Line
-                                        type="monotone"
-                                        dataKey="total"
-                                        strokeWidth={2}
+                            <ChartContainer
+                                config={chartConfig}
+                                className="h-full w-full"
+                            >
+                                <AreaChart
+                                    data={chartData}
+                                    margin={{ left: 12, right: 12 }}
+                                    className="h-full w-full"
+                                >
+                                    <CartesianGrid vertical={false} />
+
+                                    <XAxis
+                                        dataKey="day"
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickMargin={8}
                                     />
-                                </LineChart>
-                            </ResponsiveContainer>
+
+                                    <ChartTooltip
+                                        cursor={false}
+                                        content={
+                                            <ChartTooltipContent indicator="line" />
+                                        }
+                                    />
+
+                                    <Area
+                                        dataKey="total"
+                                        type="natural"
+                                        fill="var(--color-total)"
+                                        fillOpacity={0.4}
+                                        stroke="var(--color-total)"
+                                    />
+                                </AreaChart>
+                            </ChartContainer>
                         )}
                     </CardContent>
                 </Card>
@@ -244,6 +310,11 @@ export default function Dashboard({
                                                           p.expired_date,
                                                       ).toLocaleDateString(
                                                           'id-ID',
+                                                          {
+                                                              day: '2-digit',
+                                                              month: 'long',
+                                                              year: 'numeric',
+                                                          },
                                                       )
                                                     : '-'}
                                             </span>

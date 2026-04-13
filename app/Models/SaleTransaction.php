@@ -13,6 +13,7 @@ class SaleTransaction extends Model
     protected $fillable = [
         'invoice_number',
         'payment_method_id',
+        'purchasing_method_id',
         'payment_status',
         'total_amount',
         'grand_total',
