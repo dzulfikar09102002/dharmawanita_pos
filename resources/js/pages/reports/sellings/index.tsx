@@ -411,7 +411,7 @@ export default function Index({
                         <TabsList>
                             <TabsTrigger value="active" asChild>
                                 <Link href={salesReport.index().url}>
-                                    Aktif
+                                    Tersedia
                                 </Link>
                             </TabsTrigger>
 
