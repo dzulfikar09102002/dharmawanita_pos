@@ -66,6 +66,8 @@ export default function Index({ pagination, transaction }: Props) {
         },
     ];
 
+
+    
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [processing, setProcessing] = useState(false);
 
@@ -123,6 +125,11 @@ export default function Index({ pagination, transaction }: Props) {
         return acc + item.quantity * item.selling_price;
     }, 0);
 
+    const kurangBayar = Math.max(
+    grandTotal - Number(transaction.total_amount || 0),
+    0
+);
+
     const tableData = [
         ...(data ?? []),
         {
@@ -168,20 +175,6 @@ export default function Index({ pagination, transaction }: Props) {
             },
         }),
 
-        columnHelper.accessor('purchase_price', {
-            header: () => <div className="text-right">Harga Beli</div>,
-            cell: (info) => {
-                const row = info.row.original as any;
-                if (row.isTotal) return null;
-
-                return (
-                    <span className="block text-right">
-                        {formatRupiah(info.getValue())}
-                    </span>
-                );
-            },
-        }),
-
         columnHelper.accessor('selling_price', {
             header: () => <div className="text-right">Harga Jual</div>,
             cell: (info) => {
@@ -219,6 +212,26 @@ export default function Index({ pagination, transaction }: Props) {
                 );
             },
         },
+
+        {
+            id: 'kurang_bayar',
+            header: () => <div className="text-right">Kurang Bayar</div>,
+            cell: (info) => {
+                const row = info.row.original as any;
+
+                if (row.isTotal) {
+                    return (
+                        <span className="block text-right font-bold text-red-600">
+                            ({formatRupiah(kurangBayar)})
+                        </span>
+                    );
+                }
+
+                return null;
+            },
+        },
+
+        
     ];
 
     const table = useReactTable<SaleTransactionDetail>({
@@ -319,6 +332,7 @@ export default function Index({ pagination, transaction }: Props) {
                             Batalkan Transaksi
                         </Button>
                     </div>
+                    
                 </CardContent>
             </Card>
         </AppLayout>
