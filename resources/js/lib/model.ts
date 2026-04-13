@@ -62,6 +62,7 @@ export interface Purchase {
     supplier?: Supplier;
     quantity: number;
     total_quantity: number;
+    total_payment: number;
     purchase_price: number;
     purchase_date: string; // ISO date string
     status_payment: PaymentStatus;
