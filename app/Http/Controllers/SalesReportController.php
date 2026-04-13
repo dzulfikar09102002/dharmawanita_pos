@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\models\SaleTransaction;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class SalesReportController extends Controller
 {
@@ -21,9 +22,9 @@ class SalesReportController extends Controller
         $result = $this->service->getSalesReport($bulan, $tahun);
 
         return Inertia::render('reports/sellings/index', [
-            'pagination' => $result['data'],   // 🔥 ambil pagination
-            'bulan' => $result['bulan'],       // 🔥 ambil bulan hasil logic
-            'tahun' => $result['tahun'],       // 🔥 ambil tahun hasil logic
+            'pagination' => $result['data'],
+            'bulan' => $result['bulan'],  
+            'tahun' => $result['tahun'], 
         ]);
     }
 
@@ -63,5 +64,58 @@ class SalesReportController extends Controller
         $onlyTrashed = true;
         $pagination = $this->service->getDeletedMethod();
         return Inertia::render('reports/sellings/index', compact('pagination', 'onlyTrashed'));
+    }
+
+    public function printSalesReport(Request $request)
+    {
+        $type = $request->type;   
+        $bulan = $request->bulan;
+        $tahun = $request->tahun;
+
+        if (!$tahun) {
+            abort(400, 'Tahun wajib diisi');
+        }
+
+        $query = SaleTransaction::query();
+
+        if ($type === 'month') {
+            if (!$bulan) {
+                abort(400, 'Bulan wajib diisi untuk laporan bulanan');
+            }
+
+            $query->whereMonth('transaction_date', $bulan)
+                  ->whereYear('transaction_date', $tahun);
+        }
+
+        if ($type === 'year') {
+            $query->whereYear('transaction_date', $tahun);
+        }
+
+        $transactions = $query->latest()->get();
+
+        $total = $transactions->sum('grand_total');
+
+        $pdf = Pdf::loadView('reports.sales-pdf', [
+            'transactions' => $transactions,
+            'total' => $total,
+            'type' => $type,
+            'bulan' => $bulan,
+            'tahun' => $tahun,
+        ])->setPaper('a4', 'portrait');
+
+        return $pdf->stream('laporan-penjualan.pdf');
+    }
+
+    public function payment(int $id)
+    {
+        $transaction = $this->service->getSaleTransaction($id);
+        $details = $this->service->getTransactionDetails($id);
+        $paymentMethods = $this->service->getPaymentMethods();
+
+        return Inertia::render('sellings/payment', compact(
+            'transaction',
+            'details',
+            'paymentMethods'
+        ));
     }
 }
