@@ -23,7 +23,7 @@ class LabaRugiService
 
         $totalPembelian = Purchase::whereMonth('purchase_date', $bulan)
             ->whereYear('purchase_date', $tahun)
-            ->sum('purchase_price');
+            ->sum('total_payment');
 
         $laba = $totalPendapatan + $totalPendapatanPiutang - $totalPembelian;
 

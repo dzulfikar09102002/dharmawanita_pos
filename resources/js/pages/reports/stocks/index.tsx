@@ -21,7 +21,7 @@ import { Pagination, Stock } from '@/lib/model';
 import { useQuery } from '@/hooks/use-query';
 import reportsStocks from '@/routes/reportsStocks';
 
-const title = 'Laporan Penjualan';
+const title = 'Laporan Stok';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {

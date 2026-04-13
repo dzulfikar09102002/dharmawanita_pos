@@ -53,6 +53,14 @@ type Props = {
 
 const years = [2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030];
 
+const formatRupiah = (value: any) =>
+    new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(Number(value) || 0);
+
 const monthLabels: Record<number, string> = {
     1: 'Januari',
     2: 'Februari',
@@ -186,16 +194,12 @@ export default function Dashboard({
                 <div className="grid gap-4 md:grid-cols-5">
                     <Card>
                         <CardHeader>Penerimaan</CardHeader>
-                        <CardContent>
-                            Rp {income.toLocaleString('id-ID')}
-                        </CardContent>
+                        <CardContent>{formatRupiah(income)}</CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>Pengeluaran</CardHeader>
-                        <CardContent>
-                            Rp {expense.toLocaleString('id-ID')}
-                        </CardContent>
+                        <CardContent>{formatRupiah(expense)}</CardContent>
                     </Card>
 
                     <Card>
@@ -205,21 +209,25 @@ export default function Dashboard({
                                 profit >= 0 ? 'text-green-500' : 'text-red-500'
                             }
                         >
-                            Rp {profit.toLocaleString('id-ID')}
+                            {formatRupiah(profit)}
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>Piutang</CardHeader>
-                        <CardContent>
-                            Rp {receivable.toLocaleString('id-ID')}
-                        </CardContent>
+                        <CardContent>{formatRupiah(receivable)}</CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>Utang</CardHeader>
-                        <CardContent className="font-bold text-red-500">
-                            Rp {debt?.toLocaleString('id-ID') ?? 0}
+                        <CardContent
+                            className={
+                                debt > 0
+                                    ? 'font-bold text-red-500'
+                                    : 'text-black-500'
+                            }
+                        >
+                            {formatRupiah(debt)}
                         </CardContent>
                     </Card>
                 </div>
@@ -236,7 +244,7 @@ export default function Dashboard({
                         </div>
                     </CardHeader>
 
-                    <CardContent className="h-[300px]">
+                    <CardContent className="h-[300px] w-full">
                         {dailySales.length === 0 ? (
                             <p className="text-sm text-muted-foreground">
                                 Tidak ada data
@@ -249,6 +257,7 @@ export default function Dashboard({
                                 <AreaChart
                                     data={chartData}
                                     margin={{ left: 12, right: 12 }}
+                                    className="h-full w-full"
                                 >
                                     <CartesianGrid vertical={false} />
 
@@ -301,6 +310,11 @@ export default function Dashboard({
                                                           p.expired_date,
                                                       ).toLocaleDateString(
                                                           'id-ID',
+                                                          {
+                                                              day: '2-digit',
+                                                              month: 'long',
+                                                              year: 'numeric',
+                                                          },
                                                       )
                                                     : '-'}
                                             </span>
