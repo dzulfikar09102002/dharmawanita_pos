@@ -71,10 +71,19 @@ class PurchaseService
     return DB::transaction(function () use ($input) {
 
         $items = $input['items'] ?? [];
-
         $createdPurchases = [];
         $user = auth()->id();
         foreach ($items as $item) {
+            if($item['source'] == 'purchase')
+            {
+                $total_payment = $item['purchase_price'];
+                $status_payment = 'paid';
+            }
+            else
+            {
+                $status_payment = 'pending';
+                $total_payment = 0;
+            }
             $purchase = Purchase::create([
                 'product_id'      => $item['product_id'],
                 'supplier_id'     => $item['supplier_id'] ?? null,
@@ -84,6 +93,8 @@ class PurchaseService
                 'purchase_price'  => $item['purchase_price'],
                 'selling_price'   => $item['selling_price'],
                 'purchase_date'   => $item['purchase_date'],
+                'total_payment'   => $total_payment,
+                'status_payment'  => $status_payment,
                 'expired_date'    => $item['expired_date'] ?? null,
                 'created_by'      => $user,
                 'updated_by'      => $user,
@@ -108,7 +119,6 @@ class PurchaseService
                 'created_by'      => $user,
                 'updated_by'      => $user,
             ]);
-
             $createdPurchases[] = $purchase;
         }
 

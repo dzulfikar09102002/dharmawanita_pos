@@ -19,6 +19,8 @@ class Purchase extends Model
         'purchase_price',
         'selling_price',
         'purchase_date',
+        'total_payment',
+        'status_payment',
         'expired_date',
         'created_by',
         'updated_by',

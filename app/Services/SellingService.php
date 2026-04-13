@@ -3,6 +3,7 @@
 namespace App\Services;
 use App\Models\PaymentMethod;
 use App\Models\Purchase;
+use App\Models\PurchasingMethod;
 use App\Models\SaleTransactionDetail;
 use App\Models\InventoryTransaction;
 use App\Models\Category;
@@ -40,7 +41,7 @@ class SellingService
 
         return $query
             ->orderByDesc('updated_at')
-            ->paginate(request('per_page', 25))
+            ->paginate(request('per_page', 20))
             ->withQueryString();
     }
     public function getCategoryOptions()
@@ -152,6 +153,10 @@ class SellingService
     {
         return PaymentMethod::whereRaw('LOWER(kind) != ?', ['cash'])->get();
     }
+    public function getPurchasingMethod()
+    {
+        return PurchasingMethod::all();
+    }
 
     
 public function pay(SaleTransaction $sale, array $input): SaleTransaction
@@ -162,12 +167,13 @@ public function pay(SaleTransaction $sale, array $input): SaleTransaction
             ->where('payment_status', 'pending')
             ->lockForUpdate()
             ->firstOrFail();
+        $isPaid = $input['paid_amount'] >= $sale->grand_total;
 
         $sale->update([
             'payment_method_id' => $input['payment_method_id'],
             'total_amount'      => $input['paid_amount'],
             'change'            => $input['change_amount'],
-            'payment_status'    => 'paid',
+            'payment_status'    => $isPaid ? 'paid' : $sale->payment_status,
             'updated_by'        => auth()->id(),
         ]);
 

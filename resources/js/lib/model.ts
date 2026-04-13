@@ -118,4 +118,3 @@ export interface LabaRugi {
     total_pembelian: number;
     laba_rugi: number;
 }
-
