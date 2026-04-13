@@ -3,7 +3,7 @@ import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import salesReport from '@/routes/reports/sales';
-import { Eye, Search, X, ArchiveRestore, FilterX, Printer  } from 'lucide-react';
+import { Eye, Search, X, ArchiveRestore, FilterX, Printer } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,15 @@ const namaBulan = [
     'September', 'Oktober', 'November', 'Desember'
 ];
 
+// ✅ FORMAT RUPIAH (FIX UTAMA)
+const formatRupiah = (value: number | string | null | undefined) =>
+    new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(Number(value || 0));
+
 const columnHelper = createColumnHelper<SaleTransaction>();
 
 type TableMeta = {
@@ -68,7 +77,7 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
         processing: false,
     };
 
-        const handleReset = () => {
+    const handleReset = () => {
         const currentMonth = new Date().getMonth() + 1;
         const currentYear = new Date().getFullYear();
 
@@ -92,14 +101,14 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
 
     const [alert, setAlert] = useState<AlertState>(initialAlertState);
 
-   const handlePrint = (type: 'month' | 'year') => {
-    let url = `/reports/print-sales-report?type=${type}&tahun=${tahun}`;
+    const handlePrint = (type: 'month' | 'year') => {
+        let url = `/reports/print-sales-report?type=${type}&tahun=${tahun}`;
 
-    if (type === 'month') {
-        url += `&bulan=${bulan}`;
-    }
+        if (type === 'month') {
+            url += `&bulan=${bulan}`;
+        }
 
-    window.open(url, '_blank');
+        window.open(url, '_blank');
     };
 
     const onAlertClose = () => setAlert(initialAlertState);
@@ -165,50 +174,40 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
                 if (!status) return '-';
 
                 return (
-                    <span
-                        className={`rounded px-2 py-1 text-xs ${map[status]}`}
-                    >
+                    <span className={`rounded px-2 py-1 text-xs ${map[status]}`}>
                         {label[status]}
                     </span>
                 );
             },
         }),
 
+        // ✅ FIX RUPIAH
         columnHelper.accessor('grand_total', {
             header: 'Jumlah',
-            cell: (info) =>
-                new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                }).format(info.getValue()),
+            cell: (info) => formatRupiah(info.getValue()),
         }),
 
+        // ✅ FIX RUPIAH
         columnHelper.accessor('total_amount', {
             header: 'Total Pembayaran',
-            cell: (info) =>
-                new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                }).format(info.getValue()),
+            cell: (info) => formatRupiah(info.getValue()),
         }),
 
         columnHelper.accessor('transaction_date', {
             header: 'Tanggal Transaksi',
             cell: (info) =>
-               new Date(info.getValue()).toLocaleDateString('id-ID', {
+                new Date(info.getValue()).toLocaleDateString('id-ID', {
                     day: '2-digit',
                     month: 'long',
                     year: 'numeric',
-                })
+                }),
         }),
 
         {
             id: 'action',
             header: 'Aksi',
             cell: (info) => {
-                const row = info.row.original as SaleTransaction & {
-                    id: number;
-                };
+                const row = info.row.original as SaleTransaction & { id: number };
                 const meta = info.table.options.meta as TableMeta;
 
                 return (
@@ -223,14 +222,9 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
 
                         <Button
                             size="icon"
-                            variant={
-                                meta.isDeletedRoute ? 'outline' : 'destructive'
-                            }
+                            variant={meta.isDeletedRoute ? 'outline' : 'destructive'}
                             onClick={() =>
-                                meta.onDeleteOrRestore(
-                                    row.id,
-                                    !meta.isDeletedRoute,
-                                )
+                                meta.onDeleteOrRestore(row.id, !meta.isDeletedRoute)
                             }
                         >
                             {meta.isDeletedRoute ? (
@@ -271,26 +265,22 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
                     <Form method="GET" className="flex flex-wrap items-end gap-3">
                         <input type="hidden" name="page" value={1} />
 
-                        {/* Search (panjang) */}
                         <div className="flex flex-col flex-1 min-w-[250px]">
                             <label className="text-xs text-gray-500 mb-1">Cari Invoice</label>
                             <Input
                                 name="search"
                                 defaultValue={search}
                                 placeholder="Cari invoice..."
-                                className="w-full focus-visible:ring-2 focus-visible:ring-blue-500"
                             />
                         </div>
 
-                        {/* Bulan */}
                         <div className="flex flex-col">
                             <label className="text-xs text-gray-500 mb-1">Bulan</label>
                             <select
                                 name="bulan"
                                 value={bulan}
                                 onChange={(e) => setBulan(Number(e.target.value))}
-                                className="border border-gray-300 rounded px-3 py-2 w-[160px]
-                                        focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="border rounded px-3 py-2 w-[160px]"
                             >
                                 {namaBulan.map((nama, i) => (
                                     <option key={i} value={i + 1}>
@@ -300,7 +290,6 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
                             </select>
                         </div>
 
-                        {/* Tahun */}
                         <div className="flex flex-col">
                             <label className="text-xs text-gray-500 mb-1">Tahun</label>
                             <input
@@ -308,75 +297,36 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
                                 name="tahun"
                                 value={tahun}
                                 onChange={(e) => setTahun(Number(e.target.value))}
-                                className="border border-gray-300 rounded px-3 py-2 w-[110px]
-                                        focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="border rounded px-3 py-2 w-[110px]"
                             />
                         </div>
 
-                       <div className="flex gap-2">
-                            <Button
-                                type="submit"
-                                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 px-4 py-2"
-                            >
+                        <div className="flex gap-2">
+                            <Button type="submit">
                                 <Search size={16} />
                                 Filter
                             </Button>
 
-                               <Button
-                                    type="button"
-                                    onClick={handleReset}
-                                    className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white"
-                                >
-                                    <FilterX size={16} />
-                                    Reset Filter
-                                </Button>
+                            <Button type="button" onClick={handleReset}>
+                                <FilterX size={16} />
+                                Reset
+                            </Button>
                         </div>
                     </Form>
                 </CardHeader>
 
                 <CardContent>
-                     <div className="flex justify-between items-center mb-4">
-        
-                            {/* Kiri: tombol cetak */}
-                            <div className="flex gap-2">
-                                <Button
-                                    type="button"
-                                    onClick={() => handlePrint('month')}
-                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white"
-                                >
-                                    <Printer size={16} />
-                                    Cetak Laporan Bulanan
-                                </Button>
+                    <div className="flex gap-2 mb-4">
+                        <Button onClick={() => handlePrint('month')}>
+                            <Printer size={16} />
+                            Cetak Laporan Bulanan
+                        </Button>
 
-                                <Button
-                                    type="button"
-                                    onClick={() => handlePrint('year')}
-                                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white"
-                                >
-                                    <Printer size={16} />
-                                    Cetak Laporan Tahunan
-                                </Button>
-                            </div>
-
-                        </div>
-                    <Tabs
-                        value={isDeletedRoute ? 'deleted' : 'active'}
-                        className="mb-4"
-                    >
-                        <TabsList>
-                            <TabsTrigger value="active" asChild>
-                                <Link href={salesReport.index().url}>
-                                    Aktif
-                                </Link>
-                            </TabsTrigger>
-
-                            <TabsTrigger value="deleted" asChild>
-                                <Link href={salesReport.deleted().url}>
-                                    Terhapus
-                                </Link>
-                            </TabsTrigger>
-                        </TabsList>
-                    </Tabs>
+                        <Button onClick={() => handlePrint('year')}>
+                            <Printer size={16} />
+                            Cetak Laporan Tahunan
+                        </Button>
+                    </div>
 
                     <DataTable columns={columns} table={table} />
                     <TablePagination pagination={pagination} />

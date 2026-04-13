@@ -26,7 +26,6 @@ import {
 import DataTable from '@/components/data-table';
 import TablePagination from '@/components/table-pagination';
 import { Pagination, SaleTransactionDetail } from '@/lib/model';
-import { toast } from 'sonner';
 import { Spinner } from '@/components/ui/spinner';
 import { AlertTriangle } from 'lucide-react';
 
@@ -38,6 +37,15 @@ const formatDate = (date: string) =>
         month: 'long',
         year: 'numeric',
     });
+
+// ✅ GLOBAL FORMAT RUPIAH
+const formatRupiah = (value: number | string | null | undefined) =>
+    new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(Number(value || 0));
 
 const columnHelper = createColumnHelper<SaleTransactionDetail>();
 
@@ -62,54 +70,52 @@ export default function Index({ pagination, transaction }: Props) {
     const [processing, setProcessing] = useState(false);
 
     const handleCancel = () => {
-    Swal.fire({
-        title: 'Batalkan Transaksi?',
-        text: 'Tindakan ini tidak dapat dibatalkan!',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Ya, Batalkan!',
-        cancelButtonText: 'Batal',
-        reverseButtons: true,
-    }).then((result) => {
-        if (result.isConfirmed) {
-            Swal.fire({
-                title: 'Memproses...',
-                text: 'Sedang membatalkan transaksi',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                },
-            });
+        Swal.fire({
+            title: 'Batalkan Transaksi?',
+            text: 'Tindakan ini tidak dapat dibatalkan!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: 'Ya, Batalkan!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true,
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Memproses...',
+                    text: 'Sedang membatalkan transaksi',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading(),
+                });
 
-            router.post(
-                salesReport.cancel(transaction.id).url,
-                {},
-                {
-                    onSuccess: () => {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil!',
-                            text: 'Transaksi berhasil dibatalkan',
-                            timer: 2000,
-                            showConfirmButton: false,
-                        });
+                router.post(
+                    salesReport.cancel(transaction.id).url,
+                    {},
+                    {
+                        onSuccess: () => {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: 'Transaksi berhasil dibatalkan',
+                                timer: 2000,
+                                showConfirmButton: false,
+                            });
 
-                        router.visit(salesReport.index().url);
-                    },
-                    onError: () => {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal!',
-                            text: 'Terjadi kesalahan saat membatalkan transaksi',
-                        });
-                    },
-                }
-            );
-        }
-    });
-};
+                            router.visit(salesReport.index().url);
+                        },
+                        onError: () => {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal!',
+                                text: 'Terjadi kesalahan saat membatalkan transaksi',
+                            });
+                        },
+                    }
+                );
+            }
+        });
+    };
 
     const { data } = pagination;
 
@@ -148,9 +154,7 @@ export default function Index({ pagination, transaction }: Props) {
             header: 'Produk',
             cell: (info) => {
                 const row = info.row.original as any;
-                if (row.isTotal) {
-                    return <span className="font-bold">Grand Total</span>;
-                }
+                if (row.isTotal) return <span className="font-bold">Grand Total</span>;
                 return info.getValue()?.name ?? '-';
             },
         }),
@@ -160,9 +164,7 @@ export default function Index({ pagination, transaction }: Props) {
             cell: (info) => {
                 const row = info.row.original as any;
                 if (row.isTotal) return null;
-                return (
-                    <span className="block text-center">{info.getValue()}</span>
-                );
+                return <span className="block text-center">{info.getValue()}</span>;
             },
         }),
 
@@ -171,12 +173,10 @@ export default function Index({ pagination, transaction }: Props) {
             cell: (info) => {
                 const row = info.row.original as any;
                 if (row.isTotal) return null;
+
                 return (
                     <span className="block text-right">
-                        {new Intl.NumberFormat('id-ID', {
-                            style: 'currency',
-                            currency: 'IDR',
-                        }).format(info.getValue())}
+                        {formatRupiah(info.getValue())}
                     </span>
                 );
             },
@@ -187,12 +187,10 @@ export default function Index({ pagination, transaction }: Props) {
             cell: (info) => {
                 const row = info.row.original as any;
                 if (row.isTotal) return null;
+
                 return (
                     <span className="block text-right">
-                        {new Intl.NumberFormat('id-ID', {
-                            style: 'currency',
-                            currency: 'IDR',
-                        }).format(info.getValue())}
+                        {formatRupiah(info.getValue())}
                     </span>
                 );
             },
@@ -203,23 +201,20 @@ export default function Index({ pagination, transaction }: Props) {
             header: () => <div className="text-right">Subtotal</div>,
             cell: (info) => {
                 const row = info.row.original as any;
+
                 if (row.isTotal) {
                     return (
                         <span className="block text-right font-bold">
-                            {new Intl.NumberFormat('id-ID', {
-                                style: 'currency',
-                                currency: 'IDR',
-                            }).format(grandTotal)}
+                            {formatRupiah(grandTotal)}
                         </span>
                     );
                 }
+
                 const subtotal = row.quantity * row.selling_price;
+
                 return (
                     <span className="block text-right">
-                        {new Intl.NumberFormat('id-ID', {
-                            style: 'currency',
-                            currency: 'IDR',
-                        }).format(subtotal)}
+                        {formatRupiah(subtotal)}
                     </span>
                 );
             },
@@ -236,31 +231,25 @@ export default function Index({ pagination, transaction }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
 
-            {/* 🔥 MODERN ALERT */}
-            <AlertDialog
-                open={confirmOpen}
-                onOpenChange={(open) => {
-                    if (!processing) setConfirmOpen(open);
-                }}
-            >
+            <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
                 <AlertDialogContent className="sm:max-w-md">
                     <AlertDialogHeader>
                         <div className="flex items-start gap-3">
-                            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-100">
+                            <div className="w-10 h-10 flex items-center justify-center rounded-full bg-red-100">
                                 <AlertTriangle className="w-5 h-5 text-red-600" />
                             </div>
                             <div>
-                                <AlertDialogTitle className="text-lg font-semibold text-gray-900">
+                                <AlertDialogTitle>
                                     Batalkan Transaksi?
                                 </AlertDialogTitle>
-                                <AlertDialogDescription className="text-sm text-gray-500">
-                                    Tindakan ini tidak dapat dibatalkan. Data transaksi akan dibatalkan secara permanen.
+                                <AlertDialogDescription>
+                                    Tindakan ini tidak dapat dibatalkan.
                                 </AlertDialogDescription>
                             </div>
                         </div>
                     </AlertDialogHeader>
 
-                    <AlertDialogFooter className="mt-4">
+                    <AlertDialogFooter>
                         <AlertDialogCancel disabled={processing}>
                             Batal
                         </AlertDialogCancel>
@@ -269,7 +258,6 @@ export default function Index({ pagination, transaction }: Props) {
                             variant="destructive"
                             disabled={processing}
                             onClick={handleCancel}
-                            className="flex items-center gap-2"
                         >
                             {processing && <Spinner />}
                             Ya, Batalkan
@@ -286,12 +274,12 @@ export default function Index({ pagination, transaction }: Props) {
                             {transaction.invoice_number}
                         </div>
 
-                        <div className="mt-2 text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 mt-2">
                             Tanggal Transaksi
                         </div>
                         <div>{formatDate(transaction.transaction_date)}</div>
 
-                        <div className="mt-2 text-sm text-gray-500">
+                        <div className="text-sm text-gray-500 mt-2">
                             Metode Pembayaran
                         </div>
                         <div>{transaction.payment_method?.name ?? '-'}</div>
@@ -311,17 +299,17 @@ export default function Index({ pagination, transaction }: Props) {
                         {transaction.payment_status === 'pending' && (
                             <Button
                                 className="bg-green-600 hover:bg-green-700 text-white"
-                                onClick={() => {
+                                onClick={() =>
                                     router.visit(
                                         `/reports/sales/${transaction.id}/payment`
-                                    );
-                                }}
+                                    )
+                                }
                             >
                                 Lunasi
                             </Button>
                         )}
 
-                       <Button
+                        <Button
                             variant="destructive"
                             disabled={
                                 transaction.payment_status === 'canceled' ||

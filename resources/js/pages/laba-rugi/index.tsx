@@ -90,7 +90,6 @@ export default function LabaRugi({ data }: Props) {
                         <div className="flex flex-wrap gap-2">
                             <Button
                                 onClick={handleFilter}
-                                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 h-[42px]"
                             >
                                 <Filter size={16} />
                                 Filter
@@ -98,7 +97,6 @@ export default function LabaRugi({ data }: Props) {
 
                             <Button
                                 onClick={() => handlePrint('month')}
-                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded flex items-center gap-2 h-[42px]"
                             >
                                 <Printer size={16} />
                                 Bulanan
@@ -106,7 +104,6 @@ export default function LabaRugi({ data }: Props) {
 
                             <Button
                                 onClick={() => handlePrint('year')}
-                                className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded flex items-center gap-2 h-[42px]"
                             >
                                 <Printer size={16} />
                                 Tahunan
