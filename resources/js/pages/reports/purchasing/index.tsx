@@ -278,6 +278,39 @@ export default function Index({
                 }
             />
 
+             <NumberBoardModal
+    open={payModal.open}
+    onClose={() =>
+        setPayModal({
+            open: false,
+            data: undefined,
+        })
+    }
+    grandTotal={
+    (payModal.data?.purchase_price ?? 0) *
+    (payModal.data?.quantity ?? 0)
+    }
+    onConfirm={(amount) => {
+        console.log('Jumlah bayar:', amount);
+
+        router.post(
+    purchases.pay(payModal.data!.id).url,
+    {
+        total_payment: amount,
+    },
+    {
+        onSuccess: () => toast.success('Pembayaran berhasil'),
+        onError: () => toast.error('Pembayaran gagal'),
+    }
+    );
+
+        setPayModal({
+            open: false,
+            data: undefined,
+        });
+    }}
+/>
+
             <Card>
                 <CardHeader>
                     <Form

@@ -86,22 +86,23 @@ class PurchasesReportService
 
     public function pay(Purchase $purchase, array $input): Purchase
     {
-        return DB::transaction(function () use ($purchase, $input) {
+        return DB::transaction(function () use ($purchase) {
 
             $purchase = Purchase::whereKey($purchase->id)
                 ->where('status_payment', 'pending')
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $paidAmount = (int) ($input['total_payment'] ?? 0);
+            // ✅ HITUNG OTOMATIS TOTAL
+            $total = $purchase->purchase_price * $purchase->quantity;
 
-            if ($paidAmount <= 0) {
-                throw new \Exception('Nominal pembayaran harus lebih dari 0');
+            if ($total <= 0) {
+                throw new \Exception('Total pembayaran tidak valid');
             }
 
             $purchase->update([
-                'total_payment' => $paidAmount,
-                'status_payment' => 'paid', 
+                'total_payment' => $total,
+                'status_payment' => 'paid',
                 'updated_by' => auth()->id(),
             ]);
 
