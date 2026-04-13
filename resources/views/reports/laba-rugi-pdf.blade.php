@@ -197,7 +197,7 @@
                 <td>Rp {{ number_format($data['total_pendapatan'], 0, ',', '.') }}</td>
             </tr>
             <tr>
-                <td>Piutang Belum Terbayar</td>
+                <td>Piutang Terbayar</td>
                 <td>Rp {{ number_format($data['total_pendapatan_piutang'], 0, ',', '.') }}</td>
             </tr>
             <tr style="font-weight: bold; background: #f9f9f9;">

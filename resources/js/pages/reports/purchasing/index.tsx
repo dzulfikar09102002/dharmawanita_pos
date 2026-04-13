@@ -382,6 +382,24 @@ export default function Index({
                         </Button>
                     </div>
 
+                    <Tabs
+                        value={isDeletedRoute ? 'deleted' : 'available'}
+                        className="mb-4"
+                    >
+                        <TabsList>
+                            <TabsTrigger value="available" asChild>
+                                <Link href={purchases.index().url}>
+                                    Tersedia
+                                </Link>
+                            </TabsTrigger>
+                            <TabsTrigger value="deleted" asChild>
+                                <Link href={purchases.deleted().url}>
+                                    Terhapus
+                                </Link>
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
+
                     <DataTable columns={columns} table={table} />
                     <TablePagination pagination={pagination} />
                 </CardContent>
