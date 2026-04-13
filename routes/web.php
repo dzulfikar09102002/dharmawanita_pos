@@ -98,8 +98,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('sellings/{sale}/payment', [SellingController::class, 'pay'])->name('sellings.pay');
     Route::resource('/reports/laba-rugi', LabaRugiController::class)->names('reports.laba-rugi');
+        Route::get('/laba-rugi/print', [LabaRugiController::class, 'printLabaRugi'])
+        ->name('laba-rugi.print');
     Route::get('/laba-rugi/{bulan?}/{tahun?}', [LabaRugiController::class, 'index'])->name('laba-rugi.index');
-    
+
     });
 
 

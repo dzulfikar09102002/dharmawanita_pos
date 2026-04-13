@@ -150,7 +150,7 @@ const onDeleteOrRestore = (id: number, action: boolean) =>
 
             <div className="mb-4">
                 <Button
-                    className="size-9 lg:size-auto"
+                    className="bg-green-600 hover:bg-green-700 text-white"
                     onClick={() => setModal({ isOpen: true, dataId: undefined })}
                 >
                     <Plus />

@@ -24,10 +24,10 @@ type Props = {
     alertState: AlertState;
     onAlertClose: () => void;
     onAlertProcessing: () => void;
+    onSuccess?: () => void; // ✅ tambah ini
 };
 
-
-export default ({ alertState, onAlertClose, onAlertProcessing }: Props) => {
+export default ({ alertState, onAlertClose, onAlertProcessing, onSuccess }: Props) => {
     const isDelete = alertState.type === 'delete';
     const isRestore = alertState.type === 'restore';
     const isCancel = alertState.type === 'cancel';
@@ -90,6 +90,7 @@ export default ({ alertState, onAlertClose, onAlertProcessing }: Props) => {
                                 onSuccess: () => {
                                     toast.success(successMessage);
                                     onAlertClose();
+                                    onSuccess?.(); // ✅ tambah ini
                                 },
 
                                 onFinish: () => {},

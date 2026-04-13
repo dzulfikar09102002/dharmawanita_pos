@@ -24,6 +24,15 @@ import { useState } from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import purchases from '@/routes/reports/purchases';
 import Alert, { AlertState } from '@/components/purchase-report/alert';
+import { Field, FieldLabel } from '@/components/ui/field';
+import {
+    Combobox,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxList,
+} from '@/components/ui/combobox';
 
 const title = 'Laporan Pembelian';
 
@@ -48,6 +57,7 @@ type Props = {
     year: number;
 };
 
+// ✅ FORMAT RUPIAH
 const formatRupiah = (value: number) =>
     new Intl.NumberFormat('id-ID', {
         style: 'currency',
@@ -57,11 +67,29 @@ const formatRupiah = (value: number) =>
     }).format(value || 0);
 
 const namaBulan = [
-    'Januari','Februari','Maret','April','Mei','Juni',
-    'Juli','Agustus','September','Oktober','November','Desember'
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
 ];
 
-export default function Index({ pagination, month: initialMonth, year: initialYear }: Props) {
+export default function Index({
+    pagination,
+    month: initialMonth,
+    year: initialYear,
+}: Props) {
+    const bulanOptions = namaBulan.map((nama, i) => ({
+        value: String(i + 1),
+        label: nama,
+    }));
     const now = new Date();
 
     const [month, setMonth] = useState(initialMonth ?? now.getMonth() + 1);
@@ -74,6 +102,13 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
         proccessing: false,
     });
 
+    const [payModal, setPayModal] = useState<{
+        open: boolean;
+        data?: Purchase;
+    }>({
+        open: false,
+    });
+
     const { url } = usePage();
     const isDeletedRoute = url.includes('deleted');
 
@@ -81,25 +116,16 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
     const search = query.search || '';
 
     const handleReset = () => {
-        const now = new Date();
-        const m = now.getMonth() + 1;
-        const y = now.getFullYear();
+        const m = new Date().getMonth() + 1;
+        const y = new Date().getFullYear();
 
         setMonth(m);
         setYear(y);
 
         router.get(
             purchases.index().url,
-            {
-                search: '',
-                month: m,
-                year: y,
-                page: 1,
-            },
-            {
-                preserveState: true,
-                replace: true,
-            }
+            { search: '', month: m, year: y, page: 1 },
+            { preserveState: true, replace: true },
         );
     };
 
@@ -110,6 +136,12 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
             delete: action,
             proccessing: false,
         });
+
+    const handlePrint = (type: 'month' | 'year') => {
+        let url = `/reports/print-purchases-report?type=${type}&year=${year}`;
+        if (type === 'month') url += `&month=${month}`;
+        window.open(url, '_blank');
+    };
 
     const columns: ColumnDef<Purchase, any>[] = [
         {
@@ -131,12 +163,9 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
         }),
         columnHelper.accessor('quantity', { header: 'Qty' }),
         columnHelper.accessor('purchase_price', {
-    header: 'Harga',
-    cell: (info) => {
-        const value = info.getValue();
-        return value ? formatRupiah(value) : '-';
-    },
-}),
+            header: 'Harga',
+            cell: (info) => formatRupiah(info.getValue() || 0),
+        }),
         columnHelper.accessor('purchase_date', {
             header: 'Tanggal',
             cell: (info) =>
@@ -147,81 +176,78 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                 }),
         }),
         {
-    accessorKey: 'status_payment',
-    header: 'Status',
-    cell: (info) => {
-        const status = info.getValue();
+            accessorKey: 'status_payment',
+            header: 'Status',
+            cell: (info) => {
+                const status = info.getValue();
 
-        if (!status) return '-';
+                if (!status) return '-';
 
-        return (
-            <span
-                className={`px-2 py-1 rounded text-xs font-semibold ${
-                    status === 'paid'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'
-                }`}
-            >
-                {status === 'paid' ? 'Paid' : 'Pending'}
-            </span>
-        );
-    },
-},
-        {
-    id: 'action',
-    header: 'Aksi',
-    cell: (info) => {
-        const row = info.row.original;
-        const meta = info.table.options.meta as TableMeta;
-
-        return (
-            <div className="flex gap-2">
-                {/* ✅ PAYMENT BUTTON */}
-                {row.status_payment === 'pending' && !meta.isDeletedRoute && (
-                    <Button
-                        size="icon"
-                        variant="default"
-                        className="bg-green-600 hover:bg-green-700"
-                        onClick={() =>
-                            setPayModal({
-                                open: true,
-                                data: row,
-                            })
-                        }
+                return (
+                    <span
+                        className={`rounded px-2 py-1 text-xs font-semibold ${
+                            status === 'paid'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-yellow-100 text-yellow-700'
+                        }`}
                     >
-                        💰
-                    </Button>
-                )}
+                        {status === 'paid' ? 'Paid' : 'Pending'}
+                    </span>
+                );
+            },
+        },
+        {
+            id: 'action',
+            header: 'Aksi',
+            cell: (info) => {
+                const row = info.row.original;
+                const meta = info.table.options.meta as TableMeta;
 
-                {/* ❌ DELETE / RESTORE */}
-                <Button
-                    size="icon"
-                    variant={meta.isDeletedRoute ? 'outline' : 'destructive'}
-                    onClick={() =>
-                        meta.onDeleteOrRestore(
-                            row.id,
-                            !meta.isDeletedRoute
-                        )
-                    }
-                >
-                    {meta.isDeletedRoute ? (
-                        <ArchiveRestore size={16} />
-                    ) : (
-                        <X size={16} />
-                    )}
-                </Button>
-            </div>
-        );
-    },
-},
+                return (
+                    <div className="flex gap-2">
+                        {/* PAYMENT */}
+                        {row.status_payment === 'pending' &&
+                            !meta.isDeletedRoute && (
+                                <Button
+                                    size="icon"
+                                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                    onClick={() =>
+                                        setPayModal({
+                                            open: true,
+                                            data: row,
+                                        })
+                                    }
+                                >
+                                    💰
+                                </Button>
+                            )}
+
+                        {/* DELETE / RESTORE */}
+                        <Button
+                            size="icon"
+                            className={
+                                meta.isDeletedRoute
+                                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    : 'bg-red-600 text-white hover:bg-red-700'
+                            }
+                            onClick={() =>
+                                meta.onDeleteOrRestore(
+                                    row.id,
+                                    !meta.isDeletedRoute,
+                                )
+                            }
+                        >
+                            {meta.isDeletedRoute ? (
+                                <ArchiveRestore size={16} />
+                            ) : (
+                                <X size={16} />
+                            )}
+                        </Button>
+                    </div>
+                );
+            },
+        },
     ];
-
-    const [payModal, setPayModal] = useState<{
-    open: boolean;
-    data?: Purchase;
-    }>({
-        open: false,
-    });
 
     const table = useReactTable<Purchase>({
         data: pagination.data,
@@ -232,16 +258,6 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
             isDeletedRoute,
         },
     });
-
-    const handlePrint = (type: 'month' | 'year') => {
-    let url = `/reports/print-purchases-report?type=${type}&year=${year}`;
-
-    if (type === 'month') {
-        url += `&month=${month}`;
-    }
-
-    window.open(url, '_blank');
-    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -262,7 +278,7 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                 }
             />
 
-            <NumberBoardModal
+             <NumberBoardModal
     open={payModal.open}
     onClose={() =>
         setPayModal({
@@ -297,54 +313,72 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
 
             <Card>
                 <CardHeader>
-                    <Form method="GET" className="flex flex-wrap items-end gap-3">
-                        <input type="hidden" name="page" value={1} />
-
-                        {/* 🔍 SEARCH */}
-                        <div className="flex flex-col flex-1 min-w-[250px]">
-                            <label className="text-xs text-gray-500 mb-1">
+                    <Form
+                        method="GET"
+                        className="flex flex-wrap items-end gap-3"
+                    >
+                        <div className="flex min-w-[250px] flex-1 flex-col">
+                            <label className="mb-1 text-xs text-gray-500">
                                 Cari Produk / Supplier
                             </label>
-                            <Input
-                                name="search"
-                                defaultValue={search}
-                                placeholder="Cari..."
-                                className="w-full focus-visible:ring-2 focus-visible:ring-blue-500"
-                            />
+                            <Input name="search" defaultValue={search} />
                         </div>
 
-                        {/* 📅 BULAN */}
                         <div className="flex flex-col">
-                            <label className="text-xs text-gray-500 mb-1">Bulan</label>
-                            <select
-                                name="month"
-                                value={month}
-                                onChange={(e) => setMonth(Number(e.target.value))}
-                                className="border rounded px-3 py-2 w-[160px]"
-                            >
-                                {namaBulan.map((b, i) => (
-                                    <option key={i} value={i + 1}>
-                                        {b}
-                                    </option>
-                                ))}
-                            </select>
+                            <Field className="min-w-[180px]">
+                                <FieldLabel>Bulan</FieldLabel>
+
+                                <Combobox
+                                    items={bulanOptions}
+                                    value={
+                                        bulanOptions.find(
+                                            (b) => Number(b.value) === month,
+                                        ) ?? null
+                                    }
+                                    onValueChange={(val) => {
+                                        if (val) setMonth(Number(val.value));
+                                    }}
+                                >
+                                    <ComboboxInput placeholder="Pilih bulan" />
+
+                                    <ComboboxContent>
+                                        <ComboboxEmpty>
+                                            Tidak ditemukan
+                                        </ComboboxEmpty>
+                                        <ComboboxList>
+                                            {(item) => (
+                                                <ComboboxItem
+                                                    key={item.value}
+                                                    value={item}
+                                                >
+                                                    {item.label}
+                                                </ComboboxItem>
+                                            )}
+                                        </ComboboxList>
+                                    </ComboboxContent>
+                                </Combobox>
+                            </Field>
                         </div>
 
-                        {/* 📅 TAHUN */}
                         <div className="flex flex-col">
-                            <label className="text-xs text-gray-500 mb-1">Tahun</label>
-                            <Input
-                                type="number"
-                                name="year"
-                                value={year}
-                                onChange={(e) => setYear(Number(e.target.value))}
-                                className="w-[110px]"
-                            />
+                            <Field>
+                                <FieldLabel>Tahun</FieldLabel>
+
+                                <Input
+                                    type="number"
+                                    value={year}
+                                    onChange={(e) =>
+                                        setYear(Number(e.target.value))
+                                    }
+                                    min={2000}
+                                    max={2100}
+                                />
+                            </Field>
                         </div>
 
-                        {/* 🔘 ACTION */}
+                        {/* BUTTON FILTER */}
                         <div className="flex gap-2">
-                            <Button className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2">
+                            <Button className="bg-blue-600 text-white hover:bg-blue-700">
                                 <Search size={16} />
                                 Filter
                             </Button>
@@ -352,7 +386,7 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                             <Button
                                 type="button"
                                 onClick={handleReset}
-                                className="bg-red-500 hover:bg-red-600 text-white flex items-center gap-2"
+                                className="bg-red-600 text-white hover:bg-red-700"
                             >
                                 <FilterX size={16} />
                                 Reset Filter
@@ -362,30 +396,25 @@ export default function Index({ pagination, month: initialMonth, year: initialYe
                 </CardHeader>
 
                 <CardContent>
-                    <div className="flex justify-between items-center mb-4">
-        
-                            {/* Kiri: tombol cetak */}
-                            <div className="flex gap-2">
-                                <Button
-                                    type="button"
-                                    onClick={() => handlePrint('month')}
-                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white"
-                                >
-                                    <Printer size={16} />
-                                    Cetak Laporan Bulanan
-                                </Button>
+                    {/* PRINT BUTTON */}
+                    <div className="mb-4 flex gap-2">
+                        <Button
+                            onClick={() => handlePrint('month')}
+                            className="bg-emerald-600 text-white hover:bg-emerald-700"
+                        >
+                            <Printer size={16} />
+                            Cetak Laporan Bulanan
+                        </Button>
 
-                                <Button
-                                    type="button"
-                                    onClick={() => handlePrint('year')}
-                                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white"
-                                >
-                                    <Printer size={16} />
-                                    Cetak Laporan Tahunan
-                                </Button>
-                            </div>
+                        <Button
+                            onClick={() => handlePrint('year')}
+                            className="bg-purple-600 text-white hover:bg-purple-700"
+                        >
+                            <Printer size={16} />
+                            Cetak Laporan Tahunan
+                        </Button>
+                    </div>
 
-                        </div>
                     <Tabs
                         value={isDeletedRoute ? 'deleted' : 'available'}
                         className="mb-4"

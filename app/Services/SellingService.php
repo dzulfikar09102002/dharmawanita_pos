@@ -13,73 +13,73 @@ use Illuminate\Support\Facades\DB;
 class SellingService
 {
     public function getProducts()
-{
-    $search = request('search', '');
-    $category_id = request('product_category_id', 'all');
-    $stock = \DB::table('inventory_transactions as it')
-        ->leftJoin('purchases as p_in', 'p_in.id', '=', 'it.reference_id')
-        ->leftJoin('sale_transaction_details as std', 'std.id', '=', 'it.reference_id')
-        ->leftJoin('purchases as p_out', 'p_out.id', '=', 'std.purchase_id')
-        ->selectRaw('
-            COALESCE(p_in.code, p_out.code) as code,
-            SUM(
-                CASE 
-                    WHEN it.type = "in" THEN it.quantity
-                    WHEN it.type = "out" THEN -it.quantity
-                    ELSE 0
-                END
-            ) as total_quantity
-        ')
-        ->whereNull('it.deleted_at')
-        ->groupByRaw('COALESCE(p_in.code, p_out.code)');
+    {
+        $search = request('search', '');
+        $category_id = request('product_category_id', 'all');
+        $stock = \DB::table('inventory_transactions as it')
+            ->leftJoin('purchases as p_in', 'p_in.id', '=', 'it.reference_id')
+            ->leftJoin('sale_transaction_details as std', 'std.id', '=', 'it.reference_id')
+            ->leftJoin('purchases as p_out', 'p_out.id', '=', 'std.purchase_id')
+            ->selectRaw('
+                COALESCE(p_in.code, p_out.code) as code,
+                SUM(
+                    CASE 
+                        WHEN it.type = "in" THEN it.quantity
+                        WHEN it.type = "out" THEN -it.quantity
+                        ELSE 0
+                    END
+                ) as total_quantity
+            ')
+            ->whereNull('it.deleted_at')
+            ->groupByRaw('COALESCE(p_in.code, p_out.code)');
 
-    $base = Purchase::query()
-        ->when($search, function ($query) use ($search) {
-    $query->where(function ($q) use ($search) {
-        $q->where('purchases.code', 'like', "%$search%")
-            ->orWhereHas('product', function ($q2) use ($search) {
-                $q2->where('name', 'like', "%$search%");
-            });
-    });
-})
-        ->when($category_id !== 'all', function ($query) use ($category_id) {
-            $query->whereHas('product', function ($q) use ($category_id) {
-                $q->where('category_id', $category_id);
-            });
+        $base = Purchase::query()
+            ->when($search, function ($query) use ($search) {
+        $query->where(function ($q) use ($search) {
+            $q->where('purchases.code', 'like', "%$search%")
+                ->orWhereHas('product', function ($q2) use ($search) {
+                    $q2->where('name', 'like', "%$search%");
+                });
         });
+    })
+            ->when($category_id !== 'all', function ($query) use ($category_id) {
+                $query->whereHas('product', function ($q) use ($category_id) {
+                    $q->where('category_id', $category_id);
+                });
+            });
 
-    $query = $base
-        ->leftJoinSub($stock, 'stock', function ($join) {
-            $join->on('stock.code', '=', 'purchases.code');
-        })
-        ->selectRaw('
-    purchases.code,
-    purchases.product_id,
+        $query = $base
+            ->leftJoinSub($stock, 'stock', function ($join) {
+                $join->on('stock.code', '=', 'purchases.code');
+            })
+            ->selectRaw('
+        purchases.code,
+        purchases.product_id,
 
-    MAX(purchases.id) as id,
+        MAX(purchases.id) as id,
 
-    COALESCE(MAX(stock.total_quantity), 0) as total_quantity,
+        COALESCE(MAX(stock.total_quantity), 0) as total_quantity,
 
-    MAX(purchases.purchase_price) as purchase_price,
-    MAX(purchases.selling_price) as selling_price,
-    MAX(purchases.expired_date) as expired_date,
-    MAX(purchases.purchase_date) as purchase_date,
-    MAX(purchases.updated_at) as updated_at
-')
-        ->groupBy('purchases.code', 'purchases.product_id')
-        ->orderByRaw('
-    CASE 
-        WHEN COALESCE(MAX(stock.total_quantity), 0) > 0 THEN 0
-        ELSE 1
-    END
-')
-->orderByDesc('updated_at');
+        MAX(purchases.purchase_price) as purchase_price,
+        MAX(purchases.selling_price) as selling_price,
+        MAX(purchases.expired_date) as expired_date,
+        MAX(purchases.purchase_date) as purchase_date,
+        MAX(purchases.updated_at) as updated_at
+    ')
+            ->groupBy('purchases.code', 'purchases.product_id')
+            ->orderByRaw('
+        CASE 
+            WHEN COALESCE(MAX(stock.total_quantity), 0) > 0 THEN 0
+            ELSE 1
+        END
+    ')
+    ->orderByDesc('updated_at');
 
-    return $query
-        ->with('product.category')
-        ->paginate(request('per_page', 20))
-        ->withQueryString();
-}
+        return $query
+            ->with('product.category')
+            ->paginate(request('per_page', 20))
+            ->withQueryString();
+    }
     public function getCategoryOptions()
     {
         $options = Category::all()->map(function ($category) {
@@ -217,7 +217,12 @@ class SellingService
                     : ($isPaid ? 'paid' : $sale->payment_status),
                 'updated_by'        => auth()->id(),
             ]);
-
+            if ($isCancelMethod) {
+                $sale->update([
+                    'deleted_at' => now(),
+                    'deleted_by' => auth()->id(),
+                ]);
+            }
             if ($isCancelMethod) {
 
                 $sourceMap = [

@@ -3,12 +3,20 @@ import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import salesReport from '@/routes/reports/sales';
-import { Eye, Search, X, ArchiveRestore, FilterX, Printer  } from 'lucide-react';
+import { Eye, Search, X, ArchiveRestore, FilterX, Printer } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
+import { Field, FieldLabel } from '@/components/ui/field';
+import {
+    Combobox,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxList,
+} from '@/components/ui/combobox';
 import {
     createColumnHelper,
     getCoreRowModel,
@@ -32,10 +40,27 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const namaBulan = [
-    'Januari', 'Februari', 'Maret', 'April',
-    'Mei', 'Juni', 'Juli', 'Agustus',
-    'September', 'Oktober', 'November', 'Desember'
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
 ];
+
+const formatRupiah = (value: number | string | null | undefined) =>
+    new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    }).format(Number(value || 0));
 
 const columnHelper = createColumnHelper<SaleTransaction>();
 
@@ -51,7 +76,15 @@ type Props = {
     tahun: number;
 };
 
-export default function Index({ pagination, bulan: initialBulan, tahun: initialTahun }: Props) {
+export default function Index({
+    pagination,
+    bulan: initialBulan,
+    tahun: initialTahun,
+}: Props) {
+    const bulanOptions = namaBulan.map((nama, i) => ({
+        value: String(i + 1),
+        label: nama,
+    }));
     const { data } = pagination;
     const [bulan, setBulan] = useState<number>(initialBulan);
     const [tahun, setTahun] = useState<number>(initialTahun);
@@ -68,7 +101,7 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
         processing: false,
     };
 
-        const handleReset = () => {
+    const handleReset = () => {
         const currentMonth = new Date().getMonth() + 1;
         const currentYear = new Date().getFullYear();
 
@@ -86,20 +119,20 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
             {
                 preserveState: true,
                 replace: true,
-            }
+            },
         );
     };
 
     const [alert, setAlert] = useState<AlertState>(initialAlertState);
 
-   const handlePrint = (type: 'month' | 'year') => {
-    let url = `/reports/print-sales-report?type=${type}&tahun=${tahun}`;
+    const handlePrint = (type: 'month' | 'year') => {
+        let url = `/reports/print-sales-report?type=${type}&tahun=${tahun}`;
 
-    if (type === 'month') {
-        url += `&bulan=${bulan}`;
-    }
+        if (type === 'month') {
+            url += `&bulan=${bulan}`;
+        }
 
-    window.open(url, '_blank');
+        window.open(url, '_blank');
     };
 
     const onAlertClose = () => setAlert(initialAlertState);
@@ -176,30 +209,22 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
 
         columnHelper.accessor('grand_total', {
             header: 'Jumlah',
-            cell: (info) =>
-                new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                }).format(info.getValue()),
+            cell: (info) => formatRupiah(info.getValue()),
         }),
 
         columnHelper.accessor('total_amount', {
             header: 'Total Pembayaran',
-            cell: (info) =>
-                new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                }).format(info.getValue()),
+            cell: (info) => formatRupiah(info.getValue()),
         }),
 
         columnHelper.accessor('transaction_date', {
             header: 'Tanggal Transaksi',
             cell: (info) =>
-               new Date(info.getValue()).toLocaleDateString('id-ID', {
+                new Date(info.getValue()).toLocaleDateString('id-ID', {
                     day: '2-digit',
                     month: 'long',
                     year: 'numeric',
-                })
+                }),
         }),
 
         {
@@ -223,8 +248,10 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
 
                         <Button
                             size="icon"
-                            variant={
-                                meta.isDeletedRoute ? 'outline' : 'destructive'
+                            className={
+                                meta.isDeletedRoute
+                                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    : 'bg-red-600 text-white hover:bg-red-700'
                             }
                             onClick={() =>
                                 meta.onDeleteOrRestore(
@@ -268,97 +295,115 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
 
             <Card>
                 <CardHeader>
-                    <Form method="GET" className="flex flex-wrap items-end gap-3">
+                    <Form
+                        method="GET"
+                        className="flex flex-wrap items-end gap-3"
+                    >
                         <input type="hidden" name="page" value={1} />
 
-                        {/* Search (panjang) */}
-                        <div className="flex flex-col flex-1 min-w-[250px]">
-                            <label className="text-xs text-gray-500 mb-1">Cari Invoice</label>
+                        <div className="flex min-w-[250px] flex-1 flex-col">
+                            <label className="mb-1 text-xs text-gray-500">
+                                Cari Invoice
+                            </label>
                             <Input
                                 name="search"
                                 defaultValue={search}
                                 placeholder="Cari invoice..."
-                                className="w-full focus-visible:ring-2 focus-visible:ring-blue-500"
                             />
                         </div>
 
-                        {/* Bulan */}
                         <div className="flex flex-col">
-                            <label className="text-xs text-gray-500 mb-1">Bulan</label>
-                            <select
-                                name="bulan"
-                                value={bulan}
-                                onChange={(e) => setBulan(Number(e.target.value))}
-                                className="border border-gray-300 rounded px-3 py-2 w-[160px]
-                                        focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                {namaBulan.map((nama, i) => (
-                                    <option key={i} value={i + 1}>
-                                        {nama}
-                                    </option>
-                                ))}
-                            </select>
+                            <Field className="min-w-[180px]">
+                                <FieldLabel>Bulan</FieldLabel>
+
+                                <Combobox
+                                    items={bulanOptions}
+                                    value={
+                                        bulanOptions.find(
+                                            (b) => Number(b.value) === bulan,
+                                        ) ?? null
+                                    }
+                                    onValueChange={(val) => {
+                                        if (val) setBulan(Number(val.value));
+                                    }}
+                                >
+                                    <ComboboxInput placeholder="Pilih bulan" />
+
+                                    <ComboboxContent>
+                                        <ComboboxEmpty>
+                                            Tidak ditemukan
+                                        </ComboboxEmpty>
+                                        <ComboboxList>
+                                            {(item) => (
+                                                <ComboboxItem
+                                                    key={item.value}
+                                                    value={item}
+                                                >
+                                                    {item.label}
+                                                </ComboboxItem>
+                                            )}
+                                        </ComboboxList>
+                                    </ComboboxContent>
+                                </Combobox>
+                            </Field>
                         </div>
 
-                        {/* Tahun */}
                         <div className="flex flex-col">
-                            <label className="text-xs text-gray-500 mb-1">Tahun</label>
-                            <input
-                                type="number"
-                                name="tahun"
-                                value={tahun}
-                                onChange={(e) => setTahun(Number(e.target.value))}
-                                className="border border-gray-300 rounded px-3 py-2 w-[110px]
-                                        focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
+                            <Field>
+                                <FieldLabel>Tahun</FieldLabel>
+
+                                <Input
+                                    type="number"
+                                    value={tahun}
+                                    onChange={(e) =>
+                                        setTahun(Number(e.target.value))
+                                    }
+                                    min={2000}
+                                    max={2100}
+                                />
+                            </Field>
                         </div>
 
-                       <div className="flex gap-2">
+                        <div className="flex gap-2">
                             <Button
                                 type="submit"
-                                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 px-4 py-2"
+                                className="bg-blue-600 text-white hover:bg-blue-700"
                             >
                                 <Search size={16} />
                                 Filter
                             </Button>
 
-                               <Button
-                                    type="button"
-                                    onClick={handleReset}
-                                    className="flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white"
-                                >
-                                    <FilterX size={16} />
-                                    Reset Filter
-                                </Button>
+                            <Button
+                                type="button"
+                                onClick={handleReset}
+                                className="bg-red-600 text-white hover:bg-red-700"
+                            >
+                                <FilterX size={16} />
+                                Reset Filter
+                            </Button>
                         </div>
                     </Form>
                 </CardHeader>
 
                 <CardContent>
-                     <div className="flex justify-between items-center mb-4">
-        
-                            {/* Kiri: tombol cetak */}
-                            <div className="flex gap-2">
-                                <Button
-                                    type="button"
-                                    onClick={() => handlePrint('month')}
-                                    className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white"
-                                >
-                                    <Printer size={16} />
-                                    Cetak Laporan Bulanan
-                                </Button>
+                    <div className="mb-4 flex gap-2">
+                        <Button
+                            onClick={() => handlePrint('month')}
+                            className="bg-emerald-600 text-white hover:bg-emerald-700"
+                        >
+                            <Printer size={16} />
+                            Cetak Laporan Bulanan
+                        </Button>
 
-                                <Button
-                                    type="button"
-                                    onClick={() => handlePrint('year')}
-                                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white"
-                                >
-                                    <Printer size={16} />
-                                    Cetak Laporan Tahunan
-                                </Button>
-                            </div>
+                        <Button
+                            onClick={() => handlePrint('year')}
+                            className="bg-purple-600 text-white hover:bg-purple-700"
+                        >
+                            <Printer size={16} />
+                            Cetak Laporan Tahunan
+                        </Button>
+                    </div>
 
-                        </div>
                     <Tabs
                         value={isDeletedRoute ? 'deleted' : 'active'}
                         className="mb-4"
@@ -366,7 +411,7 @@ export default function Index({ pagination, bulan: initialBulan, tahun: initialT
                         <TabsList>
                             <TabsTrigger value="active" asChild>
                                 <Link href={salesReport.index().url}>
-                                    Aktif
+                                    Tersedia
                                 </Link>
                             </TabsTrigger>
 
