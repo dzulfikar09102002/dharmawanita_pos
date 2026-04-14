@@ -1,20 +1,22 @@
 import {
     Dialog,
+    DialogCancel,
+    DialogClose,
     DialogContent,
+    DialogFooter,
+    DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useEffect, useState } from 'react';
 
+import { useState } from 'react';
+import { Delete } from 'lucide-react';
 type Props = {
     open: boolean;
     onClose: () => void;
     onConfirm: (amount: number) => void;
     grandTotal: number;
-    onReset?: () => void;
-    resetKey?: number;
 };
 
 export default function NumberBoardModal({
@@ -22,14 +24,8 @@ export default function NumberBoardModal({
     onClose,
     onConfirm,
     grandTotal,
-    onReset,
-    resetKey,
 }: Props) {
-    const [value, setValue] = useState<string>('0');
-
-    useEffect(() => {
-        setValue('0');
-    }, [resetKey]);
+    const [value, setValue] = useState('0');
 
     const append = (v: string) => {
         setValue((prev) => (prev === '0' ? v : prev + v));
@@ -43,149 +39,137 @@ export default function NumberBoardModal({
         setValue(String(grandTotal));
     };
 
-    const handleConfirm = () => {
+    const confirm = () => {
         onConfirm(Number(value));
     };
-
-    const handleReset = () => {
+    const reset = () => {
         setValue('0');
-        onReset?.();
     };
 
-    const NominalButton = ({
-        label,
-        value,
-    }: {
-        label: string;
-        value: number;
-    }) => (
-        <Button
-            type="button"
-            variant="outline"
-            className="text-sm"
-            onClick={() => addNominal(value)}
-        >
-            {label}
-        </Button>
-    );
-
+    const backspace = () => {
+        setValue((prev) => {
+            if (prev.length <= 1) return '0';
+            return prev.slice(0, -1);
+        });
+    };
     return (
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="top-[45%] max-w-md">
-                <DialogTitle className="sr-only">
-                    Number Board
-                </DialogTitle>
-
+                <DialogTitle className="sr-only">Number Board</DialogTitle>
                 <div className="space-y-4">
-                    {/* DISPLAY */}
                     <Input
                         readOnly
                         value={Number(value).toLocaleString('id-ID')}
                         className="text-right text-lg"
                     />
 
-                    {/* NUMPAD */}
-                    <div className="grid grid-cols-4 gap-2">
-                        {[1, 2, 3].map((n) => (
-                            <Button
-                                key={n}
-                                variant="outline"
-                                onClick={() => append(String(n))}
-                            >
-                                {n}
-                            </Button>
-                        ))}
-
-                        <NominalButton label="10.000" value={10000} />
-
-                        {[4, 5, 6].map((n) => (
-                            <Button
-                                key={n}
-                                variant="outline"
-                                onClick={() => append(String(n))}
-                            >
-                                {n}
-                            </Button>
-                        ))}
-
-                        <NominalButton label="20.000" value={20000} />
-
-                        {[7, 8, 9].map((n) => (
-                            <Button
-                                key={n}
-                                variant="outline"
-                                onClick={() => append(String(n))}
-                            >
-                                {n}
-                            </Button>
-                        ))}
-
-                        <NominalButton label="50.000" value={50000} />
-
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => append('0')}
-                        >
-                            0
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button className="cursor-pointer" onClick={reset}>
+                            AC
                         </Button>
 
                         <Button
-                            type="button"
                             variant="outline"
+                            className="cursor-pointer"
+                            onClick={backspace}
+                        >
+                            <Delete />
+                        </Button>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                        {[1, 2, 3].map((n) => (
+                            <Button
+                                variant={'outline'}
+                                key={n}
+                                onClick={() => append(String(n))}
+                            >
+                                {n}
+                            </Button>
+                        ))}
+                        <Button
+                            variant={'outline'}
+                            onClick={() => addNominal(10000)}
+                        >
+                            10.000
+                        </Button>
+
+                        {[4, 5, 6].map((n) => (
+                            <Button
+                                variant={'outline'}
+                                key={n}
+                                onClick={() => append(String(n))}
+                            >
+                                {n}
+                            </Button>
+                        ))}
+                        <Button
+                            variant={'outline'}
+                            onClick={() => addNominal(20000)}
+                        >
+                            20.000
+                        </Button>
+
+                        {[7, 8, 9].map((n) => (
+                            <Button
+                                variant={'outline'}
+                                key={n}
+                                onClick={() => append(String(n))}
+                            >
+                                {n}
+                            </Button>
+                        ))}
+                        <Button
+                            variant={'outline'}
+                            onClick={() => addNominal(50000)}
+                        >
+                            50.000
+                        </Button>
+
+                        <Button variant={'outline'} onClick={() => append('0')}>
+                            0
+                        </Button>
+                        <Button
+                            variant={'outline'}
                             onClick={() => append('00')}
                         >
                             00
                         </Button>
-
                         <Button
-                            type="button"
-                            variant="outline"
+                            variant={'outline'}
                             onClick={() => append('000')}
                         >
                             000
                         </Button>
-
-                        <NominalButton label="100.000" value={100000} />
+                        <Button
+                            variant={'outline'}
+                            onClick={() => addNominal(100000)}
+                        >
+                            100.000
+                        </Button>
                     </div>
 
-                    {/* ACTIONS */}
                     <div className="flex gap-2">
                         <Button
-                            type="button"
                             variant="secondary"
-                            className="flex-1"
+                            className="flex-1 cursor-pointer"
                             onClick={uangPas}
                         >
                             Uang Pas
                         </Button>
 
                         <Button
-                            type="button"
                             variant="outline"
-                            className="flex-1"
+                            className="flex-1 cursor-pointer"
                             onClick={onClose}
                         >
                             Kembali
                         </Button>
 
                         <Button
-                            type="button"
-                            className="flex-1"
-                            onClick={handleConfirm}
+                            className="flex-1 cursor-pointer"
+                            onClick={confirm}
                         >
                             Konfirmasi
-                        </Button>
-                    </div>
-
-                    {/* RESET */}
-                    <div className="flex justify-end">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleReset}
-                        >
-                            Reset / Hapus
                         </Button>
                     </div>
                 </div>
