@@ -231,20 +231,31 @@ export default function Index({
             cell: (info) => formatRupiah(info.getValue()),
         }),
 
-        columnHelper.display({
-            id: 'kurang_bayar',
-            header: 'Kurang Bayar',
+      columnHelper.display({
+            id: 'financial_status',
+            header: isDeletedRoute ? 'Kerugian' : 'Kurang Bayar',
             cell: (info) => {
                 const row = info.row.original;
 
                 const kurangBayar =
                     (row.grand_total || 0) - (row.total_amount || 0);
+                
+                const kerugian = row.total_amount || 0;
 
-                return kurangBayar > 0 ? (
-                    <span className="text-red-600 font-semibold">
-                        {formatRupiah(kurangBayar)}
-                    </span>
-                ) : (
+                // 👉 kalau tab deleted = kerugian
+                const value = isDeletedRoute
+                    ? Math.max(kerugian, 0)
+                    : Math.max(kurangBayar, 0);
+
+                if (value > 0) {
+                    return (
+                        <span className="text-red-600 font-semibold">
+                            {formatRupiah(value)}
+                        </span>
+                    );
+                }
+
+                return (
                     <span className="text-green-600 font-semibold">
                         Rp 0
                     </span>
