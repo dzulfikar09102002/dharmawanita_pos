@@ -303,12 +303,11 @@ export default function Index({
 
             <NumberBoardModal
                 open={payModal.open}
-                resetKey={payModal.resetKey}
                 onClose={() =>
                     setPayModal({
                         open: false,
                         data: undefined,
-                        resetKey: 0,
+                        resetKey: 0, // boleh ada di state, tapi tidak dipakai modal
                     })
                 }
                 grandTotal={
@@ -327,7 +326,7 @@ export default function Index({
 
                     if (amount > remaining) {
                         toast.error(
-                            `Pembayaran melebihi sisa bayar!\nSisa: ${remaining.toLocaleString('id-ID')}`
+                            `Pembayaran melebihi sisa bayar! Sisa: ${remaining.toLocaleString('id-ID')}`
                         );
                         return;
                     }
@@ -346,12 +345,6 @@ export default function Index({
                         data: undefined,
                         resetKey: 0,
                     });
-                }}
-                onReset={() => {
-                    setPayModal((prev) => ({
-                        ...prev,
-                        resetKey: Date.now(),
-                    }));
                 }}
             />
 
