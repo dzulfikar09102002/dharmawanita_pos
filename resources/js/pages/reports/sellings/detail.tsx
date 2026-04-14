@@ -222,7 +222,7 @@ export default function Index({ pagination, transaction }: Props) {
                 if (row.isTotal) {
                     return (
                         <span className="block text-right font-bold text-red-600">
-                            ({formatRupiah(kurangBayar)})
+                            ({formatRupiah(kurangBayar)})   
                         </span>
                     );
                 }
@@ -282,9 +282,34 @@ export default function Index({ pagination, transaction }: Props) {
             <Card>
                 <CardContent>
                     <div className="mb-4 space-y-1">
-                        <div className="text-sm text-gray-500">Invoice</div>
-                        <div className="text-lg font-semibold">
-                            {transaction.invoice_number}
+                       {/* 📄 INVOICE + STATUS */}
+                        <div>
+                            <div className="text-sm text-gray-500">Invoice</div>
+
+                            <div className="flex items-center gap-2">
+                                <div className="text-lg font-semibold">
+                                    {transaction.invoice_number}
+                                </div>
+
+                                {/* Badge Status */}
+                                {transaction.payment_status === 'paid' && (
+                                    <span className="px-2 py-1 text-xs rounded bg-green-100 text-green-600">
+                                        Lunas
+                                    </span>
+                                )}
+
+                                {transaction.payment_status === 'pending' && (
+                                    <span className="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-600">
+                                        Pending
+                                    </span>
+                                )}
+
+                                {transaction.payment_status === 'canceled' && (
+                                    <span className="px-2 py-1 text-xs rounded bg-red-100 text-red-600">
+                                        Dibatalkan
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         <div className="text-sm text-gray-500 mt-2">
