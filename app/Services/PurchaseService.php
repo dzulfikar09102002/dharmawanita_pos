@@ -76,7 +76,7 @@ class PurchaseService
             foreach ($items as $item) {
                 if($item['source'] == 'purchase')
                 {
-                    $total_payment = $item['purchase_price'];
+                    $total_payment = $item['purchase_price'] * $item['quantity'];
                     $status_payment = 'paid';
                 }
                 else
