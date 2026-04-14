@@ -14,6 +14,9 @@ use App\Http\Controllers\StockReportController;
 use App\Http\Controllers\LabaRugiController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PurchaseMethodController;
+use App\Exports\StockReportExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Carbon\Carbon;
 
 Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
@@ -88,6 +91,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/reports/sales/{id}/payment', [SalesReportController::class, 'payment'])
     ->name('reports.sales.payment');
 
+    Route::get('/reports/stocks/export', function () {
+        $search = request('search');
+
+        $now = Carbon::now()->format('Y-m-d_H-i-s');
+
+        return Excel::download(
+            new StockReportExport($search),
+            "laporan-stok_{$now}.xlsx"
+        );
+    })->name('reports.stocks.export');
+
     Route::resource('/reports/stocks', StockReportController::class)
     ->names('reportsStocks');
 
@@ -103,7 +117,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/laba-rugi/{bulan?}/{tahun?}', [LabaRugiController::class, 'index'])->name('laba-rugi.index');
 
     });
-
-
 
 require __DIR__.'/settings.php';

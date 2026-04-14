@@ -30,7 +30,9 @@ class SalesReportController extends Controller
 
     public function show($id)
     {
-        $transaction = SaleTransaction::with('paymentMethod')->findOrFail($id);
+        $transaction = SaleTransaction::withTrashed()
+            ->with('paymentMethod')
+            ->findOrFail($id);
 
         $pagination = $this->service->getDetailSalesReport($id);
 
