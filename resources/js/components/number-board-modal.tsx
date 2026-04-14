@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
 import { useState } from 'react';
+import { Delete } from 'lucide-react';
 type Props = {
     open: boolean;
     onClose: () => void;
@@ -41,7 +42,16 @@ export default function NumberBoardModal({
     const confirm = () => {
         onConfirm(Number(value));
     };
+    const reset = () => {
+        setValue('0');
+    };
 
+    const backspace = () => {
+        setValue((prev) => {
+            if (prev.length <= 1) return '0';
+            return prev.slice(0, -1);
+        });
+    };
     return (
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="top-[45%] max-w-md">
@@ -53,6 +63,19 @@ export default function NumberBoardModal({
                         className="text-right text-lg"
                     />
 
+                    <div className="grid grid-cols-2 gap-2">
+                        <Button className="cursor-pointer" onClick={reset}>
+                            AC
+                        </Button>
+
+                        <Button
+                            variant="outline"
+                            className="cursor-pointer"
+                            onClick={backspace}
+                        >
+                            <Delete />
+                        </Button>
+                    </div>
                     <div className="grid grid-cols-4 gap-2">
                         {[1, 2, 3].map((n) => (
                             <Button

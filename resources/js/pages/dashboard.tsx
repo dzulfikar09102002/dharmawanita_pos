@@ -6,7 +6,15 @@ import { Area, AreaChart, CartesianGrid } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Eye } from 'lucide-react';
 
-
+import {
+    Combobox,
+    ComboboxInput,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxList,
+    ComboboxItem,
+} from '@/components/ui/combobox';
+import { Input } from '@/components/ui/input';
 import {
     ChartContainer,
     ChartTooltip,
@@ -146,33 +154,43 @@ export default function Dashboard({
                     </h1>
 
                     <div className="flex gap-2">
-                        {/* BULAN */}
-                        <select
-                            value={month}
-                            onChange={(e) =>
+                        <Combobox
+                            items={months}
+                            value={months.find((m) => m.value === month)}
+                            onValueChange={(val) => {
+                                if (!val) return;
+
                                 router.get(
                                     '/dashboard',
                                     {
-                                        month: Number(e.target.value),
+                                        month: val.value,
                                         year: year,
                                     },
                                     {
                                         preserveState: true,
                                         replace: true,
                                     },
-                                )
-                            }
-                            className="rounded border px-3 py-2"
+                                );
+                            }}
                         >
-                            {months.map((m) => (
-                                <option key={m.value} value={m.value}>
-                                    {m.label}
-                                </option>
-                            ))}
-                        </select>
+                            <ComboboxInput placeholder="Pilih Bulan" />
 
-                        {/* TAHUN (INPUT) */}
-                        <input
+                            <ComboboxContent>
+                                <ComboboxEmpty>Tidak ditemukan</ComboboxEmpty>
+                                <ComboboxList>
+                                    {(item) => (
+                                        <ComboboxItem
+                                            key={item.value}
+                                            value={item}
+                                        >
+                                            {item.label}
+                                        </ComboboxItem>
+                                    )}
+                                </ComboboxList>
+                            </ComboboxContent>
+                        </Combobox>
+
+                        <Input
                             type="number"
                             value={year}
                             onChange={(e) =>
@@ -188,7 +206,7 @@ export default function Dashboard({
                                     },
                                 )
                             }
-                            className="w-24 rounded border px-3 py-2"
+                            className="w-24"
                             min={2000}
                             max={2100}
                         />
@@ -323,14 +341,16 @@ export default function Dashboard({
                                             <span>{p.name}</span>
                                             <span className="text-sm text-muted-foreground">
                                                 {p.expired_date
-                                                    ? new Date(p.expired_date).toLocaleDateString(
-                                                        'id-ID',
-                                                        {
-                                                            day: '2-digit',
-                                                            month: 'long',
-                                                            year: 'numeric',
-                                                        }
-                                                    )
+                                                    ? new Date(
+                                                          p.expired_date,
+                                                      ).toLocaleDateString(
+                                                          'id-ID',
+                                                          {
+                                                              day: '2-digit',
+                                                              month: 'long',
+                                                              year: 'numeric',
+                                                          },
+                                                      )
                                                     : '-'}
                                             </span>
                                         </div>
@@ -338,7 +358,7 @@ export default function Dashboard({
                                 </div>
                             )}
                         </CardContent>
-                    </Card>     
+                    </Card>
 
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
@@ -368,7 +388,8 @@ export default function Dashboard({
                                             className="flex justify-between border-b pb-2"
                                         >
                                             <span>
-                                                {item.purchase?.product?.name ?? '-'}
+                                                {item.purchase?.product?.name ??
+                                                    '-'}
                                             </span>
                                             <span className="text-sm text-muted-foreground">
                                                 {item.total_sold} terjual

@@ -34,7 +34,8 @@ class PurchasesReportService
             ->when($year, function ($query) use ($year) {
                 $query->whereYear('purchase_date', $year);
             })
-
+            ->orderByDesc('updated_at')
+            ->orderByDesc('created_at')
             ->paginate(request('per_page', 10))
             ->withQueryString();
     }

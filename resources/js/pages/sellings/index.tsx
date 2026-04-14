@@ -49,6 +49,7 @@ type Item = {
     purchase_date: string;
     expired_date: string | null;
     source: string;
+    stock: number;
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -87,6 +88,9 @@ export default function Index({ pagination, categoryOptions }: Props) {
         const product = purchase.product;
 
         const exist = data.items.find((x) => x.purchase_id === purchase.id);
+        if (exist && exist.quantity >= exist.stock) {
+            return;
+        }
 
         if (exist) {
             setData(
@@ -120,6 +124,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
                 year,
                 code: purchase.code,
                 source: 'purchase',
+                stock: purchase.total_quantity,
             },
         ]);
     };
@@ -308,17 +313,27 @@ export default function Index({ pagination, categoryOptions }: Props) {
                         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
                             {products.map((purchase) => {
                                 const product = purchase.product;
+                                const exist = data.items.find(
+                                    (x) => x.purchase_id === purchase.id,
+                                );
 
+                                const isMax =
+                                    exist &&
+                                    exist.quantity >= purchase.total_quantity;
                                 return (
                                     <Card
                                         key={purchase.id}
                                         className={`relative transition hover:shadow-md ${
-                                            purchase.total_quantity <= 0
+                                            purchase.total_quantity <= 0 ||
+                                            isMax
                                                 ? 'cursor-not-allowed opacity-50'
                                                 : 'cursor-pointer'
                                         }`}
                                         onClick={() => {
-                                            if (purchase.total_quantity > 0) {
+                                            if (
+                                                purchase.total_quantity > 0 &&
+                                                !isMax
+                                            ) {
                                                 addItem(purchase);
                                             }
                                         }}
@@ -509,6 +524,14 @@ export default function Index({ pagination, categoryOptions }: Props) {
 
                                                     if (num <= 0) {
                                                         removeItem(index);
+                                                    } else if (
+                                                        num > item.stock
+                                                    ) {
+                                                        updateItem(
+                                                            index,
+                                                            'quantity',
+                                                            item.stock,
+                                                        );
                                                     } else {
                                                         updateItem(
                                                             index,
@@ -523,6 +546,9 @@ export default function Index({ pagination, categoryOptions }: Props) {
                                                 size="icon"
                                                 variant="secondary"
                                                 className="h-9 w-9 cursor-pointer"
+                                                disabled={
+                                                    item.quantity >= item.stock
+                                                }
                                                 onClick={() =>
                                                     updateItem(
                                                         index,
