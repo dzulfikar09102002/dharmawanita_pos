@@ -13,6 +13,8 @@ import {
     type ColumnDef,
 } from '@tanstack/react-table';
 
+import NumberBoardModal from '@/components/number-board-modal';
+import { toast } from 'sonner';
 import DataTable from '@/components/data-table';
 import TablePagination from '@/components/table-pagination';
 import { Pagination, Purchase } from '@/lib/model';
@@ -49,6 +51,8 @@ type Props = {
     pagination: Pagination<Purchase>;
     month: number;
     year: number;
+    resetKey?: number;
+     onReset?: () => void;
 };
 
 const formatRupiah = (value: number) =>
@@ -104,6 +108,15 @@ export default function Index({
             { preserveState: true, replace: true },
         );
     };
+
+    const [payModal, setPayModal] = useState<{
+    open: boolean;
+    data?: Purchase;
+    resetKey: number;
+}>({
+    open: false,
+    resetKey: 0,
+});
 
     const onDeleteOrRestore = (id: number, action: boolean) =>
         setAlert({
@@ -209,33 +222,54 @@ export default function Index({
             },
         },
         {
-            id: 'action',
+             id: 'action',
             header: 'Aksi',
             cell: (info) => {
                 const row = info.row.original;
                 const meta = info.table.options.meta as TableMeta;
 
                 return (
-                    <Button
-                        size="icon"
-                        className={
-                            meta.isDeletedRoute
-                                ? 'bg-gray-200'
-                                : 'bg-red-600 text-white'
-                        }
-                        onClick={() =>
-                            meta.onDeleteOrRestore(
-                                row.id,
-                                !meta.isDeletedRoute,
-                            )
-                        }
-                    >
-                        {meta.isDeletedRoute ? (
-                            <ArchiveRestore size={16} />
-                        ) : (
-                            <X size={16} />
-                        )}
-                    </Button>
+                    <div className="flex gap-2">
+                        {/* PAYMENT */}
+                        {row.status_payment === 'pending' &&
+                            !meta.isDeletedRoute && (
+                                <Button
+                                    size="icon"
+                                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                    onClick={() =>
+                                        setPayModal({
+                                            open: true,
+                                            data: row,
+                                            resetKey: Date.now(),
+                                        })        
+                                    }
+                                >
+                                    💰
+                                </Button>
+                            )}
+
+                        {/* DELETE / RESTORE */}
+                        <Button
+                            size="icon"
+                            className={
+                                meta.isDeletedRoute
+                                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    : 'bg-red-600 text-white hover:bg-red-700'
+                            }
+                            onClick={() =>
+                                meta.onDeleteOrRestore(
+                                    row.id,
+                                    !meta.isDeletedRoute,
+                                )
+                            }
+                        >
+                            {meta.isDeletedRoute ? (
+                                <ArchiveRestore size={16} />
+                            ) : (
+                                <X size={16} />
+                            )}
+                        </Button>
+                    </div>
                 );
             },
         },
@@ -251,6 +285,75 @@ export default function Index({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
+
+            <Alert
+                alertState={alert}
+                onAlertClose={() =>
+                    setAlert({
+                        isOpen: false,
+                        proccessing: false,
+                        dataId: undefined,
+                        delete: true,
+                    })
+                }
+                onAlertProccessing={() =>
+                    setAlert((prev) => ({ ...prev, proccessing: true }))
+                }
+            />
+
+            <NumberBoardModal
+                open={payModal.open}
+                resetKey={payModal.resetKey}
+                onClose={() =>
+                    setPayModal({
+                        open: false,
+                        data: undefined,
+                        resetKey: 0,
+                    })
+                }
+                grandTotal={
+                    ((payModal.data?.purchase_price ?? 0) *
+                    (payModal.data?.quantity ?? 0)) -
+                    (payModal.data?.total_payment ?? 0)
+                }
+                onConfirm={(amount: number) => {
+                    const total =
+                        (payModal.data?.purchase_price ?? 0) *
+                        (payModal.data?.quantity ?? 0);
+
+                    const alreadyPaid = payModal.data?.total_payment ?? 0;
+
+                    const remaining = total - alreadyPaid;
+
+                    if (amount > remaining) {
+                        toast.error(
+                            `Pembayaran melebihi sisa bayar!\nSisa: ${remaining.toLocaleString('id-ID')}`
+                        );
+                        return;
+                    }
+
+                    router.post(
+                        purchases.pay(payModal.data!.id).url,
+                        { total_payment: amount },
+                        {
+                            onSuccess: () => toast.success('Pembayaran berhasil'),
+                            onError: () => toast.error('Pembayaran gagal'),
+                        }
+                    );
+
+                    setPayModal({
+                        open: false,
+                        data: undefined,
+                        resetKey: 0,
+                    });
+                }}
+                onReset={() => {
+                    setPayModal((prev) => ({
+                        ...prev,
+                        resetKey: Date.now(),
+                    }));
+                }}
+            />
 
 <Card>
     <CardHeader>

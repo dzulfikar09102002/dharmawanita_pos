@@ -85,7 +85,8 @@ class PurchasesReportService
         return $purchasereport->restore();
     }
 
-   public function pay(Purchase $purchase, array $input): Purchase
+
+public function pay(Purchase $purchase, array $input): Purchase
 {
     return DB::transaction(function () use ($purchase, $input) {
 
@@ -94,18 +95,14 @@ class PurchasesReportService
             ->lockForUpdate()
             ->firstOrFail();
 
-        // total yang harus dibayar (system)
         $orderTotal = $purchase->purchase_price * $purchase->quantity;
 
-        // input user langsung masuk database
         $payAmount = (float) ($input['total_payment'] ?? 0);
 
-        // akumulasi pembayaran sebelumnya
-        $alreadyPaid = (float) ($purchase->paid_amount ?? 0);
+        $alreadyPaid = (float) ($purchase->total_payment ?? 0);
 
         $newPaid = $alreadyPaid + $payAmount;
 
-        // tidak boleh lebih dari total order
         if ($newPaid > $orderTotal) {
             $newPaid = $orderTotal;
         }
@@ -113,11 +110,7 @@ class PurchasesReportService
         $remaining = $orderTotal - $newPaid;
 
         $purchase->update([
-            // ✅ sesuai request: langsung dari input user
-            'total_payment' => $payAmount,
-
-            'paid_amount' => $newPaid,
-            'remaining_payment' => $remaining,
+            'total_payment' => $newPaid,
             'status_payment' => $remaining == 0 ? 'paid' : 'pending',
             'updated_by' => auth()->id(),
         ]);
