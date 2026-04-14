@@ -70,42 +70,61 @@ class SalesReportController extends Controller
 
     public function printSalesReport(Request $request)
     {
-        $type = $request->type;   
-        $bulan = $request->bulan;
-        $tahun = $request->tahun;
+        $isDeleted = $request->boolean('deleted');
 
-        if (!$tahun) {
-            abort(400, 'Tahun wajib diisi');
+        $type = $request->type ?? 'month';
+        $bulan = $request->bulan ?? now()->month;
+        $tahun = $request->tahun ?? now()->year;
+
+       $query = SaleTransaction::query()
+    ->with([
+        'details.purchase' => function ($q) {
+            $q->withTrashed()->with([
+                'product' => function ($q2) {
+                    $q2->withTrashed();
+                }
+            ]);
+        }
+    ]);
+
+        if ($isDeleted) {
+            $query->onlyTrashed();
         }
 
-        $query = SaleTransaction::query();
-
+        // filter periode
         if ($type === 'month') {
-            if (!$bulan) {
-                abort(400, 'Bulan wajib diisi untuk laporan bulanan');
-            }
-
             $query->whereMonth('transaction_date', $bulan)
-                  ->whereYear('transaction_date', $tahun);
-        }
-
-        if ($type === 'year') {
+                ->whereYear('transaction_date', $tahun);
+        } else {
             $query->whereYear('transaction_date', $tahun);
         }
 
-        $transactions = $query->latest()->get();
+        $transactions = $query->get();
 
-        $total = $transactions->sum('grand_total');
+        // total
+        $total = $isDeleted
+            ? $transactions->sum('total_amount')
+            : $transactions->sum('grand_total');
 
+        // 🔥 render blade ke PDF
         $pdf = Pdf::loadView('reports.sales-pdf', [
-            'transactions' => $transactions,
-            'total' => $total,
-            'type' => $type,
             'bulan' => $bulan,
             'tahun' => $tahun,
-        ])->setPaper('a4', 'portrait');
+            'type' => $type,
+            'transactions' => $transactions,
+            'total' => $total,
+            'isDeleted' => $isDeleted,
+        ]);
 
-        return $pdf->stream('laporan-penjualan.pdf');
+        // optional setting
+        $pdf->setPaper('A4', 'portrait');
+
+        // 🔥 STREAM (buka di browser)
+        return $pdf->stream(
+            $isDeleted
+                ? "laporan-barang-rusak-{$bulan}-{$tahun}.pdf"
+                : "laporan-penjualan-{$bulan}-{$tahun}.pdf"
+        );
     }
 
     public function payment(int $id)
