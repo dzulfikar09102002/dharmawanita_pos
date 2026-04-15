@@ -63,13 +63,14 @@ class DashboardService
     }
 
     public function getReceivable($month, $year)
-    {
-        return SaleTransaction::query()
-            ->where('payment_status', 'pending')
-            ->whereMonth('transaction_date', $month)
-            ->whereYear('transaction_date', $year) 
-            ->sum('grand_total');
-    }
+{
+    return SaleTransaction::query()
+        ->where('payment_status', 'pending')
+        ->whereMonth('transaction_date', $month)
+        ->whereYear('transaction_date', $year)
+        ->selectRaw('SUM(grand_total - total_amount) as total')
+        ->value('total') ?? 0;
+}
 
     public function getDailySalesChart($month, $year)
     {
