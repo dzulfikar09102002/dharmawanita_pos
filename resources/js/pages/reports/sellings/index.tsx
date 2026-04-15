@@ -3,7 +3,15 @@ import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import salesReport from '@/routes/reports/sales';
-import { Eye, Search, X, ArchiveRestore, FilterX, Printer } from 'lucide-react';
+import {
+    Eye,
+    Search,
+    X,
+    ArchiveRestore,
+    FilterX,
+    Printer,
+    SquareArrowOutUpRight,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -94,11 +102,11 @@ export default function Index({
     const currentYear = new Date().getFullYear();
 
     const [bulan, setBulan] = useState<number>(
-        Number(query.bulan) || initialBulan || currentMonth
+        Number(query.bulan) || initialBulan || currentMonth,
     );
 
     const [tahun, setTahun] = useState<number>(
-        Number(query.tahun) || initialTahun || currentYear
+        Number(query.tahun) || initialTahun || currentYear,
     );
     const search = query.search || '';
 
@@ -132,18 +140,22 @@ export default function Index({
     };
 
     const handleFilter = (e: React.FormEvent) => {
-    e.preventDefault();
+        e.preventDefault();
 
-    router.get(salesReport.index().url, {
-        search,
-        bulan,
-        tahun,
-        page: 1,
-    }, {
-        preserveState: true,
-        replace: true,
-    });
-};
+        router.get(
+            salesReport.index().url,
+            {
+                search,
+                bulan,
+                tahun,
+                page: 1,
+            },
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
 
     const [alert, setAlert] = useState<AlertState>(initialAlertState);
 
@@ -180,172 +192,176 @@ export default function Index({
     };
 
     // 👉 Kolom khusus saat deleted
-const deletedColumns: ColumnDef<SaleTransaction, any>[] = isDeletedRoute
-    ? [
-          columnHelper.display({
-              id: 'deleted_reason',
-              header: 'Alasan Terhapus',
-              cell: () => (
-                  <span className="text-gray-600 italic">
-                      rusak/expired
-                  </span>
-              ),
-          }),
-      ]
-    : [];
-
-// 👉 Kolom utama
-const baseColumns: ColumnDef<SaleTransaction, any>[] = [
-    {
-        id: 'no',
-        header: 'No',
-        cell: (info) =>
-            (pagination.current_page - 1) * pagination.per_page +
-            info.row.index +
-            1,
-    },
-
-    columnHelper.accessor('invoice_number', {
-        header: 'Invoice Number',
-    }),
-
-    columnHelper.accessor('payment_method', {
-        header: 'Metode Pembayaran',
-        cell: (info) => {
-            const row = info.row.original;
-            return row.payment_method?.name ?? '-';
+    const deletedColumns: ColumnDef<SaleTransaction, any>[] = isDeletedRoute
+        ? [
+              columnHelper.accessor('reason', {
+                  header: 'Keterangan',
+                  cell: (info) => {
+                      const value = info.getValue();
+                      return value || '-';
+                  },
+              }),
+          ]
+        : [];
+    const baseColumns: ColumnDef<SaleTransaction, any>[] = [
+        {
+            id: 'no',
+            header: 'No',
+            cell: (info) =>
+                (pagination.current_page - 1) * pagination.per_page +
+                info.row.index +
+                1,
         },
-    }),
 
-    columnHelper.accessor('payment_status', {
-        header: 'Status Pembayaran',
-        cell: (info) => {
-            const status = info.getValue() as
-                | 'paid'
-                | 'pending'
-                | 'canceled'
-                | undefined;
+        columnHelper.accessor('invoice_number', {
+            header: 'Invoice Number',
+        }),
 
-            const map: Record<string, string> = {
-                paid: 'bg-green-100 text-green-600',
-                pending: 'bg-yellow-100 text-yellow-600',
-                canceled: 'bg-red-100 text-red-600',
-            };
+        columnHelper.accessor('payment_method', {
+            header: 'Metode Pembayaran',
+            cell: (info) => {
+                const row = info.row.original;
+                return row.payment_method?.name ?? '-';
+            },
+        }),
 
-            const label: Record<string, string> = {
-                paid: 'Lunas',
-                pending: 'Pending',
-                canceled: 'Dibatalkan',
-            };
+        columnHelper.accessor('payment_status', {
+            header: 'Status Pembayaran',
+            cell: (info) => {
+                const status = info.getValue() as
+                    | 'paid'
+                    | 'pending'
+                    | 'canceled'
+                    | undefined;
 
-            if (!status) return '-';
+                const map: Record<string, string> = {
+                    paid: 'bg-green-100 text-green-600',
+                    pending: 'bg-yellow-100 text-yellow-600',
+                    canceled: 'bg-red-100 text-red-600',
+                };
 
-            return (
-                <span className={`rounded px-2 py-1 text-xs ${map[status]}`}>
-                    {label[status]}
-                </span>
-            );
-        },
-    }),
+                const label: Record<string, string> = {
+                    paid: 'Lunas',
+                    pending: 'Pending',
+                    canceled: 'Dibatalkan',
+                };
 
-    columnHelper.accessor('grand_total', {
-        header: 'Jumlah',
-        cell: (info) => formatRupiah(info.getValue()),
-    }),
+                if (!status) return '-';
 
-    columnHelper.accessor('total_amount', {
-        header: 'Total Pembayaran',
-        cell: (info) => formatRupiah(info.getValue()),
-    }),
-
-    // 🔥 Kolom dinamis (Kurang Bayar / Kerugian)
-    columnHelper.display({
-        id: 'financial_status',
-        header: isDeletedRoute ? 'Kerugian' : 'Kurang Bayar',
-        cell: (info) => {
-            const row = info.row.original;
-
-            const kurangBayar =
-                (row.grand_total || 0) - (row.total_amount || 0);
-
-            const kerugian = row.total_amount || 0;
-
-            const value = isDeletedRoute
-                ? Math.max(kerugian, 0)
-                : Math.max(kurangBayar, 0);
-
-            if (value > 0) {
                 return (
-                    <span className="text-red-600 font-semibold">
-                        {formatRupiah(value)}
+                    <span
+                        className={`rounded px-2 py-1 text-xs ${map[status]}`}
+                    >
+                        {label[status]}
                     </span>
                 );
-            }
+            },
+        }),
 
-            return (
-                <span className="text-green-600 font-semibold">
-                    Rp 0
-                </span>
-            );
+        columnHelper.accessor('grand_total', {
+            header: 'Jumlah',
+            cell: (info) => formatRupiah(info.getValue()),
+        }),
+
+        columnHelper.accessor('total_amount', {
+            id: 'total_amount',
+            header: 'Total Pembayaran',
+            cell: (info) => formatRupiah(info.getValue()),
+        }),
+
+        // 🔥 Kolom dinamis (Kurang Bayar / Kerugian)
+        columnHelper.display({
+            id: 'financial_status',
+            header: isDeletedRoute ? 'Kerugian' : 'Kurang Bayar',
+            cell: (info) => {
+                const row = info.row.original;
+
+                const kurangBayar =
+                    (row.grand_total || 0) - (row.total_amount || 0);
+
+                const kerugian = row.total_amount || 0;
+
+                const value = isDeletedRoute
+                    ? Math.max(kerugian, 0)
+                    : Math.max(kurangBayar, 0);
+
+                if (value > 0) {
+                    return (
+                        <span className="font-semibold text-red-600">
+                            {formatRupiah(value)}
+                        </span>
+                    );
+                }
+
+                return (
+                    <span className="font-semibold text-green-600">Rp 0</span>
+                );
+            },
+        }),
+
+        columnHelper.accessor('transaction_date', {
+            header: 'Tanggal Transaksi',
+            cell: (info) =>
+                new Date(info.getValue()).toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                }),
+        }),
+
+        {
+            id: 'action',
+            header: 'Aksi',
+            cell: (info) => {
+                const row = info.row.original as SaleTransaction & {
+                    id: number;
+                };
+                const meta = info.table.options.meta as TableMeta;
+
+                return (
+                    <div className="flex gap-2">
+                        <Button
+                            size="icon"
+                            variant="outline"
+                            onClick={() => meta.onDetail(row.id)}
+                        >
+                            <SquareArrowOutUpRight size={16} />
+                        </Button>
+                    </div>
+                );
+            },
         },
-    }),
+    ];
 
-    columnHelper.accessor('transaction_date', {
-        header: 'Tanggal Transaksi',
-        cell: (info) =>
-            new Date(info.getValue()).toLocaleDateString('id-ID', {
-                day: '2-digit',
-                month: 'long',
-                year: 'numeric',
-            }),
-    }),
+    const columns: ColumnDef<SaleTransaction, any>[] = isDeletedRoute
+        ? (() => {
+              const filtered = baseColumns.filter(
+                  (col: any) => col.id !== 'total_amount',
+              );
 
-    {
-        id: 'action',
-        header: 'Aksi',
-        cell: (info) => {
-            const row = info.row.original as SaleTransaction & {
-                id: number;
-            };
-            const meta = info.table.options.meta as TableMeta;
+              const actionIndex = filtered.findIndex(
+                  (col: any) => col.id === 'action',
+              );
 
-            return (
-                <div className="flex gap-2">
-                    <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => meta.onDetail(row.id)}
-                    >
-                        <Eye size={16} />
-                    </Button>
-                </div>
-            );
-        },
-    },
-];
+              return [
+                  ...filtered.slice(0, actionIndex), // sebelum action
+                  ...deletedColumns, // reason masuk sini
+                  ...filtered.slice(actionIndex), // action tetap terakhir
+              ];
+          })()
+        : baseColumns;
 
-// ✅ FINAL COLUMNS (FIX UTAMA)
-const columns: ColumnDef<SaleTransaction, any>[] = isDeletedRoute
-    ? [
-          ...baseColumns.slice(0, 6), // sebelum financial
-          ...deletedColumns,          // alasan terhapus
-          ...baseColumns.slice(6),    // setelahnya (financial, tanggal, aksi)
-      ]
-    : baseColumns;
-
-// ✅ TABLE
-const table = useReactTable<SaleTransaction>({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    meta: {
-        onDeleteOrRestore,
-        onDetail,
-        isDeletedRoute,
-    } as TableMeta,
-});
-
-
+    // ✅ TABLE
+    const table = useReactTable<SaleTransaction>({
+        data,
+        columns,
+        getCoreRowModel: getCoreRowModel(),
+        meta: {
+            onDeleteOrRestore,
+            onDetail,
+            isDeletedRoute,
+        } as TableMeta,
+    });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -486,7 +502,7 @@ const table = useReactTable<SaleTransaction>({
                                     preserveState
                                     preserveScroll
                                 >
-                                    Tersedia
+                                    Penjualan
                                 </Link>
                             </TabsTrigger>
 
@@ -501,7 +517,7 @@ const table = useReactTable<SaleTransaction>({
                                     preserveState
                                     preserveScroll
                                 >
-                                    Terhapus
+                                    Kerugian
                                 </Link>
                             </TabsTrigger>
                         </TabsList>

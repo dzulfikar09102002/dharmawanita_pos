@@ -14,15 +14,7 @@ $isDeleted = request('deleted') == 1;
 
 <head>
     <meta charset="utf-8">
-    <title>
-        {{ $isDeleted ? 'Laporan Barang Rusak / Expired' : 'Laporan Penjualan' }}
-        -
-        @if ($type === 'month')
-            {{ $namaBulan[$bulan] }} {{ $tahun }}
-        @else
-            {{ $tahun }}
-        @endif
-    </title>
+    <title>{{ $title }}</title>
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -108,7 +100,7 @@ $isDeleted = request('deleted') == 1;
 
     <p>
         @if ($type === 'month')
-            Periode: {{ $namaBulan[$bulan] }} {{ $tahun }}
+            Periode: {{ $namaBulan[(int) $bulan] ?? '-' }} {{ $tahun }}
         @else
             Periode: {{ $tahun }}
         @endif
@@ -121,7 +113,7 @@ $isDeleted = request('deleted') == 1;
 </div>
 
 <table>
-    <thead>
+        <thead>
         <tr>
             <th style="width:5%">No</th>
 
@@ -150,46 +142,52 @@ $isDeleted = request('deleted') == 1;
                 <td class="text-center">{{ $i + 1 }}</td>
 
                 @if ($isDeleted)
-                    <td>
-                        {{
-                            $trx->details
-                                ->map(fn($d) => ($d->purchase->product->name ?? '-') . ' (' . $d->quantity . ')')
-                                ->join(', ')
-                            ?: '-'
-                        }}
-                    </td>
-                    <td class="text-center">{{ $trx->quantity ?? '-' }}</td>
+    <td>
+        {{
+            $trx->details
+                ->map(fn($d) => ($d->purchase->product->name ?? '-') . ' (' . $d->quantity . ')')
+                ->join(', ')
+            ?: '-'
+        }}
+    </td>
 
-                    <td>
-                        {{ $date->format('d') }}
-                        {{ $namaBulan[$date->month] }}
-                        {{ $date->format('Y') }}
-                    </td>
+    <td class="text-center">
+        {{ $trx->details->sum('quantity') ?: '-' }}
+    </td>
 
-                    <td>rusak/expired</td>
+    <td>
+        {{ $date->format('d') }}
+        {{ $namaBulan[(int) $date->format('n')] ?? '-' }}
+        {{ $date->format('Y') }}
+    </td>
 
-                    <td class="text-right">
-                        Rp {{ number_format($trx->total_amount ?? 0, 0, ',', '.') }}
-                    </td>
-                @else
-                    <td>{{ $trx->invoice_number }}</td>
+    <td>
+        {{ $trx->reason ?? '-' }}
+    </td>
 
-                    <td class="text-center">
-                        <span class="badge {{ $trx->payment_status }}">
-                            {{ ucfirst($trx->payment_status) }}
-                        </span>
-                    </td>
+    <td class="text-right">
+        Rp {{ number_format($trx->total_amount ?? 0, 0, ',', '.') }}
+    </td>
 
-                    <td>
-                        {{ $date->format('d') }}
-                        {{ $namaBulan[$date->month] }}
-                        {{ $date->format('Y') }}
-                    </td>
+@else
+    <td>{{ $trx->invoice_number }}</td>
 
-                    <td class="text-right">
-                        Rp {{ number_format($trx->grand_total, 0, ',', '.') }}
-                    </td>
-                @endif
+    <td class="text-center">
+        <span class="badge {{ $trx->payment_status }}">
+            {{ ucfirst($trx->payment_status) }}
+        </span>
+    </td>
+
+    <td>
+        {{ $date->format('d') }}
+        {{ $namaBulan[(int) $date->format('n')] ?? '-' }}
+        {{ $date->format('Y') }}
+    </td>
+
+    <td class="text-right">
+        Rp {{ number_format($trx->grand_total ?? 0, 0, ',', '.') }}
+    </td>
+@endif
             </tr>
 
         @empty

@@ -22,6 +22,7 @@ type LabaRugiData = {
     total_pendapatan_piutang: number;
     total_pembelian: number;
     laba_rugi: number;
+    total_utang: number;
 };
 
 type Props = {
@@ -84,7 +85,7 @@ export default function LabaRugi({ data }: Props) {
 
     const totalPendapatan =
         data.total_pendapatan + data.total_pendapatan_piutang;
-
+    const totalPengeluaran = data.total_pembelian + data.total_utang;
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Laba Rugi" />
@@ -191,7 +192,9 @@ export default function LabaRugi({ data }: Props) {
                             </h3>
 
                             <div className="mt-2 flex justify-between">
-                                <span className="pl-4">Pendapatan Tunai</span>
+                                <span className="pl-4">
+                                    Pendapatan Penjualan
+                                </span>
                                 <span>
                                     {formatRupiah(data.total_pendapatan)}
                                 </span>
@@ -215,7 +218,7 @@ export default function LabaRugi({ data }: Props) {
                         {/* PEMBELIAN */}
                         <div>
                             <h3 className="border-b pb-1 font-semibold">
-                                Pembelian
+                                Pengeluaran
                             </h3>
 
                             <div className="mt-2 flex justify-between">
@@ -224,12 +227,14 @@ export default function LabaRugi({ data }: Props) {
                                     {formatRupiah(data.total_pembelian)}
                                 </span>
                             </div>
+                            <div className="flex justify-between">
+                                <span className="pl-4">Pelunasan Utang</span>
+                                <span>{formatRupiah(data.total_utang)}</span>
+                            </div>
 
                             <div className="mt-2 flex justify-between border-t pt-2 font-semibold">
-                                <span>Total Pembelian</span>
-                                <span>
-                                    {formatRupiah(data.total_pembelian)}
-                                </span>
+                                <span>Total Pengeluaran</span>
+                                <span>{formatRupiah(totalPengeluaran)}</span>
                             </div>
                         </div>
 

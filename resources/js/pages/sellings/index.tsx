@@ -348,6 +348,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
                                                             : 'bg-red-500'
                                                     }`}
                                                 >
+                                                    Stok :{' '}
                                                     {purchase.total_quantity}
                                                 </span>
                                             </div>

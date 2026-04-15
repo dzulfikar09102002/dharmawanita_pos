@@ -89,6 +89,7 @@ export interface SaleTransaction {
     transaction_date: string;
     bulan: number;
     tahun: number;
+    reason: string;
 }
 
 export interface SaleTransactionDetail {

@@ -33,7 +33,11 @@ class SaleTransactionDetail extends Model
     {
         return $this->belongsTo(Purchase::class);
     }
-
+    public function inventoryTransactions()
+    {
+        return $this->hasMany(InventoryTransaction::class, 'reference_id')
+            ->where('type', 'out');
+    }
     public function product()
     {
         return $this->belongsTo(Product::class, 'product_id')->withTrashed();

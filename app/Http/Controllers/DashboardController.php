@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Services\DashboardService;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use App\Models\Purchase;
 use App\Models\SaleTransactionDetail;
@@ -52,13 +53,18 @@ public function expiredDetail()
 
    public function bestSellingDetail()
 {
-    $products = SaleTransactionDetail::with('purchase.product')
-        ->selectRaw('purchase_id, SUM(quantity) as total_sold')
+    $products = SaleTransactionDetail::query()
+        ->select('purchase_id', DB::raw('SUM(quantity) as total_sold'))
+        ->with('purchase.product')
+        ->whereHas('saleTransaction', function ($q) {
+            $q->whereNull('deleted_at') 
+              ->where('payment_status', '!=', 'canceled');
+        })
         ->groupBy('purchase_id')
         ->orderByDesc('total_sold')
         ->get();
 
-    return inertia('dashboard/best-selling-detail', [
+    return Inertia::render('dashboard/best-selling-detail', [
         'products' => $products,
     ]);
 }

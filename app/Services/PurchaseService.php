@@ -78,10 +78,17 @@ class PurchaseService
                 {
                     $total_payment = $item['purchase_price'] * $item['quantity'];
                     $status_payment = 'paid';
+                    $payment_type = 'cash';
                 }
-                else
+                else if($item['source'] == 'consignment')
                 {
                     $status_payment = 'pending';
+                    $payment_type = 'credit';
+                    $total_payment = 0;
+                }
+                else    
+                {
+                    $status_payment = 'paid';
                     $total_payment = 0;
                 }
                 $purchase = Purchase::create([
@@ -93,6 +100,7 @@ class PurchaseService
                     'purchase_price'  => $item['purchase_price'],
                     'selling_price'   => $item['selling_price'],
                     'purchase_date'   => $item['purchase_date'],
+                    'payment_type'    => $payment_type,
                     'total_payment'   => $total_payment,
                     'status_payment'  => $status_payment,
                     'expired_date'    => $item['expired_date'] ?? null,

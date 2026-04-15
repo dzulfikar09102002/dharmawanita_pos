@@ -4,8 +4,17 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
-
 export default defineConfig({
+    server: {
+        host: '0.0.0.0',
+        port: 5173,
+        cors: {
+            origin: '*',
+        },
+        hmr: {
+            host: '10.0.70.90',
+        },
+    },
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],

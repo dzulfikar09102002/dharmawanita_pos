@@ -46,6 +46,12 @@ class SalesReportService
 
         return [
             'data' => $query
+                ->orderByRaw("
+                    CASE 
+                        WHEN payment_status = 'canceled' THEN 1
+                        ELSE 0
+                    END
+                ")
                 ->orderByDesc('transaction_date')
                 ->paginate(request('per_page', 10))
                 ->withQueryString(),
@@ -90,13 +96,30 @@ class SalesReportService
     {
         $search = request('search', '');
 
-        return SaleTransaction::onlyTrashed()
-            ->with('paymentMethod')
+        $data = SaleTransaction::onlyTrashed()
+            ->with([
+                'paymentMethod',
+                'details.inventoryTransactions'
+            ])
             ->when($search, function ($q) use ($search) {
                 $q->where('invoice_number', 'like', "%$search%");
             })
+            ->orderByDesc('transaction_date')
             ->paginate(request('per_page', 10))
             ->withQueryString();
+
+        $data->getCollection()->transform(function ($item) {
+
+            $item->reason = optional(
+                $item->details
+                    ->flatMap(fn ($d) => $d->inventoryTransactions)
+                    ->first()
+            )->note;
+
+            return $item;
+        });
+
+        return $data;
     }
 
      public function delete(SaleTransaction $salereport)

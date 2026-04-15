@@ -113,6 +113,7 @@ class SellingService
                 'invoice_number'   => $this->generateInvoiceNumber(),
                 'payment_status'   => 'pending',
                 'grand_total'      => $grandTotal,
+                'payment_type'     => 'cash',
                 'transaction_date' => now(),
                 'created_by'       => $user,
                 'updated_by'       => $user,
@@ -207,11 +208,16 @@ class SellingService
             $methodId = $input['purchase_method_id'];
             $isCancelMethod = $methodId > 3;
             $isPaid = $total_amount >= $sale->grand_total;
+            $paymentType = $sale->payment_type;
+            if ($sale->payment_type === 'cash' && !$isPaid) {
+                $paymentType = 'credit';
+            }
             $sale->update([
                 'payment_method_id' => $input['payment_method_id'] ?? null,
                 'total_amount'      => $total_amount,
                 'change'            => $input['change_amount'],
                 'purchasing_method_id' => $methodId,
+                'payment_type'        => $isCancelMethod ? null : $paymentType,
                 'payment_status'    => $isCancelMethod
                     ? 'canceled'
                     : ($isPaid ? 'paid' : $sale->payment_status),

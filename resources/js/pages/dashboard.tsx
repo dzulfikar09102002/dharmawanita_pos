@@ -4,7 +4,7 @@ import type { BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Area, AreaChart, CartesianGrid } from 'recharts';
 import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
+import { Eye, SquareArrowOutUpRight } from 'lucide-react';
 
 import {
     Combobox,
@@ -320,8 +320,7 @@ export default function Dashboard({
                                     variant="outline"
                                     className="flex items-center gap-1"
                                 >
-                                    <Eye size={14} />
-                                    Detail
+                                    <SquareArrowOutUpRight size={14} />
                                 </Button>
                             </Link>
                         </CardHeader>
@@ -369,8 +368,7 @@ export default function Dashboard({
                                     variant="outline"
                                     className="flex items-center gap-1"
                                 >
-                                    <Eye size={14} />
-                                    Detail
+                                    <SquareArrowOutUpRight size={14} />
                                 </Button>
                             </Link>
                         </CardHeader>

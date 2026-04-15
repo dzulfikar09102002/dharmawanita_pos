@@ -15,6 +15,7 @@ class SaleTransaction extends Model
         'payment_method_id',
         'purchasing_method_id',
         'payment_status',
+        'payment_type',
         'total_amount',
         'grand_total',
         'change',

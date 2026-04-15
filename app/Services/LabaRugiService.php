@@ -9,38 +9,49 @@ use App\Models\Category;
 
 class LabaRugiService
 {
-    public function getLabaRugi(?int $bulan, int $tahun)
+public function getLabaRugi(int $bulan, int $tahun)
 {
     // Base query
     $queryPendapatan = SaleTransaction::query()
+        ->where('payment_type', 'cash')
         ->whereYear('transaction_date', $tahun);
 
     $queryPiutang = SaleTransaction::query()
-        ->where('created_at', '!=', 'updated_at')
+        ->where('payment_type', 'credit')
         ->whereYear('transaction_date', $tahun);
 
     $queryPembelian = Purchase::query()
+        ->where('payment_type', 'cash')
         ->whereYear('purchase_date', $tahun);
 
-    // Jika ada bulan → filter bulan
+    $queryUtang = Purchase::query()
+        ->where('payment_type', 'credit')
+        ->whereYear('purchase_date', $tahun);
+
+    // Filter bulan
     if ($bulan) {
         $queryPendapatan->whereMonth('transaction_date', $bulan);
         $queryPiutang->whereMonth('transaction_date', $bulan);
         $queryPembelian->whereMonth('purchase_date', $bulan);
+        $queryUtang->whereMonth('purchase_date', $bulan);
     }
 
     // Eksekusi
-    $totalPendapatan = $queryPendapatan
+    $totalPendapatan = (float) $queryPendapatan
         ->where('payment_status', 'paid')
         ->sum('grand_total');
 
-    $totalPendapatanPiutang = $queryPiutang
+    $totalPendapatanPiutang = (float) $queryPiutang
         ->sum('grand_total');
 
-    $totalPembelian = $queryPembelian
+    $totalPembelian = (float) $queryPembelian
         ->sum('total_payment');
 
-    $laba = $totalPendapatan + $totalPendapatanPiutang - $totalPembelian;
+    $totalUtang = (float) $queryUtang
+        ->sum('total_payment');
+
+    // Perhitungan laba (tetap sesuai punyamu)
+    $laba = $totalPendapatan + $totalPendapatanPiutang - $totalPembelian - $totalUtang;
 
     return [
         'bulan' => $bulan,
@@ -48,6 +59,7 @@ class LabaRugiService
         'total_pendapatan' => $totalPendapatan,
         'total_pendapatan_piutang' => $totalPendapatanPiutang,
         'total_pembelian' => $totalPembelian,
+        'total_utang' => $totalUtang,
         'laba_rugi' => $laba,
     ];
 }
