@@ -42,7 +42,8 @@ class DashboardController extends Controller
 
 public function expiredDetail()
 {
-    $products = Product::whereNotNull('expired_date')
+    $products = Product::with('category') 
+        ->whereNotNull('expired_date')
         ->orderBy('expired_date', 'asc')
         ->get();
 
@@ -51,7 +52,7 @@ public function expiredDetail()
     ]);
 }
 
-   public function bestSellingDetail()
+public function bestSellingDetail()
 {
     $products = SaleTransactionDetail::query()
         ->select('purchase_id', DB::raw('SUM(quantity) as total_sold'))
@@ -68,4 +69,6 @@ public function expiredDetail()
         'products' => $products,
     ]);
 }
+
+
 }
