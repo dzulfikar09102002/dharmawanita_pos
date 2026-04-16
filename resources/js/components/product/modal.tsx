@@ -8,12 +8,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 
-import {
-    Field,
-    FieldError,
-    FieldLabel,
-    FieldSet,
-} from '@/components/ui/field';
+import { Field, FieldError, FieldLabel, FieldSet } from '@/components/ui/field';
 
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -30,6 +25,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { DatePicker } from '../ui/date-picker';
 
 export type ModalState = {
     isOpen: boolean;
@@ -117,7 +113,7 @@ export default function Modal({
     }, [modalState.dataId]);
 
     return (
-       <Dialog
+        <Dialog
             open={modalState.isOpen}
             onOpenChange={(open) => {
                 if (!open && !processing) {
@@ -126,11 +122,9 @@ export default function Modal({
                 }
             }}
         >
-            <DialogContent
-                className="top-[10%] translate-y-0 p-6"
-                asChild
-            >
+            <DialogContent className="top-[10%] translate-y-0 p-6" asChild>
                 <form onSubmit={submit}>
+                    <DialogCancel />
                     <DialogHeader className="mb-4">
                         <DialogTitle>
                             {modalState.dataId
@@ -139,8 +133,7 @@ export default function Modal({
                         </DialogTitle>
                     </DialogHeader>
 
-                    {/* ✅ FIX SPACING */}
-                    <FieldSet className="space-y-4">
+                    <FieldSet>
                         <Field>
                             <FieldLabel>Nama</FieldLabel>
                             <Input
@@ -176,14 +169,16 @@ export default function Modal({
                                 </SelectTrigger>
 
                                 <SelectContent>
-                                    {categoryOptions.map((opt) => (
-                                        <SelectItem
-                                            key={opt.value}
-                                            value={opt.value.toString()}
-                                        >
-                                            {opt.label}
-                                        </SelectItem>
-                                    ))}
+                                    {categoryOptions
+                                        .filter((opt) => opt.value !== 'all')
+                                        .map((opt) => (
+                                            <SelectItem
+                                                key={opt.value}
+                                                value={opt.value.toString()}
+                                            >
+                                                {opt.label}
+                                            </SelectItem>
+                                        ))}
                                 </SelectContent>
                             </Select>
                             <FieldError>{errors.category_id}</FieldError>
@@ -195,10 +190,7 @@ export default function Modal({
                                 type="number"
                                 value={data.purchase_price}
                                 onChange={(e) =>
-                                    setData(
-                                        'purchase_price',
-                                        e.target.value,
-                                    )
+                                    setData('purchase_price', e.target.value)
                                 }
                             />
                         </Field>
@@ -209,22 +201,21 @@ export default function Modal({
                                 type="number"
                                 value={data.selling_price}
                                 onChange={(e) =>
-                                    setData(
-                                        'selling_price',
-                                        e.target.value,
-                                    )
+                                    setData('selling_price', e.target.value)
                                 }
                             />
                         </Field>
 
                         <Field>
-                            <FieldLabel>Tanggal Expired (jika produk memiliki masa kadaluarsa)</FieldLabel>
-                            <Input
-                                type="date"
-                                value={data.expired_date ? data.expired_date.slice(0, 10) : ''}
-                                onChange={(e) =>
-                                    setData('expired_date', e.target.value)
-                                }
+                            <FieldLabel>
+                                Tanggal Expired (jika produk memiliki masa
+                                kadaluarsa)
+                            </FieldLabel>
+                            <DatePicker
+                                value={data.expired_date || null}
+                                onChange={(val) => {
+                                    setData('expired_date', val ?? '');
+                                }}
                             />
                         </Field>
                     </FieldSet>
@@ -236,9 +227,7 @@ export default function Modal({
                         </DialogClose>
 
                         <Button type="submit" disabled={processing}>
-                            <Spinner
-                                className={processing ? '' : 'hidden'}
-                            />
+                            <Spinner className={processing ? '' : 'hidden'} />
                             Simpan
                         </Button>
                     </DialogFooter>

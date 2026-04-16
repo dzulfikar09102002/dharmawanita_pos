@@ -234,7 +234,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
 
             <div className="mb-4">
                 <Button
-                    className="bg-green-600 hover:bg-green-700 text-white"
+                    className="bg-green-600 text-white hover:bg-green-700"
                     onClick={() =>
                         setModal({ isOpen: true, dataId: undefined })
                     }
@@ -297,7 +297,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
                             <Input
                                 name="search"
                                 defaultValue={search}
-                                placeholder="Cari produk..."
+                                placeholder="Cari..."
                             />
 
                             <Button type="submit" variant="secondary">

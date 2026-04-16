@@ -384,13 +384,10 @@ export default function Index({
                         <input type="hidden" name="bulan" value={bulan} />
                         <input type="hidden" name="tahun" value={tahun} />
                         <div className="flex min-w-[250px] flex-1 flex-col">
-                            <label className="mb-1 text-xs text-gray-500">
-                                Cari Invoice
-                            </label>
                             <Input
                                 name="search"
                                 defaultValue={search}
-                                placeholder="Cari invoice..."
+                                placeholder="Cari..."
                             />
                         </div>
 

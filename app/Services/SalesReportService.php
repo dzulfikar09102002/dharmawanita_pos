@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\InventoryTransaction;
 use App\Models\SaleTransaction;
 use App\Models\SaleTransactionDetail;
 use App\Models\PaymentMethod;
 use App\Models\Product;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 class SalesReportService
 {
     
@@ -84,12 +86,38 @@ class SalesReportService
 
     public function cancel(int $id)
     {
-        $invoice = SaleTransaction::findOrFail($id);
-        
-        return $invoice->update([
-            'payment_status' => 'canceled',
-            'updated_by'   => auth()->user()->id,
-        ]);
+        return DB::transaction(function () use ($id) {
+
+            $invoice = SaleTransaction::with('details.purchase')->findOrFail($id);
+
+            // Update status
+            $invoice->update([
+                'payment_status' => 'canceled',
+                'updated_by'     => auth()->id(),
+            ]);
+
+            // Loop detail transaksi (karena bisa banyak produk)
+            foreach ($invoice->details as $detail) {
+
+                if (!$detail->purchase) {
+                    throw new \Exception("Purchase tidak ditemukan untuk detail ID: {$detail->id}");
+                }
+
+                InventoryTransaction::create([
+                    'product_id'     => $detail->purchase->product_id, // ✅ FIX DI SINI
+                    'type'           => 'in',
+                    'source'         => 'return',
+                    'reference_id'   => $detail->purchase_id, // lebih konsisten
+                    'quantity'       => $detail->quantity,
+                    'purchase_price' => $detail->purchase->purchase_price ?? 0,
+                    'selling_price'  => $detail->selling_price ?? 0,
+                    'note'           => 'Transaksi dibatalkan (return)',
+                    'created_by'     => auth()->id(),
+                ]);
+            }
+
+            return true;
+        });
     }
 
     public function getDeletedMethod()

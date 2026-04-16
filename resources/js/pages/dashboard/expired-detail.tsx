@@ -1,81 +1,132 @@
+import { Head, Form, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { Head } from '@inertiajs/react';
 import type { BreadcrumbItem } from '@/types';
+
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Search } from 'lucide-react';
+
+import {
+    createColumnHelper,
+    getCoreRowModel,
+    useReactTable,
+    type ColumnDef,
+} from '@tanstack/react-table';
+
+import DataTable from '@/components/data-table';
+import TablePagination from '@/components/table-pagination';
+import { Pagination, Product } from '@/lib/model';
+import { useQuery } from '@/hooks/use-query';
 import { dashboard } from '@/routes';
 
-export default function ExpiredDetail({ products = [] }: any) {
-    const formatDate = (date: string | null) => {
-        if (!date) return '-';
-
-        return new Date(date).toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric',
-        });
-    };
-    
 const title = 'Expired Detail';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
+        title: 'Dashboard',
+        href: dashboard().url,
+    },
+    {
         title,
-        href: '/dashboard',
+        href: '',
     },
 ];
+type Props = {
+    pagination: Pagination<Product>;
+};
+
+const columnHelper = createColumnHelper<Product>();
+
+const formatDate = (date: string | null) => {
+    if (!date) return '-';
+
+    return new Date(date).toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+    });
+};
+
+const columns: ColumnDef<Product, any>[] = [
+    {
+        id: 'no',
+        header: 'No',
+        cell: (info) => info.row.index + 1,
+    },
+
+    columnHelper.accessor('name', {
+        header: 'Produk',
+    }),
+
+    columnHelper.accessor('brand', {
+        header: 'Brand',
+        cell: (info) => info.getValue() ?? '-',
+    }),
+
+    columnHelper.display({
+        id: 'category',
+        header: 'Kategori',
+        cell: (info) => info.row.original.category?.name ?? '-',
+    }),
+
+    columnHelper.accessor('expired_date', {
+        header: 'Expired Date',
+        cell: (info) => formatDate(info.getValue()),
+    }),
+];
+
+export default function ExpiredDetail({ pagination }: Props) {
+    const { data } = pagination;
+
+    const search = useQuery().search || '';
+
+    const table = useReactTable<Product>({
+        data,
+        columns,
+        getCoreRowModel: getCoreRowModel(),
+    });
 
     return (
-        <AppLayout  breadcrumbs={breadcrumbs}>
-            <Head title={title}/>
-
-            <div className="p-4">
-                <h1 className="text-xl font-bold mb-4">
-                    Produk Mendekati Expired
-                </h1>
-
-                {products.length === 0 ? (
-                    <p>Tidak ada data</p>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full border border-gray-200 text-sm">
-                            <thead className="bg-gray-100">
-                                <tr>
-                                    <th className="border px-3 py-2 text-left">No</th>
-                                    <th className="border px-3 py-2 text-left">Produk</th>
-                                    <th className="border px-3 py-2 text-left">Brand</th>
-                                    <th className="border px-3 py-2 text-left">Kategori</th>
-                                    <th className="border px-3 py-2 text-left">Expired Date</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                {products.map((item: any, index: number) => (
-                                    <tr key={item.id} className="hover:bg-gray-50">
-                                        <td className="border px-3 py-2">
-                                            {index + 1}
-                                        </td>
-
-                                        <td className="border px-3 py-2">
-                                            {item.name ?? '-'}
-                                        </td>
-
-                                        <td className="border px-3 py-2">
-                                            {item.brand ?? '-'}
-                                        </td>
-
-                                        <td className="border px-3 py-2">
-                                            {item.category?.name ?? '-'}
-                                        </td>
-
-                                        <td className="border px-3 py-2">
-                                            {formatDate(item.expired_date)}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title={title} />
+            <div className="mb-4">
+                <Button asChild>
+                    <Link
+                        href={dashboard().url}
+                        className="flex items-center gap-2"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="hidden lg:inline">Kembali</span>
+                    </Link>
+                </Button>
             </div>
+            <Card className="border-0 bg-background p-0 lg:border lg:bg-card lg:py-6">
+                {/* 🔥 SEARCH HEADER */}
+                <CardHeader className="p-0 lg:px-6">
+                    <Form method="GET">
+                        <div className="grid gap-2 lg:flex">
+                            <input type="hidden" name="page" value={1} />
+
+                            <Input
+                                name="search"
+                                defaultValue={search}
+                                placeholder="Cari produk / brand..."
+                            />
+
+                            <Button variant="secondary">
+                                <Search /> Cari
+                            </Button>
+                        </div>
+                    </Form>
+                </CardHeader>
+
+                <CardContent className="border-t p-0 lg:border-0 lg:px-6">
+                    <DataTable columns={columns} table={table} />
+
+                    <TablePagination pagination={pagination} />
+                </CardContent>
+            </Card>
         </AppLayout>
     );
 }

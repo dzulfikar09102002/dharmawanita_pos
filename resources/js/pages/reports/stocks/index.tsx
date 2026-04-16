@@ -6,7 +6,7 @@ import type { BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, FileSpreadsheet  } from 'lucide-react';
+import { Search, FileSpreadsheet } from 'lucide-react';
 
 import {
     createColumnHelper,
@@ -106,7 +106,6 @@ export default function Index({ pagination }: Props) {
         },
     );
 
-    
     // Inject <tfoot> langsung ke dalam <table> yang dirender DataTable
     // Dengan cara ini lebar kolom Grand Total 100% ikut <thead> secara otomatis
     useEffect(() => {
@@ -128,9 +127,13 @@ export default function Index({ pagination }: Props) {
                         <Input
                             name="search"
                             defaultValue={search}
-                            placeholder="Nama Produk"
+                            placeholder="Cari..."
                         />
-                        <Button  className="bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-2" type="submit" variant="secondary">
+                        <Button
+                            className="flex items-center gap-2 bg-blue-600 text-white hover:bg-blue-700"
+                            type="submit"
+                            variant="secondary"
+                        >
                             <Search /> Cari
                         </Button>
                     </Form>
@@ -140,15 +143,20 @@ export default function Index({ pagination }: Props) {
                     <Button
                         type="button"
                         onClick={() => {
-                            const params = new URLSearchParams(window.location.search);
-                            window.open(`/reports/stocks/export?${params.toString()}`, '_blank');
+                            const params = new URLSearchParams(
+                                window.location.search,
+                            );
+                            window.open(
+                                `/reports/stocks/export?${params.toString()}`,
+                                '_blank',
+                            );
                         }}
-                        className="bg-green-600 text-white hover:bg-green-700 flex items-center gap-2"
+                        className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
                     >
                         <FileSpreadsheet size={16} />
                         Export Excel
                     </Button>
-                    <br/>
+                    <br />
                     <div ref={wrapperRef}>
                         <DataTable columns={columns} table={table} />
                     </div>

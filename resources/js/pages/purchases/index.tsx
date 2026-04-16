@@ -311,22 +311,28 @@ export default function Index({
 
                     <CardContent className="flex-1">
                         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-                            {products.map((product) => (
-                                <Card
-                                    key={product.id}
-                                    className="cursor-pointer transition hover:shadow-md"
-                                    onClick={() => addItem(product)}
-                                >
-                                    <CardContent className="p-3">
-                                        <div className="text-sm font-semibold">
-                                            {product.name}
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">
-                                            {product.brand}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                            {products.length === 0 ? (
+                                <div className="col-span-full py-10 text-center text-sm text-muted-foreground">
+                                    Tidak ada data produk
+                                </div>
+                            ) : (
+                                products.map((product) => (
+                                    <Card
+                                        key={product.id}
+                                        className="cursor-pointer transition hover:shadow-md"
+                                        onClick={() => addItem(product)}
+                                    >
+                                        <CardContent className="p-3">
+                                            <div className="text-sm font-semibold">
+                                                {product.name}
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                                {product.brand}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))
+                            )}
                         </div>
 
                         <div className="mt-4">

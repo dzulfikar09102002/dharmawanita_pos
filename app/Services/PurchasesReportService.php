@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\InventoryTransaction;
 use App\Models\Purchase;
 use Illuminate\Support\Facades\DB;
 
@@ -16,7 +17,10 @@ class PurchasesReportService
         return Purchase::with(['product', 'supplier'])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
-                    $q->whereHas('product', function ($q2) use ($search) {
+                    
+                    $q->where('purchases.code', 'like', "%{$search}%") // ✅ TAMBAH INI
+                    
+                    ->orWhereHas('product', function ($q2) use ($search) {
                         $q2->where('name', 'like', "%{$search}%");
                     })
                     ->orWhereHas('supplier', function ($q2) use ($search) {
@@ -34,6 +38,12 @@ class PurchasesReportService
             ->when($year, function ($query) use ($year) {
                 $query->whereYear('purchase_date', $year);
             })
+            ->orderByRaw("
+                CASE 
+                    WHEN status_payment = 'canceled' THEN 1
+                    ELSE 0
+                END
+            ")
             ->orderByDesc('updated_at')
             ->orderByDesc('created_at')
             ->paginate(request('per_page', 10))
@@ -76,7 +86,27 @@ class PurchasesReportService
 
     public function delete(Purchase $purchasereport)
     {
-        return $purchasereport->delete();
+        DB::transaction(function () use ($purchasereport) {
+
+            $purchasereport->update([
+                'status_payment' => 'canceled',
+                'updated_by'     => auth()->id()
+            ]);
+
+            InventoryTransaction::create([
+                'product_id'     => $purchasereport->product_id,
+                'type'           => 'out',
+                'source'         => 'return',
+                'reference_id'   => $purchasereport->id,
+                'quantity'       => $purchasereport->quantity,
+                'purchase_price' => $purchasereport->purchase_price ?? 0,
+                'selling_price'  => $purchasereport->selling_price ?? 0,
+                'note'           => 'Purchase dibatalkan',
+                'created_by'     => auth()->id(),
+            ]);
+        });
+
+        return back();
     }
 
     public function restore(int $id)

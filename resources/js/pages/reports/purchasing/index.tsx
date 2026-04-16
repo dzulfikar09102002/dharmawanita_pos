@@ -36,9 +36,7 @@ import {
 
 const title = 'Laporan Pembelian';
 
-const breadcrumbs: BreadcrumbItem[] = [
-    { title, href: purchases.index().url },
-];
+const breadcrumbs: BreadcrumbItem[] = [{ title, href: purchases.index().url }];
 
 const columnHelper = createColumnHelper<Purchase>();
 
@@ -52,7 +50,7 @@ type Props = {
     month: number;
     year: number;
     resetKey?: number;
-     onReset?: () => void;
+    onReset?: () => void;
 };
 
 const formatRupiah = (value: number) =>
@@ -63,8 +61,18 @@ const formatRupiah = (value: number) =>
     }).format(value || 0);
 
 const namaBulan = [
-    'Januari','Februari','Maret','April','Mei','Juni',
-    'Juli','Agustus','September','Oktober','November','Desember',
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
 ];
 
 export default function Index({
@@ -110,13 +118,13 @@ export default function Index({
     };
 
     const [payModal, setPayModal] = useState<{
-    open: boolean;
-    data?: Purchase;
-    resetKey: number;
-}>({
-    open: false,
-    resetKey: 0,
-});
+        open: boolean;
+        data?: Purchase;
+        resetKey: number;
+    }>({
+        open: false,
+        resetKey: 0,
+    });
 
     const onDeleteOrRestore = (id: number, action: boolean) =>
         setAlert({
@@ -165,13 +173,9 @@ export default function Index({
                     (row.quantity || 0) * (row.purchase_price || 0);
 
                 return TotalBayar > 0 ? (
-                    <span >
-                        {formatRupiah(TotalBayar)}
-                    </span>
+                    <span>{formatRupiah(TotalBayar)}</span>
                 ) : (
-                    <span>
-                        Rp 0
-                    </span>
+                    <span>Rp 0</span>
                 );
             },
         }),
@@ -182,16 +186,15 @@ export default function Index({
                 const row = info.row.original;
 
                 const kurangBayar =
-                    (row.quantity * row.purchase_price || 0) - (row.total_payment || 0);
+                    (row.quantity * row.purchase_price || 0) -
+                    (row.total_payment || 0);
 
                 return kurangBayar > 0 ? (
-                    <span className="text-red-600 font-semibold">
+                    <span className="font-semibold text-red-600">
                         {formatRupiah(kurangBayar)}
                     </span>
                 ) : (
-                    <span>
-                        0
-                    </span>
+                    <span>0</span>
                 );
             },
         }),
@@ -211,18 +214,26 @@ export default function Index({
                 const status = info.getValue();
                 if (!status) return '-';
                 return (
-                    <span className={`px-2 py-1 text-xs rounded ${
-                        status === 'paid'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                        {status === 'paid' ? 'Paid' : 'Pending'}
+                    <span
+                        className={`rounded px-2 py-1 text-xs ${
+                            status === 'paid'
+                                ? 'bg-green-100 text-green-700'
+                                : status === 'canceled'
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-yellow-100 text-yellow-700'
+                        }`}
+                    >
+                        {status === 'paid'
+                            ? 'Paid'
+                            : status === 'canceled'
+                              ? 'Dibatalkan'
+                              : 'Pending'}
                     </span>
                 );
             },
         },
         {
-             id: 'action',
+            id: 'action',
             header: 'Aksi',
             cell: (info) => {
                 const row = info.row.original;
@@ -241,7 +252,7 @@ export default function Index({
                                             open: true,
                                             data: row,
                                             resetKey: Date.now(),
-                                        })        
+                                        })
                                     }
                                 >
                                     💰
@@ -311,8 +322,8 @@ export default function Index({
                     })
                 }
                 grandTotal={
-                    ((payModal.data?.purchase_price ?? 0) *
-                    (payModal.data?.quantity ?? 0)) -
+                    (payModal.data?.purchase_price ?? 0) *
+                        (payModal.data?.quantity ?? 0) -
                     (payModal.data?.total_payment ?? 0)
                 }
                 onConfirm={(amount: number) => {
@@ -326,7 +337,7 @@ export default function Index({
 
                     if (amount > remaining) {
                         toast.error(
-                            `Pembayaran melebihi sisa bayar! Sisa: ${remaining.toLocaleString('id-ID')}`
+                            `Pembayaran melebihi sisa bayar! Sisa: ${remaining.toLocaleString('id-ID')}`,
                         );
                         return;
                     }
@@ -335,9 +346,10 @@ export default function Index({
                         purchases.pay(payModal.data!.id).url,
                         { total_payment: amount },
                         {
-                            onSuccess: () => toast.success('Pembayaran berhasil'),
+                            onSuccess: () =>
+                                toast.success('Pembayaran berhasil'),
                             onError: () => toast.error('Pembayaran gagal'),
-                        }
+                        },
                     );
 
                     setPayModal({
@@ -348,149 +360,125 @@ export default function Index({
                 }}
             />
 
-<Card>
-    <CardHeader>
-        <Form
-            method="GET"
-            action={purchases.index().url}
-            className="flex flex-wrap items-end gap-3"
-        >
-            <input type="hidden" name="month" value={month} />
-            <input type="hidden" name="year" value={year} />
-            <input type="hidden" name="page" value={1} />
-
-            {/* SEARCH */}
-            <div className="flex min-w-[250px] flex-1 flex-col">
-                <label className="mb-1 text-xs text-gray-500">
-                    Cari Produk / Supplier
-                </label>
-                <Input
-                    name="search"
-                    defaultValue={search}
-                    placeholder="Cari produk / supplier..."
-                />
-            </div>
-
-            {/* BULAN */}
-            <div className="flex flex-col">
-                <Field className="min-w-[180px]">
-                    <FieldLabel>Bulan</FieldLabel>
-
-                    <Combobox
-                        items={bulanOptions}
-                        value={
-                            bulanOptions.find(
-                                (b) => Number(b.value) === month,
-                            ) ?? null
-                        }
-                        onValueChange={(val) => {
-                            if (val) setMonth(Number(val.value));
-                        }}
+            <Card>
+                <CardHeader>
+                    <Form
+                        method="GET"
+                        action={purchases.index().url}
+                        className="flex flex-wrap items-end gap-3"
                     >
-                        <ComboboxInput placeholder="Pilih bulan" />
+                        <input type="hidden" name="month" value={month} />
+                        <input type="hidden" name="year" value={year} />
+                        <input type="hidden" name="page" value={1} />
 
-                        <ComboboxContent>
-                            <ComboboxEmpty>
-                                Tidak ditemukan
-                            </ComboboxEmpty>
-                            <ComboboxList>
-                                {(item) => (
-                                    <ComboboxItem
-                                        key={item.value}
-                                        value={item}
-                                    >
-                                        {item.label}
-                                    </ComboboxItem>
-                                )}
-                            </ComboboxList>
-                        </ComboboxContent>
-                    </Combobox>
-                </Field>
-            </div>
+                        {/* SEARCH */}
+                        <div className="flex min-w-[250px] flex-1 flex-col">
+                            <Input
+                                name="search"
+                                defaultValue={search}
+                                placeholder="Cari..."
+                            />
+                        </div>
 
-            {/* TAHUN */}
-            <div className="flex flex-col">
-                <Field>
-                    <FieldLabel>Tahun</FieldLabel>
+                        {/* BULAN */}
+                        <div className="flex flex-col">
+                            <Field className="min-w-[180px]">
+                                <FieldLabel>Bulan</FieldLabel>
 
-                    <Input
-                        type="number"
-                        value={year}
-                        onChange={(e) =>
-                            setYear(Number(e.target.value))
-                        }
-                        min={2000}
-                        max={2100}
-                    />
-                </Field>
-            </div>
+                                <Combobox
+                                    items={bulanOptions}
+                                    value={
+                                        bulanOptions.find(
+                                            (b) => Number(b.value) === month,
+                                        ) ?? null
+                                    }
+                                    onValueChange={(val) => {
+                                        if (val) setMonth(Number(val.value));
+                                    }}
+                                >
+                                    <ComboboxInput placeholder="Pilih bulan" />
 
-            {/* BUTTON */}
-            <div className="flex gap-2">
-                <Button
-                    type="submit"
-                    className="bg-blue-600 text-white hover:bg-blue-700"
-                >
-                    <Search size={16} />
-                    Filter
-                </Button>
+                                    <ComboboxContent>
+                                        <ComboboxEmpty>
+                                            Tidak ditemukan
+                                        </ComboboxEmpty>
+                                        <ComboboxList>
+                                            {(item) => (
+                                                <ComboboxItem
+                                                    key={item.value}
+                                                    value={item}
+                                                >
+                                                    {item.label}
+                                                </ComboboxItem>
+                                            )}
+                                        </ComboboxList>
+                                    </ComboboxContent>
+                                </Combobox>
+                            </Field>
+                        </div>
 
-                <Button
-                    type="button"
-                    onClick={handleReset}
-                    className="bg-red-600 text-white hover:bg-red-700"
-                >
-                    <FilterX size={16} />
-                    Reset Filter
-                </Button>
-            </div>
-        </Form>
-    </CardHeader>
+                        {/* TAHUN */}
+                        <div className="flex flex-col">
+                            <Field>
+                                <FieldLabel>Tahun</FieldLabel>
 
-    <CardContent>
-        {/* PRINT */}
-        <div className="mb-4 flex gap-2">
-            <Button
-                onClick={() => handlePrint('month')}
-                className="bg-emerald-600 text-white hover:bg-emerald-700"
-            >
-                <Printer size={16} />
-                Cetak Laporan Bulanan
-            </Button>
+                                <Input
+                                    type="number"
+                                    value={year}
+                                    onChange={(e) =>
+                                        setYear(Number(e.target.value))
+                                    }
+                                    min={2000}
+                                    max={2100}
+                                />
+                            </Field>
+                        </div>
 
-            <Button
-                onClick={() => handlePrint('year')}
-                className="bg-purple-600 text-white hover:bg-purple-700"
-            >
-                <Printer size={16} />
-                Cetak Laporan Tahunan
-            </Button>
-        </div>
+                        {/* BUTTON */}
+                        <div className="flex gap-2">
+                            <Button
+                                type="submit"
+                                className="bg-blue-600 text-white hover:bg-blue-700"
+                            >
+                                <Search size={16} />
+                                Filter
+                            </Button>
 
-        {/* TABS */}
-        <Tabs
-            value={isDeletedRoute ? 'deleted' : 'active'}
-            className="mb-4"
-        >
-            <TabsList>
-                <TabsTrigger value="active" asChild>
-                    <Link href={purchases.index().url}>
-                        Tersedia
-                    </Link>
-                </TabsTrigger>
+                            <Button
+                                type="button"
+                                onClick={handleReset}
+                                className="bg-red-600 text-white hover:bg-red-700"
+                            >
+                                <FilterX size={16} />
+                                Reset Filter
+                            </Button>
+                        </div>
+                    </Form>
+                </CardHeader>
 
-                <TabsTrigger value="deleted" asChild>
-                    <Link href={purchases.deleted().url}>
-                        Terhapus
-                    </Link>
-                </TabsTrigger>
-            </TabsList>
-        </Tabs>
+                <CardContent>
+                    {/* PRINT */}
+                    <div className="mb-4 flex gap-2">
+                        <Button
+                            onClick={() => handlePrint('month')}
+                            className="bg-emerald-600 text-white hover:bg-emerald-700"
+                        >
+                            <Printer size={16} />
+                            Cetak Laporan Bulanan
+                        </Button>
 
-        <DataTable columns={columns} table={table} />
-        <TablePagination pagination={pagination} />
-    </CardContent>
-</Card>
+                        <Button
+                            onClick={() => handlePrint('year')}
+                            className="bg-purple-600 text-white hover:bg-purple-700"
+                        >
+                            <Printer size={16} />
+                            Cetak Laporan Tahunan
+                        </Button>
+                    </div>
+                    <DataTable columns={columns} table={table} />
+                    <TablePagination pagination={pagination} />
+                </CardContent>
+            </Card>
         </AppLayout>
     );
 }

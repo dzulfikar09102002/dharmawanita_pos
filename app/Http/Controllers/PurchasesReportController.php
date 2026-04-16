@@ -61,11 +61,11 @@ class PurchasesReportController extends Controller
         ]);
     }
 
-   public function printPurchasesReport(Request $request)
+  public function printPurchasesReport(Request $request)
 {
-    $type = $request->type;
-    $bulan = $request->month;
-    $tahun = $request->year;
+    $type = $request->type ?? 'month';
+    $bulan = $request->bulan ?? now()->month;
+    $tahun = $request->tahun ?? now()->year;
 
     if (!$tahun) {
         abort(400, 'Tahun wajib diisi');
@@ -93,10 +93,29 @@ class PurchasesReportController extends Controller
 
     $transactions = $query->latest('purchase_date')->get();
 
-    // 🔥 TOTAL BENAR
-    $total = $transactions->sum(function ($item) {
-        return $item->quantity * $item->purchase_price;
-    });
+    // 🔥 TOTAL (exclude canceled kalau ada status)
+    $total = $transactions
+        ->where('status_payment', '!=', 'canceled')
+        ->sum(function ($item) {
+            return $item->quantity * $item->purchase_price;
+        });
+
+    // 🔥 FORMAT PERIODE (SAMA KAYAK SALES)
+    if ($type === 'month') {
+        $namaBulan = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
+            4 => 'April', 5 => 'Mei', 6 => 'Juni',
+            7 => 'Juli', 8 => 'Agustus', 9 => 'September',
+            10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        $periode = ($namaBulan[(int)$bulan] ?? '-') . ' ' . $tahun;
+    } else {
+        $periode = $tahun;
+    }
+
+    // 🔥 TITLE FIX
+    $title = 'Laporan Pembelian - ' . $periode;
 
     $pdf = Pdf::loadView('reports.purchase-pdf', [
         'transactions' => $transactions,
@@ -104,9 +123,10 @@ class PurchasesReportController extends Controller
         'type' => $type,
         'bulan' => $bulan,
         'tahun' => $tahun,
+        'title' => $title, // ✅ ini penting
     ])->setPaper('a4', 'portrait');
 
-    return $pdf->stream('laporan-pembelian.pdf');
+    return $pdf->stream("laporan-pembelian-{$bulan}-{$tahun}.pdf");
 }
 
 public function pay(Purchase $purchase)

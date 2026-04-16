@@ -126,8 +126,9 @@ $isDeleted = request('deleted') == 1;
             @else
                 <th style="width:30%">Invoice</th>
                 <th style="width:12%" class="text-center">Status</th>
-                <th style="width:20%">Tanggal</th>
+                <th style="width:20%" class="text-center">Tanggal</th>
                 <th style="width:33%" class="text-right">Total</th>
+                <th style="width:33%" class="text-right">Pendapatan</th>
             @endif
         </tr>
     </thead>
@@ -185,8 +186,16 @@ $isDeleted = request('deleted') == 1;
     </td>
 
     <td class="text-right">
-        Rp {{ number_format($trx->grand_total ?? 0, 0, ',', '.') }}
-    </td>
+    Rp {{ number_format($trx->grand_total ?? 0, 0, ',', '.') }}
+</td>
+
+<td class="text-right">
+    @if ($trx->payment_status === 'paid')
+        Rp {{ number_format($trx->total_amount ?? 0, 0, ',', '.') }}
+    @else
+        -
+    @endif
+</td>
 @endif
             </tr>
 
@@ -198,22 +207,32 @@ $isDeleted = request('deleted') == 1;
             </tr>
         @endforelse
     </tbody>
+@php
+    if ($isDeleted) {
+        // ✅ khusus kerugian
+        $totalFinal = $transactions->sum('total_amount');
+    } else {
+        // ✅ khusus pendapatan (yang paid saja)
+        $totalFinal = $transactions
+            ->where('payment_status', 'paid')
+            ->sum('total_amount');
+    }
+@endphp
+ <tfoot>
+    <tr>
+        <td colspan="5">
+            <strong>
+                {{ $isDeleted ? 'Total Kerugian' : 'Total Pendapatan' }}
+            </strong>
+        </td>
 
-    <tfoot>
-        <tr>
-            <td colspan="{{ $isDeleted ? 5 : 4 }}">
-                <strong>
-                    {{ $isDeleted ? 'Total Kerugian' : 'Grand Total' }}
-                </strong>
-            </td>
-
-            <td class="text-right">
-                <strong>
-                    Rp {{ number_format($total, 0, ',', '.') }}
-                </strong>
-            </td>
-        </tr>
-    </tfoot>
+        <td class="text-right">
+            <strong>
+                Rp {{ number_format($totalFinal, 0, ',', '.') }}
+            </strong>
+        </td>
+    </tr>
+</tfoot>
 </table>
 
 </body>

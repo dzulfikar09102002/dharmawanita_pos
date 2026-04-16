@@ -311,78 +311,96 @@ export default function Index({ pagination, categoryOptions }: Props) {
 
                     <CardContent className="flex-1">
                         <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-                            {products.map((purchase) => {
-                                const product = purchase.product;
-                                const exist = data.items.find(
-                                    (x) => x.purchase_id === purchase.id,
-                                );
+                            {products.length === 0 ? (
+                                <div className="col-span-full flex items-center justify-center py-10 text-sm text-muted-foreground">
+                                    Tidak ada data produk
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+                                    {products.map((purchase) => {
+                                        const product = purchase.product;
+                                        const exist = data.items.find(
+                                            (x) =>
+                                                x.purchase_id === purchase.id,
+                                        );
 
-                                const isMax =
-                                    exist &&
-                                    exist.quantity >= purchase.total_quantity;
-                                return (
-                                    <Card
-                                        key={purchase.id}
-                                        className={`relative transition hover:shadow-md ${
-                                            purchase.total_quantity <= 0 ||
-                                            isMax
-                                                ? 'cursor-not-allowed opacity-50'
-                                                : 'cursor-pointer'
-                                        }`}
-                                        onClick={() => {
-                                            if (
-                                                purchase.total_quantity > 0 &&
-                                                !isMax
-                                            ) {
-                                                addItem(purchase);
-                                            }
-                                        }}
-                                    >
-                                        <CardContent className="pl-4">
-                                            <div className="absolute top-1 left-2">
-                                                <span
-                                                    className={`rounded px-2 py-0.5 text-[11px] font-medium text-white ${
+                                        const isMax =
+                                            exist &&
+                                            exist.quantity >=
+                                                purchase.total_quantity;
+
+                                        return (
+                                            <Card
+                                                key={purchase.id}
+                                                className={`relative transition hover:shadow-md ${
+                                                    purchase.total_quantity <=
+                                                        0 || isMax
+                                                        ? 'cursor-not-allowed opacity-50'
+                                                        : 'cursor-pointer'
+                                                }`}
+                                                onClick={() => {
+                                                    if (
                                                         purchase.total_quantity >
-                                                        0
-                                                            ? 'bg-green-500'
-                                                            : 'bg-red-500'
-                                                    }`}
-                                                >
-                                                    Stok :{' '}
-                                                    {purchase.total_quantity}
-                                                </span>
-                                            </div>
-                                            <div className="absolute top-1 right-2">
-                                                <span className="rounded bg-muted px-2 py-0.5 text-[11px] font-medium">
-                                                    {purchase.code}
-                                                </span>
-                                            </div>
-                                            <div className="mt-2 text-sm font-semibold">
-                                                {product?.name}
-                                            </div>
-                                            <div className="text-xs text-muted-foreground">
-                                                {product?.brand}
-                                            </div>
-                                            <div className="mt-4 text-sm font-semibold">
-                                                {new Intl.NumberFormat(
-                                                    'id-ID',
-                                                    {
-                                                        style: 'currency',
-                                                        currency: 'IDR',
-                                                        minimumFractionDigits: 0,
-                                                        maximumFractionDigits: 0,
-                                                    },
-                                                ).format(
-                                                    Number(
-                                                        product?.selling_price ??
-                                                            0,
-                                                    ),
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                );
-                            })}
+                                                            0 &&
+                                                        !isMax
+                                                    ) {
+                                                        addItem(purchase);
+                                                    }
+                                                }}
+                                            >
+                                                <CardContent className="pl-4">
+                                                    <div className="absolute top-1 left-2">
+                                                        <span
+                                                            className={`rounded px-2 py-0.5 text-[11px] font-medium text-white ${
+                                                                purchase.total_quantity >
+                                                                0
+                                                                    ? 'bg-green-500'
+                                                                    : 'bg-red-500'
+                                                            }`}
+                                                        >
+                                                            Stok :{' '}
+                                                            {
+                                                                purchase.total_quantity
+                                                            }
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="absolute top-1 right-2">
+                                                        <span className="rounded bg-muted px-2 py-0.5 text-[11px] font-medium">
+                                                            {purchase.code}
+                                                        </span>
+                                                    </div>
+
+                                                    <div className="mt-2 text-sm font-semibold">
+                                                        {product?.name}
+                                                    </div>
+
+                                                    <div className="text-xs text-muted-foreground">
+                                                        {product?.brand}
+                                                    </div>
+
+                                                    <div className="mt-4 text-sm font-semibold">
+                                                        {new Intl.NumberFormat(
+                                                            'id-ID',
+                                                            {
+                                                                style: 'currency',
+                                                                currency: 'IDR',
+                                                                minimumFractionDigits: 0,
+                                                                maximumFractionDigits: 0,
+                                                            },
+                                                        ).format(
+                                                            Number(
+                                                                product?.selling_price ??
+                                                                    0,
+                                                            ),
+                                                        )}
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                         <div className="mt-4">
                             <div className="flex items-center gap-2 text-sm">

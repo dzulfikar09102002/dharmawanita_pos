@@ -66,16 +66,12 @@ export default function Index({ pagination, transaction }: Props) {
         },
     ];
 
-
-    
     const [confirmOpen, setConfirmOpen] = useState(false);
     const [processing, setProcessing] = useState(false);
 
     const handleCancel = () => {
         Swal.fire({
-            title: 'Batalkan Transaksi?',
-            text: 'Tindakan ini tidak dapat dibatalkan!',
-            icon: 'warning',
+            title: 'Apakah anda yakin?',
             showCancelButton: true,
             confirmButtonColor: '#dc2626',
             cancelButtonColor: '#6b7280',
@@ -113,7 +109,7 @@ export default function Index({ pagination, transaction }: Props) {
                                 text: 'Terjadi kesalahan saat membatalkan transaksi',
                             });
                         },
-                    }
+                    },
                 );
             }
         });
@@ -126,9 +122,9 @@ export default function Index({ pagination, transaction }: Props) {
     }, 0);
 
     const kurangBayar = Math.max(
-    grandTotal - Number(transaction.total_amount || 0),
-    0
-);
+        grandTotal - Number(transaction.total_amount || 0),
+        0,
+    );
 
     const tableData = [
         ...(data ?? []),
@@ -161,7 +157,8 @@ export default function Index({ pagination, transaction }: Props) {
             header: 'Produk',
             cell: (info) => {
                 const row = info.row.original as any;
-                if (row.isTotal) return <span className="font-bold">Grand Total</span>;
+                if (row.isTotal)
+                    return <span className="font-bold">Grand Total</span>;
                 return info.getValue()?.name ?? '-';
             },
         }),
@@ -171,7 +168,9 @@ export default function Index({ pagination, transaction }: Props) {
             cell: (info) => {
                 const row = info.row.original as any;
                 if (row.isTotal) return null;
-                return <span className="block text-center">{info.getValue()}</span>;
+                return (
+                    <span className="block text-center">{info.getValue()}</span>
+                );
             },
         }),
 
@@ -222,7 +221,7 @@ export default function Index({ pagination, transaction }: Props) {
                 if (row.isTotal) {
                     return (
                         <span className="block text-right font-bold text-red-600">
-                            ({formatRupiah(kurangBayar)})   
+                            ({formatRupiah(kurangBayar)})
                         </span>
                     );
                 }
@@ -230,8 +229,6 @@ export default function Index({ pagination, transaction }: Props) {
                 return null;
             },
         },
-
-        
     ];
 
     const table = useReactTable<SaleTransactionDetail>({
@@ -248,8 +245,8 @@ export default function Index({ pagination, transaction }: Props) {
                 <AlertDialogContent className="sm:max-w-md">
                     <AlertDialogHeader>
                         <div className="flex items-start gap-3">
-                            <div className="w-10 h-10 flex items-center justify-center rounded-full bg-red-100">
-                                <AlertTriangle className="w-5 h-5 text-red-600" />
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                                <AlertTriangle className="h-5 w-5 text-red-600" />
                             </div>
                             <div>
                                 <AlertDialogTitle>
@@ -282,42 +279,17 @@ export default function Index({ pagination, transaction }: Props) {
             <Card>
                 <CardContent>
                     <div className="mb-4 space-y-1">
-                       {/* 📄 INVOICE + STATUS */}
-                        <div>
-                            <div className="text-sm text-gray-500">Invoice</div>
-
-                            <div className="flex items-center gap-2">
-                                <div className="text-lg font-semibold">
-                                    {transaction.invoice_number}
-                                </div>
-
-                                {/* Badge Status */}
-                                {transaction.payment_status === 'paid' && (
-                                    <span className="px-2 py-1 text-xs rounded bg-green-100 text-green-600">
-                                        Lunas
-                                    </span>
-                                )}
-
-                                {transaction.payment_status === 'pending' && (
-                                    <span className="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-600">
-                                        Pending
-                                    </span>
-                                )}
-
-                                {transaction.payment_status === 'canceled' && (
-                                    <span className="px-2 py-1 text-xs rounded bg-red-100 text-red-600">
-                                        Dibatalkan
-                                    </span>
-                                )}
-                            </div>
+                        <div className="text-sm text-gray-500">Invoice</div>
+                        <div className="text-lg font-semibold">
+                            {transaction.invoice_number}
                         </div>
 
-                        <div className="text-sm text-gray-500 mt-2">
+                        <div className="mt-2 text-sm text-gray-500">
                             Tanggal Transaksi
                         </div>
                         <div>{formatDate(transaction.transaction_date)}</div>
 
-                        <div className="text-sm text-gray-500 mt-2">
+                        <div className="mt-2 text-sm text-gray-500">
                             Metode Pembayaran
                         </div>
                         <div>{transaction.payment_method?.name ?? '-'}</div>
@@ -326,20 +298,22 @@ export default function Index({ pagination, transaction }: Props) {
                     <DataTable columns={columns} table={table} />
                     <TablePagination pagination={pagination} />
 
-                    <div className="flex justify-end gap-2 mt-6">
+                    <div className="mt-6 flex justify-end gap-2">
                         <Button
                             variant="outline"
-                            onClick={() => router.visit(salesReport.index().url)}
+                            onClick={() =>
+                                router.visit(salesReport.index().url)
+                            }
                         >
                             Kembali
                         </Button>
 
                         {transaction.payment_status === 'pending' && (
                             <Button
-                                className="bg-green-600 hover:bg-green-700 text-white"
+                                className="bg-green-600 text-white hover:bg-green-700"
                                 onClick={() =>
                                     router.visit(
-                                        `/sellings/${transaction.id}/payment`
+                                        `/sellings/${transaction.id}/payment`,
                                     )
                                 }
                             >
@@ -349,15 +323,12 @@ export default function Index({ pagination, transaction }: Props) {
 
                         <Button
                             variant="destructive"
-                            disabled={
-                                transaction.payment_status === 'canceled'   
-                            }
+                            disabled={transaction.payment_status === 'canceled'}
                             onClick={handleCancel}
                         >
                             Batalkan Transaksi
                         </Button>
                     </div>
-                    
                 </CardContent>
             </Card>
         </AppLayout>

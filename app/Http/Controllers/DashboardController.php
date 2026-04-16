@@ -40,35 +40,52 @@ class DashboardController extends Controller
         ]);
     }
 
-public function expiredDetail()
-{
-    $products = Product::with('category') 
-        ->whereNotNull('expired_date')
-        ->orderBy('expired_date', 'asc')
-        ->get();
+    public function expiredDetail()
+    {
+        $search = request('search', '');
+        $perPage = request('per_page', 10);
 
-    return inertia('dashboard/expired-detail', [
-        'products' => $products,
-    ]);
-}
+        $pagination = Product::query()
+            ->with('category')
+            ->whereNotNull('expired_date')
+            ->when($search, function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                ->orWhere('brand', 'like', "%{$search}%");
+            })
+            ->orderBy('expired_date', 'asc')
+            ->paginate($perPage)
+            ->withQueryString();
 
-public function bestSellingDetail()
-{
-    $products = SaleTransactionDetail::query()
-        ->select('purchase_id', DB::raw('SUM(quantity) as total_sold'))
-        ->with('purchase.product')
-        ->whereHas('saleTransaction', function ($q) {
-            $q->whereNull('deleted_at') 
-              ->where('payment_status', '!=', 'canceled');
-        })
-        ->groupBy('purchase_id')
-        ->orderByDesc('total_sold')
-        ->get();
+        return inertia('dashboard/expired-detail', [
+            'pagination' => $pagination,
+        ]);
+    }
 
-    return Inertia::render('dashboard/best-selling-detail', [
-        'products' => $products,
-    ]);
-}
+    public function bestSellingDetail()
+    {
+        $search = request('search', '');
+        $perPage = request('per_page', 10);
 
+        $pagination = SaleTransactionDetail::query()
+            ->select('purchase_id', DB::raw('SUM(quantity) as total_sold'))
+            ->with('purchase.product.category')
+            ->whereHas('saleTransaction', function ($q) {
+                $q->whereNull('deleted_at')
+                ->where('payment_status', '!=', 'canceled');
+            })
+            ->when($search, function ($q) use ($search) {
+                $q->whereHas('purchase.product', function ($q2) use ($search) {
+                    $q2->where('name', 'like', "%{$search}%");
+                });
+            })
+            ->groupBy('purchase_id')
+            ->orderByDesc('total_sold')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return Inertia::render('dashboard/best-selling-detail', [
+            'pagination' => $pagination,
+        ]);
+    }
 
 }

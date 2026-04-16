@@ -76,7 +76,7 @@ export default function Payment({
     const change = cashAmount - remaining;
     const [reason, setReason] = useState('');
     const showReason = selectedPurchasing
-        ? Number(selectedPurchasing.value) > 3
+        ? Number(selectedPurchasing.value) > 2
         : false;
     useEffect(() => {
         if (!isCash) {

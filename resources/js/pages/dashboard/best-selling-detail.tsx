@@ -1,74 +1,137 @@
+import { Form, Head, Link } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { Head } from '@inertiajs/react';
 import type { BreadcrumbItem } from '@/types';
+
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Search } from 'lucide-react';
+
+import {
+    createColumnHelper,
+    getCoreRowModel,
+    useReactTable,
+    type ColumnDef,
+} from '@tanstack/react-table';
+
+import DataTable from '@/components/data-table';
+import TablePagination from '@/components/table-pagination';
+import { Pagination } from '@/lib/model';
+import { useQuery } from '@/hooks/use-query';
+import { dashboard } from '@/routes';
 
 const title = 'Produk Terlaris';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
+        title: 'Dashboard',
+        href: dashboard().url,
+    },
+    {
         title,
-        href: '/dashboard',
+        href: '',
     },
 ];
 
-export default function BestSellingDetail({ products = [] }: any) {
+type ProductRow = {
+    purchase_id: number;
+    total_sold: number;
+    purchase?: {
+        product?: {
+            name: string;
+            brand: string;
+            category?: {
+                name: string;
+            };
+        };
+    };
+};
+
+type Props = {
+    pagination: Pagination<ProductRow>;
+};
+
+const columnHelper = createColumnHelper<ProductRow>();
+
+const columns: ColumnDef<ProductRow, any>[] = [
+    {
+        id: 'no',
+        header: 'No',
+        cell: (info) => info.row.index + 1,
+    },
+
+    columnHelper.display({
+        id: 'name',
+        header: 'Produk',
+        cell: (info) => info.row.original.purchase?.product?.name ?? '-',
+    }),
+
+    columnHelper.display({
+        id: 'brand',
+        header: 'Brand',
+        cell: (info) => info.row.original.purchase?.product?.brand ?? '-',
+    }),
+
+    columnHelper.display({
+        id: 'category',
+        header: 'Kategori',
+        cell: (info) =>
+            info.row.original.purchase?.product?.category?.name ?? '-',
+    }),
+
+    columnHelper.accessor('total_sold', {
+        header: 'Total Terjual',
+        cell: (info) => info.getValue() ?? 0,
+    }),
+];
+
+export default function BestSellingDetail({ pagination }: Props) {
+    const { data } = pagination;
+    const search = useQuery().search || '';
+
+    const table = useReactTable<ProductRow>({
+        data,
+        columns,
+        getCoreRowModel: getCoreRowModel(),
+    });
+
     return (
-        <AppLayout  breadcrumbs={breadcrumbs}>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
-
-            <div className="p-4">
-                <h1 className="text-xl font-bold mb-4">
-                    Produk Terlaris
-                </h1>
-
-                {products.length === 0 ? (
-                    <p>Tidak ada data</p>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full border text-sm">
-                            <thead className="bg-gray-100">
-                                <tr>
-                                    <th className="border px-3 py-2 text-left">No</th>
-                                    <th className="border px-3 py-2 text-left">Produk</th>
-                                    <th className="border px-3 py-2 text-left">Brand</th>
-                                    <th className="border px-3 py-2 text-left">Kategori</th>
-                                    <th className="border px-3 py-2 text-left">Total Terjual</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                {products.map((item: any, index: number) => {
-                                    const product = item.purchase?.product;
-
-                                    return (
-                                        <tr key={index} className="hover:bg-gray-50">
-                                            <td className="border px-3 py-2">
-                                                {index + 1}
-                                            </td>
-
-                                            <td className="border px-3 py-2">
-                                                {product?.name ?? '-'}
-                                            </td>
-
-                                            <td className="border px-3 py-2">
-                                                {product?.brand}
-                                            </td>
-
-                                            <td className="border px-3 py-2">
-                                                {product?.category?.name ?? '-'}
-                                            </td>
-
-                                            <td className="border px-3 py-2 font-semibold">
-                                                {item.total_sold ?? 0}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+            <div className="mb-4">
+                <Button asChild>
+                    <Link
+                        href={dashboard().url}
+                        className="flex items-center gap-2"
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="hidden lg:inline">Kembali</span>
+                    </Link>
+                </Button>
             </div>
+            <Card className="border-0 bg-background p-0 lg:border lg:bg-card lg:py-6">
+                <CardHeader className="p-0 lg:px-6">
+                    <Form method="GET">
+                        <div className="grid gap-2 lg:flex">
+                            <input type="hidden" name="page" value={1} />
+                            <Input
+                                defaultValue={search}
+                                name="search"
+                                placeholder="Cari produk..."
+                            />
+                            <Button variant="secondary">
+                                <Search /> Cari
+                            </Button>
+                        </div>
+                    </Form>
+                </CardHeader>
+
+                <CardContent className="border-t p-0 lg:border-0 lg:px-6">
+                    <DataTable columns={columns} table={table} />
+
+                    <TablePagination pagination={pagination} />
+                </CardContent>
+            </Card>
         </AppLayout>
     );
 }

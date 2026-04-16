@@ -14,18 +14,22 @@ public function getLabaRugi(int $bulan, int $tahun)
     // Base query
     $queryPendapatan = SaleTransaction::query()
         ->where('payment_type', 'cash')
+        ->where('payment_status', '!=', 'canceled')
         ->whereYear('transaction_date', $tahun);
 
     $queryPiutang = SaleTransaction::query()
         ->where('payment_type', 'credit')
+        ->where('payment_status', '!=', 'canceled')
         ->whereYear('transaction_date', $tahun);
 
     $queryPembelian = Purchase::query()
         ->where('payment_type', 'cash')
+        ->where('status_payment', '!=', 'canceled')
         ->whereYear('purchase_date', $tahun);
 
     $queryUtang = Purchase::query()
         ->where('payment_type', 'credit')
+        ->where('status_payment', '!=', 'canceled')
         ->whereYear('purchase_date', $tahun);
 
     // Filter bulan

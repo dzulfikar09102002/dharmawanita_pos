@@ -25,16 +25,17 @@ class DashboardService
     public function getBestSellingProducts($month, $year)
     {
         return SaleTransactionDetail::query()
-            ->select('purchase_id', DB::raw('SUM(quantity) as total_sold'))
-            ->with('purchase.product')
-            ->whereHas('saleTransaction', function ($q) use ($month, $year) {
-                $q->whereMonth('transaction_date', $month)
-                ->whereYear('transaction_date', $year);
-            })
-            ->groupBy('purchase_id')
-            ->orderByDesc('total_sold')
-            ->limit(5)
-            ->get();
+    ->select('purchase_id', DB::raw('SUM(quantity) as total_sold'))
+    ->with('purchase.product')
+    ->whereHas('saleTransaction', function ($q) use ($month, $year) {
+        $q->whereMonth('transaction_date', $month)
+          ->whereYear('transaction_date', $year)
+          ->where('payment_status', '!=', 'canceled'); 
+    })
+    ->groupBy('purchase_id')
+    ->orderByDesc('total_sold')
+    ->limit(5)
+    ->get();
     }
 
     public function getMonthlyIncome($month, $year)
@@ -49,6 +50,7 @@ class DashboardService
     public function getMonthlyExpense($month, $year)
     {
         return Purchase::query()
+        ->where('status_payment', 'paid')
             ->whereMonth('purchase_date', $month)
             ->whereYear('purchase_date', $year) 
             ->sum('total_payment');

@@ -24,10 +24,15 @@ type Props = {
     alertState: AlertState;
     onAlertClose: () => void;
     onAlertProcessing: () => void;
-    onSuccess?: () => void; // ✅ tambah ini
+    onSuccess?: () => void;
 };
 
-export default ({ alertState, onAlertClose, onAlertProcessing, onSuccess }: Props) => {
+export default ({
+    alertState,
+    onAlertClose,
+    onAlertProcessing,
+    onSuccess,
+}: Props) => {
     const isDelete = alertState.type === 'delete';
     const isRestore = alertState.type === 'restore';
     const isCancel = alertState.type === 'cancel';
@@ -35,31 +40,32 @@ export default ({ alertState, onAlertClose, onAlertProcessing, onSuccess }: Prop
     const title = isDelete
         ? 'Hapus Transaksi'
         : isRestore
-        ? 'Pulihkan Transaksi'
-        : 'Batalkan Transaksi';
+          ? 'Pulihkan Transaksi'
+          : 'Batalkan Transaksi';
 
     const successMessage = isDelete
         ? 'Transaksi berhasil dihapus'
         : isRestore
-        ? 'Transaksi berhasil dipulihkan'
-        : 'Transaksi berhasil dibatalkan';
+          ? 'Transaksi berhasil dipulihkan'
+          : 'Transaksi berhasil dibatalkan';
 
     const errorMessage = isDelete
         ? 'Gagal menghapus transaksi'
         : isRestore
-        ? 'Gagal memulihkan transaksi'
-        : 'Gagal membatalkan transaksi';
+          ? 'Gagal memulihkan transaksi'
+          : 'Gagal membatalkan transaksi';
 
     return (
         <AlertDialog
             open={alertState.isOpen}
             onOpenChange={(open) => {
-                if (!open && !alertState.processing) {
+                // ✅ SELALU boleh close kalau user klik luar / escape
+                if (!open) {
                     onAlertClose();
                 }
             }}
         >
-            <AlertDialogContent>
+            <AlertDialogContent className="z-[9999]">
                 <AlertDialogHeader>
                     <AlertDialogTitle>{title}</AlertDialogTitle>
                     <AlertDialogDescription>
@@ -73,13 +79,21 @@ export default ({ alertState, onAlertClose, onAlertProcessing, onSuccess }: Prop
                     </AlertDialogCancel>
 
                     <Button
-                        variant={isDelete || isCancel ? 'destructive' : 'default'}
+                        variant={
+                            isDelete || isCancel ? 'destructive' : 'default'
+                        }
                         disabled={alertState.processing}
                         onClick={() => {
+                            // 🔥 GUARD (anti double klik)
+                            if (alertState.processing) return;
+
                             const options = {
                                 only: ['pagination'],
                                 preserveState: true,
-                                onBefore: onAlertProcessing,
+
+                                onBefore: () => {
+                                    onAlertProcessing();
+                                },
 
                                 onError: (errors: any) => {
                                     toast.error(errorMessage);
@@ -90,28 +104,31 @@ export default ({ alertState, onAlertClose, onAlertProcessing, onSuccess }: Prop
                                 onSuccess: () => {
                                     toast.success(successMessage);
                                     onAlertClose();
-                                    onSuccess?.(); // ✅ tambah ini
+                                    onSuccess?.();
                                 },
 
-                                onFinish: () => {},
+                                onFinish: () => {
+                                    // 🔥 tambahan safety (anti nyangkut)
+                                    onAlertClose();
+                                },
                             };
 
                             if (isDelete) {
                                 router.delete(
                                     salesReport.destroy(alertState.dataId).url,
-                                    options
+                                    options,
                                 );
                             } else if (isRestore) {
                                 router.post(
                                     salesReport.restore(alertState.dataId).url,
                                     {},
-                                    options
+                                    options,
                                 );
                             } else if (isCancel) {
                                 router.post(
                                     salesReport.cancel(alertState.dataId).url,
                                     {},
-                                    options
+                                    options,
                                 );
                             }
                         }}
