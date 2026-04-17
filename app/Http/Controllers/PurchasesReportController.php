@@ -95,10 +95,10 @@ class PurchasesReportController extends Controller
 
     // 🔥 TOTAL (exclude canceled kalau ada status)
     $total = $transactions
-        ->where('status_payment', '!=', 'canceled')
-        ->sum(function ($item) {
-            return $item->quantity * $item->purchase_price;
-        });
+    ->where('status_payment', '!=', 'canceled')
+    ->sum(function ($item) {
+        return (float) ($item->total_payment ?? 0);
+    });
 
     // 🔥 FORMAT PERIODE (SAMA KAYAK SALES)
     if ($type === 'month') {
@@ -123,8 +123,8 @@ class PurchasesReportController extends Controller
         'type' => $type,
         'bulan' => $bulan,
         'tahun' => $tahun,
-        'title' => $title, // ✅ ini penting
-    ])->setPaper('a4', 'portrait');
+        'title' => $title, 
+    ])->setPaper('a4', 'landscape');
 
     return $pdf->stream("laporan-pembelian-{$bulan}-{$tahun}.pdf");
 }

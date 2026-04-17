@@ -10,14 +10,13 @@ $namaBulan = [
 
 $now = \Carbon\Carbon::now();
 
-// 🔥 FIX ERROR bulan (biar ga Illegal offset)
 $bulanInt = (int) ($bulan ?? $now->month);
 
 // 🔥 TOTAL PENGELUARAN REAL (exclude canceled)
 $totalPengeluaran = $transactions
     ->where('status_payment', '!=', 'canceled')
     ->sum(function ($trx) {
-        return $trx->paid_amount ?? ($trx->quantity * $trx->purchase_price);
+        return (float) ($trx->total_payment ?? 0);
     });
 @endphp
 
@@ -141,28 +140,35 @@ tfoot tr {
         $subtotal = $trx->quantity * $trx->purchase_price;
 
         // 🔥 LOGIC PENGELUARAN
-        if ($status === 'canceled') {
-            $pengeluaran = 0;
-        } else {
-            $pengeluaran = $trx->paid_amount ?? $subtotal;
-        }
+        $pengeluaran = ($status === 'canceled')
+    ? 0
+    : (float) ($trx->total_payment ?? 0);
     @endphp
 
 <tr>
     <td class="text-center">{{ $i + 1 }}</td>
     <td>{{ $trx->code }}</td>
     <td>{{ $trx->product->name ?? '-' }}</td>
-    <td>{{ $trx->supplier->name ?? '-' }}</td>
+    <td class="text-center">{{ $trx->supplier->name ?? '-' }}</td>
 
-    <td>
+    <td class="text-center">
         {{ $date->format('d') }}
         {{ $namaBulan[$date->month] }}
         {{ $date->format('Y') }}
     </td>
 
     <td class="text-center">
+        @php
+            $statusLabel = match ($status) {
+                'paid' => 'Lunas',
+                'pending' => 'Belum Lunas',
+                'canceled' => 'Dibatalkan',
+                default => ucfirst($status),
+            };
+        @endphp
+
         <span class="badge {{ $status }}">
-            {{ ucfirst($status) }}
+            {{ $statusLabel }}
         </span>
     </td>
 

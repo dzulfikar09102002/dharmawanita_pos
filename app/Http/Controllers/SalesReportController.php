@@ -117,8 +117,10 @@ class SalesReportController extends Controller
 
     // total
     $total = $isDeleted
-        ? (float) $transactions->sum('total_amount')
-        : (float) $transactions->sum('grand_total');
+    ? (float) $transactions->sum('total_amount')
+    : (float) $transactions->sum(function ($trx) {
+        return (float) ($trx->total_amount - ($trx->change ?? 0));
+    });
     if ($type === 'month') {
         $namaBulan = [
             1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
@@ -146,7 +148,7 @@ class SalesReportController extends Controller
         'title' => $title, 
     ]);
 
-    $pdf->setPaper('A4', 'portrait');
+    $pdf->setPaper('A4', 'landscape');
 
     return $pdf->stream(
         $isDeleted

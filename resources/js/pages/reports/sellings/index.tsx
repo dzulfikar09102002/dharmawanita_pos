@@ -268,6 +268,11 @@ export default function Index({
             header: 'Total Pembayaran',
             cell: (info) => formatRupiah(info.getValue()),
         }),
+        columnHelper.accessor('change', {
+            id: 'change',
+            header: 'Kembalian',
+            cell: (info) => formatRupiah(info.getValue()),
+        }),
 
         // 🔥 Kolom dinamis (Kurang Bayar / Kerugian)
         columnHelper.display({

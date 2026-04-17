@@ -82,7 +82,7 @@ export interface SaleTransaction {
     invoice_number: string;
     payment_method_id: number;
     payment_method?: PaymentMethod;
-
+    change: number;
     payment_status: PaymentStatus;
     total_amount: number;
     grand_total: number;
@@ -92,6 +92,19 @@ export interface SaleTransaction {
     reason: string;
 }
 
+export interface PaymentMethodSummary {
+    payment_method_id: number;
+    payment_method_name: string;
+    payment_method_kind: string;
+    total_transaksi: number;
+    total_nominal: number;
+}
+export interface SalesSummary {
+    total_transaksi: number;
+    total_item: number;
+    total_pendapatan: number;
+    by_payment_method: PaymentMethodSummary[];
+}
 export interface SaleTransactionDetail {
     id: number;
     sale_transaction_id: number;

@@ -88,9 +88,7 @@ export default ({
                             if (alertState.processing) return;
 
                             const options = {
-                                only: ['pagination'],
-                                preserveState: true,
-
+                                preserveScroll: true,
                                 onBefore: () => {
                                     onAlertProcessing();
                                 },

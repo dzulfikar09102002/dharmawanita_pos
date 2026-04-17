@@ -122,13 +122,15 @@ $isDeleted = request('deleted') == 1;
                 <th style="width:10%" class="text-center">Jumlah</th>
                 <th style="width:20%">Tanggal</th>
                 <th style="width:20%">Alasan</th>
-                <th style="width:20%" class="text-right">Kerugian</th>
+                <th style="width:20%" class="text-center">Kerugian</th>
             @else
-                <th style="width:30%">Invoice</th>
-                <th style="width:12%" class="text-center">Status</th>
-                <th style="width:20%" class="text-center">Tanggal</th>
-                <th style="width:33%" class="text-right">Total</th>
-                <th style="width:33%" class="text-right">Pendapatan</th>
+                <th style="width:25%">Invoice</th>
+                <th style="width:10%" class="text-center">Status</th>
+                <th style="width:15%" class="text-center">Tanggal</th>
+                <th style="width:15%" class="text-right">Total</th>
+                <th style="width:15%" class="text-right">Pembayaran</th> 
+                <th style="width:15%" class="text-right">Kembalian</th> 
+                <th style="width:15%" class="text-right">Pendapatan</th>
             @endif
         </tr>
     </thead>
@@ -179,22 +181,28 @@ $isDeleted = request('deleted') == 1;
         </span>
     </td>
 
-    <td>
+    <td class="text-center">
         {{ $date->format('d') }}
         {{ $namaBulan[(int) $date->format('n')] ?? '-' }}
         {{ $date->format('Y') }}
     </td>
 
-    <td class="text-right">
+   <td class="text-right">
     Rp {{ number_format($trx->grand_total ?? 0, 0, ',', '.') }}
 </td>
 
 <td class="text-right">
-    @if ($trx->payment_status === 'paid')
-        Rp {{ number_format($trx->total_amount ?? 0, 0, ',', '.') }}
-    @else
-        -
-    @endif
+    Rp {{ number_format($trx->total_amount ?? 0, 0, ',', '.') }}
+</td>
+
+<td class="text-right">
+    Rp {{ number_format($trx->change ?? 0, 0, ',', '.') }}
+</td>
+
+<td class="text-right">
+    Rp {{ number_format(
+        max(0, ($trx->total_amount ?? 0) - ($trx->change ?? 0)),
+    0, ',', '.') }}
 </td>
 @endif
             </tr>
@@ -214,13 +222,15 @@ $isDeleted = request('deleted') == 1;
     } else {
         // ✅ khusus pendapatan (yang paid saja)
         $totalFinal = $transactions
-            ->where('payment_status', 'paid')
-            ->sum('total_amount');
+    ->where('payment_status', 'paid')
+    ->sum(function ($trx) {
+        return max(0, ($trx->total_amount ?? 0) - ($trx->change ?? 0));
+    });
     }
 @endphp
  <tfoot>
     <tr>
-        <td colspan="5">
+        <td colspan="7">
             <strong>
                 {{ $isDeleted ? 'Total Kerugian' : 'Total Pendapatan' }}
             </strong>

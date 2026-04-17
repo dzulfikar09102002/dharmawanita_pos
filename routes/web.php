@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\SalesSummaryController;
 use App\Http\Controllers\SellingController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -32,8 +33,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('/products', ProductController::class)->except('show');
     Route::get('products/deleted', [ProductController::class, 'deleted'])
         ->name('products.deleted');
+
     Route::post('products/{id}/restore', [ProductController::class, 'restore'])
         ->name('products.restore');  
+
+    Route::get('sales-summary/history', [SalesSummaryController::class, 'history'])
+        ->name('sales-summary.history');
+    Route::resource('/sales-summary', SalesSummaryController::class)->except('show');
 
     Route::resource('/payment-methods', PaymentMethodController::class)->except('show');
     Route::get('payment-methods/deleted', [PaymentMethodController::class, 'deleted'])

@@ -34,7 +34,7 @@ class PurchaseService
 
         return $query
             ->orderByDesc('updated_at')
-            ->paginate(request('per_page', 25))
+            ->paginate(request('per_page', 20))
             ->withQueryString();
     }
 

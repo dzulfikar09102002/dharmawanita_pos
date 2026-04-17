@@ -17,8 +17,7 @@ createInertiaApp({
                 return AuthLayout;
             case name.startsWith('settings/'):
                 return [AppLayout, SettingsLayout];
-            case name.startsWith('user/confirm-password/'):
-                return [AppLayout, SettingsLayout];
+
             default:
                 return null;
         }

@@ -15,6 +15,7 @@ import {
     PoundSterling,
     BadgePoundSterling,
     BaggageClaim,
+    Calculator,
 } from 'lucide-react';
 
 import AppLogo from '@/components/app-logo';
@@ -40,6 +41,7 @@ import suppliers from '@/routes/suppliers';
 import purchases from '@/routes/purchases';
 import reportsStocks from '@/routes/reportsStocks';
 import sellings from '@/routes/sellings';
+import salesSummary from '@/routes/sales-summary';
 
 const mainNavItems = [
     {
@@ -51,6 +53,11 @@ const mainNavItems = [
         title: 'Kasir',
         href: sellings.index().url,
         icon: ScanBarcode,
+    },
+    {
+        title: 'Rekapan',
+        href: salesSummary.index().url,
+        icon: Calculator,
     },
 
     {

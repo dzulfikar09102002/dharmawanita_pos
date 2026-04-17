@@ -182,7 +182,7 @@ export default ({ pagination }: Props) => {
 
             <div className="mb-4">
                 <Button
-                    className="bg-green-600 hover:bg-green-700 text-white"
+                    className="bg-green-600 text-white hover:bg-green-700"
                     onClick={() =>
                         setModal({ isOpen: true, dataId: undefined })
                     }

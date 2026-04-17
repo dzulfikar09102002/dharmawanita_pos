@@ -4,7 +4,14 @@ import type { BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, X, ArchiveRestore, FilterX, Printer } from 'lucide-react';
+import {
+    Search,
+    X,
+    ArchiveRestore,
+    FilterX,
+    Printer,
+    CircleCheckBig,
+} from 'lucide-react';
 
 import {
     createColumnHelper,
@@ -165,12 +172,26 @@ export default function Index({
         }),
         columnHelper.display({
             id: 'Total_Bayar',
+            header: 'Total',
+            cell: (info) => {
+                const row = info.row.original;
+
+                const Total = (row.quantity || 0) * (row.purchase_price || 0);
+
+                return Total > 0 ? (
+                    <span>{formatRupiah(Total)}</span>
+                ) : (
+                    <span>Rp 0</span>
+                );
+            },
+        }),
+        columnHelper.display({
+            id: 'Total_Bayar',
             header: 'Total Bayar',
             cell: (info) => {
                 const row = info.row.original;
 
-                const TotalBayar =
-                    (row.quantity || 0) * (row.purchase_price || 0);
+                const TotalBayar = row.total_payment;
 
                 return TotalBayar > 0 ? (
                     <span>{formatRupiah(TotalBayar)}</span>
@@ -255,7 +276,7 @@ export default function Index({
                                         })
                                     }
                                 >
-                                    💰
+                                    <CircleCheckBig />
                                 </Button>
                             )}
 
