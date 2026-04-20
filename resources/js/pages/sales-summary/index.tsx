@@ -4,7 +4,17 @@ import type { BreadcrumbItem } from '@/types';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import {
     DollarSign,
     ShoppingCart,
@@ -16,6 +26,8 @@ import {
 import { SalesSummary } from '@/lib/model';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import salesSummary from '@/routes/sales-summary';
+import { toast } from 'sonner';
+import { Spinner } from '@/components/ui/spinner';
 
 const title = 'Rekap Penjualan';
 
@@ -31,7 +43,6 @@ type Props = {
 };
 
 export default function Index({ summary }: Props) {
-    // 🔥 GROUP BY KIND
     const grouped = Object.values(
         summary.by_payment_method.reduce((acc: any, item) => {
             if (!acc[item.payment_method_kind]) {
@@ -56,8 +67,7 @@ export default function Index({ summary }: Props) {
             minimumFractionDigits: 0,
         }).format(Number(value || 0));
 
-    // ✅ USE FORM
-    const { data, setData, post, processing } = useForm({
+    const form = useForm({
         date: new Date().toISOString(),
         total_sales: summary.total_pendapatan,
         total_transactions: summary.total_transaksi,
@@ -68,9 +78,15 @@ export default function Index({ summary }: Props) {
         })),
     });
 
-    // ✅ SUBMIT
     const handleSubmit = () => {
-        post(salesSummary.store().url);
+        form.post(salesSummary.store().url, {
+            onSuccess: () => {
+                toast.success('Rekapan berhasil disimpan');
+            },
+            onError: () => {
+                toast.error('Gagal menyimpan rekapan');
+            },
+        });
     };
 
     return (
@@ -79,7 +95,6 @@ export default function Index({ summary }: Props) {
 
             <Card className="p-4">
                 <div className="mb-2 space-y-4">
-                    {/* HEADER */}
                     <div className="mt-2 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="rounded-lg bg-muted p-2">
@@ -100,7 +115,6 @@ export default function Index({ summary }: Props) {
                         </div>
                     </div>
 
-                    {/* TABS */}
                     <Tabs defaultValue="today" className="mt-6 w-fit">
                         <TabsList>
                             <TabsTrigger value="today" asChild>
@@ -111,13 +125,12 @@ export default function Index({ summary }: Props) {
 
                             <TabsTrigger value="history" asChild>
                                 <Link href={salesSummary.history().url}>
-                                    History Rekap
+                                    Histori Rekap
                                 </Link>
                             </TabsTrigger>
                         </TabsList>
                     </Tabs>
 
-                    {/* STATS */}
                     <div className="mt-4 grid gap-4 md:grid-cols-3">
                         <Card>
                             <CardContent className="flex items-center gap-4 p-5">
@@ -178,7 +191,6 @@ export default function Index({ summary }: Props) {
                     </div>
                 </div>
 
-                {/* PAYMENT BREAKDOWN */}
                 <div className="space-y-4">
                     {grouped.map((group: any) => (
                         <Card key={group.kind}>
@@ -219,17 +231,48 @@ export default function Index({ summary }: Props) {
                     ))}
                 </div>
 
-                {/* BUTTON */}
                 <div className="mt-4 flex justify-end">
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={processing}
-                        className="bg-green-600 text-white hover:bg-green-700"
-                    >
-                        {processing
-                            ? 'Menyimpan...'
-                            : 'Rekap Penjualan Sekarang'}
-                    </Button>
+                    <div className="mt-4 flex justify-end">
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    disabled={form.processing}
+                                    className="bg-green-600 text-white hover:bg-green-700"
+                                >
+                                    Rekap Penjualan Sekarang
+                                </Button>
+                            </AlertDialogTrigger>
+
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                        Konfirmasi Rekap Penjualan
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Apakah kamu yakin ingin melakukan rekap
+                                        sekarang? Pastikan semua data transaksi
+                                        sudah sesuai karena proses ini akan
+                                        menutup periode saat ini.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Batal</AlertDialogCancel>
+
+                                    <AlertDialogAction
+                                        onClick={handleSubmit}
+                                        disabled={form.processing}
+                                        className="bg-green-600 hover:bg-green-700"
+                                    >
+                                        {form.processing && <Spinner />}
+                                        {form.processing
+                                            ? 'Menyimpan...'
+                                            : 'Ya, Rekap Sekarang'}
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </div>
                 </div>
             </Card>
         </AppLayout>

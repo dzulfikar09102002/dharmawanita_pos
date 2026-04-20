@@ -75,7 +75,8 @@ class SalesReportService
                         $q2->withTrashed();
                     }
                 ]);
-            }
+            },
+            'returnTransaction'
         ])
         ->where('sale_transaction_id', $id);
 
@@ -90,13 +91,15 @@ class SalesReportService
 
             $invoice = SaleTransaction::with('details.purchase')->findOrFail($id);
 
-            // Update status
+            $reason = request('reason'); // ✅ ambil dari FE
+
+            // Update status + simpan reason kalau mau
             $invoice->update([
                 'payment_status' => 'canceled',
                 'updated_by'     => auth()->id(),
+                'cancel_reason'  => $reason, // opsional (kalau ada kolomnya)
             ]);
 
-            // Loop detail transaksi (karena bisa banyak produk)
             foreach ($invoice->details as $detail) {
 
                 if (!$detail->purchase) {
@@ -104,15 +107,20 @@ class SalesReportService
                 }
 
                 InventoryTransaction::create([
-                    'product_id'     => $detail->purchase->product_id, // ✅ FIX DI SINI
+                    'product_id'     => $detail->purchase->product_id,
                     'type'           => 'in',
                     'source'         => 'return',
-                    'reference_id'   => $detail->purchase_id, // lebih konsisten
+                    'reference_id'   => $detail->id,
                     'quantity'       => $detail->quantity,
                     'purchase_price' => $detail->purchase->purchase_price ?? 0,
                     'selling_price'  => $detail->selling_price ?? 0,
-                    'note'           => 'Transaksi dibatalkan (return)',
-                    'created_by'     => auth()->id(),
+
+                    // 🔥 INI YANG DIGANTI
+                    'note' => $reason
+                        ? "Return: {$reason}"
+                        : 'Transaksi dibatalkan (return)',
+
+                    'created_by' => auth()->id(),
                 ]);
             }
 

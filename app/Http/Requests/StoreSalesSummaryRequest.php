@@ -20,10 +20,22 @@ class StoreSalesSummaryRequest extends FormRequest
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
-    public function rules(): array
-    {
-        return [
-            //
-        ];
-    }
+   public function rules(): array
+{
+    return [
+        'date' => ['required', 'date'],
+        'total_sales' => ['required', 'numeric', 'min:0'],
+        'total_transactions' => ['required', 'integer', 'min:0'],
+
+        'details' => ['required', 'array', 'min:1'],
+
+        'details.*.payment_method_id' => [
+            'required',
+            'integer',
+            'exists:payment_methods,id'
+        ],
+        'details.*.total_amount' => ['required', 'numeric', 'min:0'],
+        'details.*.total_transactions' => ['required', 'integer', 'min:0'],
+    ];
+}
 }

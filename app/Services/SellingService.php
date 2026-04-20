@@ -8,6 +8,7 @@ use App\Models\SaleTransactionDetail;
 use App\Models\InventoryTransaction;
 use App\Models\Category;
 use App\Models\SaleTransaction;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class SellingService
@@ -139,7 +140,9 @@ class SellingService
                 'payment_status'   => 'pending',
                 'grand_total'      => $grandTotal,
                 'payment_type'     => 'cash',
-                'transaction_date' => now(),
+                'transaction_date' => Carbon::parse($input['transaction_date'])->isToday()
+                    ? now()
+                    : Carbon::parse($input['transaction_date'])->startOfDay(),
                 'created_by'       => $user,
                 'updated_by'       => $user,
             ]);

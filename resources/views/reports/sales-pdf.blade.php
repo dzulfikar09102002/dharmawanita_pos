@@ -15,7 +15,7 @@ $isDeleted = request('deleted') == 1;
 <head>
     <meta charset="utf-8">
     <title>{{ $title }}</title>
-
+    <link rel="icon" href="/assets/images/logo-dharmawanita.png" type="image/png">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 

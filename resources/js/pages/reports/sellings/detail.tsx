@@ -71,46 +71,56 @@ export default function Index({ pagination, transaction }: Props) {
 
     const handleCancel = () => {
         Swal.fire({
-            title: 'Apakah anda yakin?',
+            title: 'Alasan Pembatalan',
+            input: 'textarea',
+            inputLabel: 'Masukkan alasan pembatalan',
+            inputPlaceholder: 'Contoh: Salah input / customer batal / dll...',
+            inputAttributes: {
+                'aria-label': 'Alasan pembatalan',
+            },
             showCancelButton: true,
+            confirmButtonText: 'Batalkan Transaksi',
+            cancelButtonText: 'Batal',
             confirmButtonColor: '#dc2626',
             cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Ya, Batalkan!',
-            cancelButtonText: 'Batal',
             reverseButtons: true,
+            showLoaderOnConfirm: true,
+
+            preConfirm: async (reason) => {
+                if (!reason) {
+                    Swal.showValidationMessage('Alasan wajib diisi');
+                    return;
+                }
+
+                return new Promise((resolve, reject) => {
+                    router.post(
+                        salesReport.cancel(transaction.id).url,
+                        { reason }, // ✅ kirim ke BE
+                        {
+                            onSuccess: () => resolve(true),
+                            onError: () => {
+                                Swal.showValidationMessage(
+                                    'Gagal membatalkan transaksi',
+                                );
+                                reject();
+                            },
+                        },
+                    );
+                });
+            },
+
+            allowOutsideClick: () => !Swal.isLoading(),
         }).then((result) => {
             if (result.isConfirmed) {
                 Swal.fire({
-                    title: 'Memproses...',
-                    text: 'Sedang membatalkan transaksi',
-                    allowOutsideClick: false,
-                    didOpen: () => Swal.showLoading(),
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Transaksi berhasil dibatalkan',
+                    timer: 2000,
+                    showConfirmButton: false,
                 });
 
-                router.post(
-                    salesReport.cancel(transaction.id).url,
-                    {},
-                    {
-                        onSuccess: () => {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Berhasil!',
-                                text: 'Transaksi berhasil dibatalkan',
-                                timer: 2000,
-                                showConfirmButton: false,
-                            });
-
-                            router.visit(salesReport.index().url);
-                        },
-                        onError: () => {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Gagal!',
-                                text: 'Terjadi kesalahan saat membatalkan transaksi',
-                            });
-                        },
-                    },
-                );
+                router.visit(salesReport.index().url);
             }
         });
     };
@@ -236,46 +246,11 @@ export default function Index({ pagination, transaction }: Props) {
         columns,
         getCoreRowModel: getCoreRowModel(),
     });
-
+    const cancelReason =
+        pagination.data?.[0]?.return_transaction?.[0]?.note ?? null;
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
-
-            <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                <AlertDialogContent className="sm:max-w-md">
-                    <AlertDialogHeader>
-                        <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
-                                <AlertTriangle className="h-5 w-5 text-red-600" />
-                            </div>
-                            <div>
-                                <AlertDialogTitle>
-                                    Batalkan Transaksi?
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Tindakan ini tidak dapat dibatalkan.
-                                </AlertDialogDescription>
-                            </div>
-                        </div>
-                    </AlertDialogHeader>
-
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={processing}>
-                            Batal
-                        </AlertDialogCancel>
-
-                        <Button
-                            variant="destructive"
-                            disabled={processing}
-                            onClick={handleCancel}
-                        >
-                            {processing && <Spinner />}
-                            Ya, Batalkan
-                        </Button>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-
             <Card>
                 <CardContent>
                     <div className="mb-4 space-y-1">
@@ -293,6 +268,34 @@ export default function Index({ pagination, transaction }: Props) {
                             Metode Pembayaran
                         </div>
                         <div>{transaction.payment_method?.name ?? '-'}</div>
+                        <div className="mt-2 text-sm text-gray-500">Status</div>
+                        <div>
+                            {transaction.payment_status === 'canceled' ? (
+                                <span className="inline-block rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">
+                                    Dibatalkan
+                                </span>
+                            ) : transaction.payment_status === 'paid' ? (
+                                <span className="inline-block rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
+                                    Lunas
+                                </span>
+                            ) : (
+                                <span className="inline-block rounded bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-700">
+                                    Pending
+                                </span>
+                            )}
+                        </div>
+
+                        {transaction.payment_status === 'canceled' &&
+                            cancelReason && (
+                                <>
+                                    <div className="mt-2 text-sm text-gray-500">
+                                        Alasan Pembatalan :
+                                    </div>
+                                    <div className="rounded bg-red-50 p-2 text-sm text-red-700">
+                                        {cancelReason}
+                                    </div>
+                                </>
+                            )}
                     </div>
 
                     <DataTable columns={columns} table={table} />

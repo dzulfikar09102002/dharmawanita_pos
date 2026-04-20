@@ -19,7 +19,7 @@ class SalesSummary extends Model
     ];
 
     protected $casts = [
-        'date' => 'date',
+        'date' => 'datetime',
         'total_sales' => 'decimal:2',
     ];
 

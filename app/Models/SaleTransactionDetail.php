@@ -46,8 +46,13 @@ class SaleTransactionDetail extends Model
     {
         return $this->belongsTo(Product::class, 'product_id')->withTrashed();
     }
-
-    // User tracking
+    public function returnTransaction()
+    {
+        return $this->hasMany(InventoryTransaction::class, 'reference_id')
+            ->where('type', 'in')
+            ->where('source', 'return');
+    }
+        // User tracking
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');

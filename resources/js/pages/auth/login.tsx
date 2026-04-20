@@ -24,7 +24,7 @@ export default function Login({
 }: Props) {
     return (
         <>
-            <Head title="Masuk — Dharma Wanita" />
+            <Head title="Autentikasi" />
 
             <Form
                 {...store.form()}

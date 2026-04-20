@@ -91,7 +91,18 @@ export interface SaleTransaction {
     tahun: number;
     reason: string;
 }
-
+export interface SalesSummaryDetail {
+    id: number;
+    sales_summary_id: number;
+    payment_method_id: number;
+    total_amount: number | string;
+    total_transactions: number;
+    payment_method?: {
+        id: number;
+        name: string;
+        kind: string;
+    };
+}
 export interface PaymentMethodSummary {
     payment_method_id: number;
     payment_method_name: string;
@@ -104,6 +115,19 @@ export interface SalesSummary {
     total_item: number;
     total_pendapatan: number;
     by_payment_method: PaymentMethodSummary[];
+
+    id: number;
+    date: string;
+    total_sales: number;
+    total_transactions: number;
+    details: SalesSummaryDetail[];
+    created_by?: number | null;
+    updated_by?: number | null;
+    deleted_by?: number | null;
+
+    created_at?: string;
+    updated_at?: string;
+    deleted_at?: string | null;
 }
 export interface SaleTransactionDetail {
     id: number;
@@ -114,6 +138,7 @@ export interface SaleTransactionDetail {
     purchase_price: number;
     selling_price: number;
     subtotal: number;
+    return_transaction?: InventoryTransaction[];
 }
 
 export interface Stock {
@@ -126,7 +151,17 @@ export interface Stock {
     total_out: number;
     stock: number;
 }
-
+export interface InventoryTransaction {
+    id: number;
+    product_id: number;
+    type: string;
+    source: string;
+    reference_id: number;
+    quantity: number;
+    purchase_price: number;
+    selling_price: number;
+    note?: string; // 🔥 ini reason
+}
 export interface LabaRugi {
     bulan: number;
     tahun: number;

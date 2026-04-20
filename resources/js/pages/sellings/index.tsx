@@ -27,6 +27,8 @@ import { useEffect, useRef, useState } from 'react';
 import sellings from '@/routes/sellings';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
+import { FieldLabel } from '@/components/ui/field';
+import { DatePicker } from '@/components/ui/date-picker';
 
 const title = 'Kasir / Penjualan';
 
@@ -68,10 +70,14 @@ type Props = {
 export default function Index({ pagination, categoryOptions }: Props) {
     const { data: products } = pagination;
 
+    const today = new Date().toISOString().split('T')[0];
+
     const { data, setData, post, processing, errors } = useForm<{
         items: Item[];
+        transaction_date: string | null;
     }>({
         items: [],
+        transaction_date: today,
     });
     const err = (key: string) => ((errors as any)[key] ? 'border-red-500' : '');
     const query = useQuery();
@@ -588,6 +594,19 @@ export default function Index({ pagination, categoryOptions }: Props) {
                         </div>
                     </CardContent>
                     <div className="mx-auto mt-4 w-[95%] space-y-1 border-t pt-3 text-sm">
+                        <div className="mb-3 grid grid-cols-[150px_1fr] items-center gap-3">
+                            <FieldLabel>
+                                Tanggal Penjualan{' '}
+                                <span className="text-red-500">*</span>
+                            </FieldLabel>
+
+                            <DatePicker
+                                value={data.transaction_date}
+                                onChange={(val) =>
+                                    setData('transaction_date', val)
+                                }
+                            />
+                        </div>
                         <div className="flex justify-between">
                             <span>Subtotal</span>
                             <span>{subtotal.toLocaleString('id-ID')}</span>
@@ -606,14 +625,38 @@ export default function Index({ pagination, categoryOptions }: Props) {
                     <Button
                         className="mx-auto mt-4 w-[95%] cursor-pointer"
                         disabled={processing || data.items.length === 0}
-                        onClick={() =>
-                            post(sellings.store().url, {
+                        onClick={() => {
+                            if (!data.transaction_date) {
+                                toast.error('Tanggal wajib diisi');
+                                return;
+                            }
+
+                            const selectedDate = data.transaction_date;
+                            const today = new Date()
+                                .toISOString()
+                                .split('T')[0];
+
+                            let finalDate = selectedDate;
+
+                            if (selectedDate === today) {
+                                finalDate = new Date().toISOString();
+                            }
+
+                            const payload = {
+                                transaction_date: finalDate,
+                                items: data.items,
+                            };
+
+                            router.post(sellings.store().url, payload, {
                                 onSuccess: () => {
-                                    setData('items', []);
+                                    setData({
+                                        items: [],
+                                        transaction_date: today,
+                                    });
                                     toast.success('Data berhasil disimpan');
                                 },
-                            })
-                        }
+                            });
+                        }}
                     >
                         {processing ? (
                             <>

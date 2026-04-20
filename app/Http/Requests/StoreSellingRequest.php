@@ -20,9 +20,11 @@ class StoreSellingRequest extends FormRequest
      *
      * @return array<string, ValidationRule|array<mixed>|string>
      */
-    public function rules(): array
+public function rules(): array
 {
     return [
+        'transaction_date' => ['required', 'date'],
+
         'items' => ['required', 'array', 'min:1'],
 
         'items.*.purchase_id'   => ['required', 'integer', 'exists:purchases,id'],

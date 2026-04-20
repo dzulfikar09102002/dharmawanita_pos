@@ -20,13 +20,12 @@ export function AppSidebarHeader({
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
             </div>
 
-            {/* RIGHT */}
-            <Link href={logout()} as="button" data-test="logout-button">
-                <Button variant="destructive">
+            <Button variant="destructive" asChild>
+                <Link href={logout()} data-test="logout-button">
                     <LogOut />
                     <span className="hidden lg:inline"> Log out</span>
-                </Button>
-            </Link>
+                </Link>
+            </Button>
         </header>
     );
 }

@@ -21,38 +21,21 @@ class SalesSummaryController extends Controller
 
     public function store(StoreSalesSummaryRequest $request)
     {
-        dd($request);
+        $this->service->store($request->validated());
+        return to_route('sales-summary.index')->with('success', 'Rekapan berhasil disimpan');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(SalesSummary $salesSummary)
+    public function history()
     {
-        //
+        $pagination = $this->service->getHistorySalesSummaries();
+        return Inertia::render('sales-summary/history', compact('pagination'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(SalesSummary $salesSummary)
+    public function detail($id)
     {
-        //
-    }
+        $summary = $this->service->getDetail($id);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateSalesSummaryRequest $request, SalesSummary $salesSummary)
-    {
-        //
+        return Inertia::render('sales-summary/detail', compact('summary'));
     }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(SalesSummary $salesSummary)
-    {
-        //
-    }
+        
 }
