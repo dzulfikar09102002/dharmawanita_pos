@@ -16,6 +16,7 @@ class InventoryTransaction extends Model
         'type',
         'source',
         'reference_id', 
+        'reference_table',
         'quantity',
         'purchase_price',
         'selling_price',

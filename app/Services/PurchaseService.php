@@ -120,6 +120,7 @@ class PurchaseService
                     'type'            => 'in',
                     'source'          => $item['source'], 
                     'reference_id'    => $purchase->id, 
+                    'reference_table' => 'purchase',
                     'quantity'        => $item['quantity'],
                     'purchase_price'  => $item['purchase_price'],
                     'selling_price'   => $item['selling_price'],

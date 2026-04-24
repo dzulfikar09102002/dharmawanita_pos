@@ -98,6 +98,7 @@ class PurchasesReportService
                 'type'           => 'out',
                 'source'         => 'return',
                 'reference_id'   => $purchasereport->id,
+                'reference_table'=> 'purchase',
                 'quantity'       => $purchasereport->quantity,
                 'purchase_price' => $purchasereport->purchase_price ?? 0,
                 'selling_price'  => $purchasereport->selling_price ?? 0,

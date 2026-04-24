@@ -111,6 +111,7 @@ class SalesReportService
                     'type'           => 'in',
                     'source'         => 'return',
                     'reference_id'   => $detail->id,
+                    'reference_table'=> 'sale',
                     'quantity'       => $detail->quantity,
                     'purchase_price' => $detail->purchase->purchase_price ?? 0,
                     'selling_price'  => $detail->selling_price ?? 0,
