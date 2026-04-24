@@ -55,4 +55,25 @@ class Purchase extends Model
     {
         return $this->belongsTo(User::class, 'deleted_by');
     }
+
+    public function inventoryTransactions()
+    {
+        return $this->hasMany(
+            InventoryTransaction::class,
+            'reference_id',
+            'id'
+        )
+        ->where('type', 'in')
+        ->where('reference_table', 'purchase');
+    }
+    public function returnTransaction()
+    {
+        return $this->hasMany(
+            InventoryTransaction::class,
+            'reference_id',
+            'id'
+        )
+        ->where('type', 'out')
+        ->where('reference_table', 'purchase');
+    }
 }

@@ -134,6 +134,7 @@ class PurchaseService
             return $createdPurchases;
         });
     }
+    
     public function generateCode(int $productId, int $year, ?string $expiredDate): string
     {
         $product = Product::findOrFail($productId);

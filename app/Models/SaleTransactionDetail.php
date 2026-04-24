@@ -36,7 +36,8 @@ class SaleTransactionDetail extends Model
     public function inventoryTransactions()
     {
         return $this->hasMany(InventoryTransaction::class, 'reference_id')
-            ->where('type', 'out');
+            ->where('type', 'out')
+            ->where('reference_table', 'sale');
     }
     public function category()
     {
@@ -50,7 +51,7 @@ class SaleTransactionDetail extends Model
     {
         return $this->hasMany(InventoryTransaction::class, 'reference_id')
             ->where('type', 'in')
-            ->where('source', 'return');
+            ->where('reference_table', 'sale');
     }
         // User tracking
     public function createdBy()

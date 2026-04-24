@@ -52,6 +52,10 @@ export interface ProductStock {
     id: number;
     stock: number;
 }
+export type Option = {
+    value: string;
+    label: string;
+};
 export interface Purchase {
     id: number;
     product_id: number;
@@ -64,16 +68,18 @@ export interface Purchase {
     total_quantity: number;
     total_payment: number;
     purchase_price: number;
-    purchase_date: string; // ISO date string
+    selling_price: number;
+    purchase_date: string;
     status_payment: PaymentStatus;
-    expired_date: string | null; // bisa null kalau belum ada
+    expired_date: string | null;
     created_by: number;
     updated_by: number | null;
     deleted_by: number | null;
-    created_at: string; // ISO date string
+    created_at: string;
     updated_at: string | null;
     deleted_at: string | null;
     month: number;
+    inventory_transactions: InventoryTransaction[];
 }
 export type PaymentStatus = 'pending' | 'paid' | 'canceled';
 
@@ -160,7 +166,7 @@ export interface InventoryTransaction {
     quantity: number;
     purchase_price: number;
     selling_price: number;
-    note?: string; // 🔥 ini reason
+    note?: string;
 }
 export interface LabaRugi {
     bulan: number;

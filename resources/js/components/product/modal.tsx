@@ -220,7 +220,6 @@ export default function Modal({
                         </Field>
                     </FieldSet>
 
-                    {/* ✅ FIX FOOTER SPACING */}
                     <DialogFooter className="mt-6">
                         <DialogClose asChild>
                             <Button variant="outline">Batal</Button>

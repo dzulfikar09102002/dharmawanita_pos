@@ -11,6 +11,7 @@ import {
     FilterX,
     Printer,
     CircleCheckBig,
+    Pencil,
 } from 'lucide-react';
 
 import {
@@ -24,7 +25,7 @@ import NumberBoardModal from '@/components/number-board-modal';
 import { toast } from 'sonner';
 import DataTable from '@/components/data-table';
 import TablePagination from '@/components/table-pagination';
-import { Pagination, Purchase } from '@/lib/model';
+import { Option, Pagination, Purchase } from '@/lib/model';
 import { useQuery } from '@/hooks/use-query';
 import { useState } from 'react';
 
@@ -40,6 +41,7 @@ import {
     ComboboxItem,
     ComboboxList,
 } from '@/components/ui/combobox';
+import Modal from '@/components/purchase-report/modal';
 
 const title = 'Laporan Pembelian';
 
@@ -57,6 +59,7 @@ type Props = {
     month: number;
     year: number;
     resetKey?: number;
+    supplierOptions: Option[];
     onReset?: () => void;
 };
 
@@ -86,6 +89,7 @@ export default function Index({
     pagination,
     month: initialMonth,
     year: initialYear,
+    supplierOptions,
 }: Props) {
     const bulanOptions = namaBulan.map((nama, i) => ({
         value: String(i + 1),
@@ -103,7 +107,13 @@ export default function Index({
         dataId: undefined,
         proccessing: false,
     });
-
+    const [editModal, setEditModal] = useState<{
+        open: boolean;
+        data?: Purchase;
+    }>({
+        open: false,
+        data: undefined,
+    });
     const { url } = usePage();
     const isDeletedRoute = url.includes('deleted');
 
@@ -141,12 +151,19 @@ export default function Index({
             proccessing: false,
         });
 
-    const handlePrint = (type: 'month' | 'year') => {
+    const handlePrint = (type: 'month' | 'year' | 'week') => {
         let url = `/reports/print-purchases-report?type=${type}&year=${year}`;
-        if (type === 'month') url += `&month=${month}`;
+
+        if (type === 'month' || type === 'week') {
+            url += `&month=${month}`;
+        }
+
+        if (isDeletedRoute) {
+            url += '&deleted=1';
+        }
+
         window.open(url, '_blank');
     };
-
     const columns: ColumnDef<Purchase, any>[] = [
         {
             id: 'no',
@@ -156,50 +173,82 @@ export default function Index({
                 info.row.index +
                 1,
         },
-        columnHelper.accessor('code', { header: 'Kode' }),
+
+        columnHelper.accessor('code', {
+            header: 'Kode',
+        }),
+
         columnHelper.accessor('product_id', {
             header: 'Produk',
             cell: (info) => info.row.original.product?.name ?? '-',
         }),
+
+        columnHelper.display({
+            id: 'source',
+            header: 'Sumber',
+            cell: (info) => {
+                const source =
+                    info.row.original.inventory_transactions?.[0]?.source;
+
+                const labels: Record<string, string> = {
+                    purchase: 'Pembelian',
+                    sale: 'Penjualan',
+                    adjustment: 'Penyesuaian',
+                    return: 'Retur',
+                    transfer: 'Transfer',
+                    other: 'Lainnya',
+                    damage: 'Barang Rusak',
+                    expired: 'Kedaluwarsa',
+                    consignment: 'Titipan',
+                };
+
+                return labels[source ?? ''] ?? '-';
+            },
+        }),
+
         columnHelper.accessor('supplier_id', {
             header: 'Supplier',
             cell: (info) => info.row.original.supplier?.name ?? '-',
         }),
-        columnHelper.accessor('quantity', { header: 'Qty' }),
+
+        columnHelper.accessor('quantity', {
+            header: 'Qty',
+        }),
+
         columnHelper.accessor('purchase_price', {
             header: 'Harga',
             cell: (info) => formatRupiah(info.getValue() || 0),
         }),
+
         columnHelper.display({
-            id: 'Total_Bayar',
+            id: 'total',
             header: 'Total',
             cell: (info) => {
                 const row = info.row.original;
+                const total = (row.quantity || 0) * (row.purchase_price || 0);
 
-                const Total = (row.quantity || 0) * (row.purchase_price || 0);
-
-                return Total > 0 ? (
-                    <span>{formatRupiah(Total)}</span>
+                return total > 0 ? (
+                    <span>{formatRupiah(total)}</span>
                 ) : (
                     <span>Rp 0</span>
                 );
             },
         }),
+
         columnHelper.display({
-            id: 'Total_Bayar',
+            id: 'total_bayar',
             header: 'Total Bayar',
             cell: (info) => {
-                const row = info.row.original;
+                const totalBayar = info.row.original.total_payment;
 
-                const TotalBayar = row.total_payment;
-
-                return TotalBayar > 0 ? (
-                    <span>{formatRupiah(TotalBayar)}</span>
+                return totalBayar > 0 ? (
+                    <span>{formatRupiah(totalBayar)}</span>
                 ) : (
                     <span>Rp 0</span>
                 );
             },
         }),
+
         columnHelper.display({
             id: 'kurang_bayar',
             header: 'Kurang Bayar',
@@ -219,6 +268,7 @@ export default function Index({
                 );
             },
         }),
+
         columnHelper.accessor('purchase_date', {
             header: 'Tanggal',
             cell: (info) =>
@@ -228,12 +278,15 @@ export default function Index({
                     year: 'numeric',
                 }),
         }),
+
         {
             accessorKey: 'status_payment',
             header: 'Status',
             cell: (info) => {
                 const status = info.getValue();
+
                 if (!status) return '-';
+
                 return (
                     <span
                         className={`rounded px-2 py-1 text-xs ${
@@ -245,67 +298,64 @@ export default function Index({
                         }`}
                     >
                         {status === 'paid'
-                            ? 'Paid'
+                            ? 'Lunas'
                             : status === 'canceled'
                               ? 'Dibatalkan'
-                              : 'Pending'}
+                              : 'Belum Lunas'}
                     </span>
                 );
             },
         },
-        {
+    ];
+
+    if (!isDeletedRoute) {
+        columns.push({
             id: 'action',
             header: 'Aksi',
             cell: (info) => {
                 const row = info.row.original;
-                const meta = info.table.options.meta as TableMeta;
 
                 return (
                     <div className="flex gap-2">
-                        {/* PAYMENT */}
-                        {row.status_payment === 'pending' &&
-                            !meta.isDeletedRoute && (
-                                <Button
-                                    size="icon"
-                                    className="bg-emerald-600 text-white hover:bg-emerald-700"
-                                    onClick={() =>
-                                        setPayModal({
-                                            open: true,
-                                            data: row,
-                                            resetKey: Date.now(),
-                                        })
-                                    }
-                                >
-                                    <CircleCheckBig />
-                                </Button>
-                            )}
-
-                        {/* DELETE / RESTORE */}
+                        {row.status_payment === 'pending' && (
+                            <Button
+                                size="icon"
+                                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                                onClick={() =>
+                                    setPayModal({
+                                        open: true,
+                                        data: row,
+                                        resetKey: Date.now(),
+                                    })
+                                }
+                            >
+                                <CircleCheckBig />
+                            </Button>
+                        )}
                         <Button
                             size="icon"
-                            className={
-                                meta.isDeletedRoute
-                                    ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    : 'bg-red-600 text-white hover:bg-red-700'
-                            }
+                            variant="outline"
                             onClick={() =>
-                                meta.onDeleteOrRestore(
-                                    row.id,
-                                    !meta.isDeletedRoute,
-                                )
+                                setEditModal({
+                                    open: true,
+                                    data: row,
+                                })
                             }
                         >
-                            {meta.isDeletedRoute ? (
-                                <ArchiveRestore size={16} />
-                            ) : (
-                                <X size={16} />
-                            )}
+                            <Pencil size={16} />
+                        </Button>
+                        <Button
+                            size="icon"
+                            className="bg-red-600 text-white hover:bg-red-700"
+                            onClick={() => onDeleteOrRestore(row.id, true)}
+                        >
+                            <X size={16} />
                         </Button>
                     </div>
                 );
             },
-        },
-    ];
+        });
+    }
 
     const table = useReactTable({
         data: pagination.data,
@@ -317,6 +367,17 @@ export default function Index({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
+            <Modal
+                open={editModal.open}
+                item={editModal.data}
+                supplierOptions={supplierOptions}
+                onClose={() =>
+                    setEditModal({
+                        open: false,
+                        data: undefined,
+                    })
+                }
+            />
 
             <Alert
                 alertState={alert}
@@ -479,22 +540,66 @@ export default function Index({
 
                 <CardContent>
                     {/* PRINT */}
-                    <div className="mb-4 flex gap-2">
-                        <Button
-                            onClick={() => handlePrint('month')}
-                            className="bg-emerald-600 text-white hover:bg-emerald-700"
-                        >
-                            <Printer size={16} />
-                            Cetak Laporan Bulanan
-                        </Button>
+                    <div className="mb-4 flex items-center justify-between gap-4">
+                        <Tabs value={isDeletedRoute ? 'canceled' : 'active'}>
+                            <TabsList>
+                                <TabsTrigger value="active" asChild>
+                                    <Link
+                                        href={purchases.index().url}
+                                        data={{
+                                            month,
+                                            year,
+                                            search,
+                                        }}
+                                        preserveState
+                                        preserveScroll
+                                    >
+                                        Pembelian
+                                    </Link>
+                                </TabsTrigger>
 
-                        <Button
-                            onClick={() => handlePrint('year')}
-                            className="bg-purple-600 text-white hover:bg-purple-700"
-                        >
-                            <Printer size={16} />
-                            Cetak Laporan Tahunan
-                        </Button>
+                                <TabsTrigger value="canceled" asChild>
+                                    <Link
+                                        href={purchases.deleted().url}
+                                        data={{
+                                            month,
+                                            year,
+                                            search,
+                                        }}
+                                        preserveState
+                                        preserveScroll
+                                    >
+                                        Pembatalan
+                                    </Link>
+                                </TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+
+                        <div className="flex items-center gap-2">
+                            <Button
+                                onClick={() => handlePrint('week')}
+                                className="bg-cyan-600 text-white shadow-sm hover:bg-cyan-700"
+                            >
+                                <Printer size={16} />
+                                Cetak Laporan Mingguan
+                            </Button>
+
+                            <Button
+                                onClick={() => handlePrint('month')}
+                                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                            >
+                                <Printer size={16} />
+                                Cetak Laporan Bulanan
+                            </Button>
+
+                            <Button
+                                onClick={() => handlePrint('year')}
+                                className="bg-purple-600 text-white hover:bg-purple-700"
+                            >
+                                <Printer size={16} />
+                                Cetak Laporan Tahunan
+                            </Button>
+                        </div>
                     </div>
                     <DataTable columns={columns} table={table} />
                     <TablePagination pagination={pagination} />

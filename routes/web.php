@@ -84,8 +84,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('reports/sales/deleted', [SalesReportController::class, 'deleted'])
         ->name('reports.sales.deleted');
 
-    Route::post('/reports/sales/{id}/restore', [SalesReportController::class, 'restore'])
-        ->name('reports.sales.restore');  
+    Route::get('reports/sales/canceled', [SalesReportController::class, 'canceled'])
+        ->name('reports.sales.canceled');
 
     Route::post('/reports/sales/{id}/cancel', [SalesReportController::class, 'cancel'])
         ->name('reports.sales.cancel');

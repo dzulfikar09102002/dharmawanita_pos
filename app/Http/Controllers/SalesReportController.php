@@ -62,17 +62,24 @@ class SalesReportController extends Controller
         return to_route('reports.sales.index')->with('success', 'Transaksi berhasil dipulihkan');
     }
 
+    public function canceled ()
+    {
+        $pagination = $this->service->getCanceledMethod();
+        return Inertia::render('reports/sellings/index', compact('pagination'));
+
+    }
     public function deleted(){
         $onlyTrashed = true;
         $pagination = $this->service->getDeletedMethod();
-        return Inertia::render('reports/sellings/index', compact('pagination', 'onlyTrashed'));
+        return Inertia::render('reports/sellings/index', compact('pagination'));
     }
 
-   public function printSalesReport(Request $request)
+public function printSalesReport(Request $request)
 {
-    $isDeleted = $request->boolean('deleted');
+    $isDeleted  = $request->boolean('deleted');
+    $isCanceled = $request->boolean('canceled');
 
-    $type = $request->type ?? 'month';
+    $type  = $request->type ?? 'month'; // month | week | year
     $bulan = $request->bulan ?? now()->month;
     $tahun = $request->tahun ?? now()->year;
 
@@ -87,76 +94,172 @@ class SalesReportController extends Controller
                             }
                         ]);
                     },
-                    'inventoryTransactions' // 🔥 pastikan relasi ini bener
+                    'inventoryTransactions',
+                    'returnTransaction',
                 ]);
             }
         ]);
 
-    if ($isDeleted) {
+    // FILTER STATUS
+    if ($isCanceled) {
+        $query->where('payment_status','canceled');
+    } elseif ($isDeleted) {
         $query->onlyTrashed();
+    } else {
+        $query->where('payment_status','!=','canceled');
     }
 
-    // filter periode
-    if ($type === 'month') {
+    // FILTER PERIODE
+    if ($type === 'month' || $type === 'week') {
         $query->whereMonth('transaction_date', $bulan)
               ->whereYear('transaction_date', $tahun);
     } else {
         $query->whereYear('transaction_date', $tahun);
     }
 
-    $transactions = $query->get();
+    $transactions = $query
+        ->orderBy('transaction_date')
+        ->get();
 
-    // 🔥 amanin reason
-    $transactions->each(function ($item) {
-        $inventory = $item->details
-            ->flatMap(fn ($d) => $d->inventoryTransactions ?? [])
-            ->first();
+    // REASON
+    $transactions->each(function ($item) use ($isCanceled) {
 
-        $item->reason = $inventory->note ?? null;
+        if ($isCanceled) {
+
+            $return = $item->details
+                ->flatMap(fn($d) => $d->returnTransaction)
+                ->first();
+
+            $item->reason = $return?->note;
+
+        } else {
+
+            $inventory = $item->details
+                ->flatMap(fn($d) => $d->inventoryTransactions)
+                ->first();
+
+            $item->reason = $inventory?->note;
+        }
+
     });
 
-    // total
+    /*
+    |--------------------------------------------------------------------------
+    | WEEKLY GROUPING
+    |--------------------------------------------------------------------------
+    */
+    $weeklyTotals = [];
+
+    if ($type === 'week') {
+
+        $transactions = $transactions
+            ->sortBy('transaction_date')
+            ->groupBy(function ($trx) {
+                return ceil(
+                    \Carbon\Carbon::parse(
+                        $trx->transaction_date
+                    )->day / 7
+                );
+            });
+
+        foreach ($transactions as $week => $items) {
+
+            $weeklyTotals[$week] = $isDeleted
+                ? (float) $items->sum('total_amount')
+                : (float) $items->sum(function ($trx) {
+                    return (float)(
+                        $trx->total_amount - ($trx->change ?? 0)
+                    );
+                });
+        }
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | GRAND TOTAL
+    |--------------------------------------------------------------------------
+    */
+    $flatTransactions = collect($transactions)->flatten();
+
     $total = $isDeleted
-    ? (float) $transactions->sum('total_amount')
-    : (float) $transactions->sum(function ($trx) {
-        return (float) ($trx->total_amount - ($trx->change ?? 0));
-    });
-    if ($type === 'month') {
-        $namaBulan = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret',
-            4 => 'April', 5 => 'Mei', 6 => 'Juni',
-            7 => 'Juli', 8 => 'Agustus', 9 => 'September',
-            10 => 'Oktober', 11 => 'November', 12 => 'Desember'
-        ];
+        ? (float) $flatTransactions->sum('total_amount')
+        : (float) $flatTransactions->sum(function ($trx) {
+            return (float)(
+                $trx->total_amount - ($trx->change ?? 0)
+            );
+        });
 
-        $periode = ($namaBulan[(int)$bulan] ?? '-') . ' ' . $tahun;
+    $namaBulan = [
+        1=>'Januari',
+        2=>'Februari',
+        3=>'Maret',
+        4=>'April',
+        5=>'Mei',
+        6=>'Juni',
+        7=>'Juli',
+        8=>'Agustus',
+        9=>'September',
+        10=>'Oktober',
+        11=>'November',
+        12=>'Desember'
+    ];
+
+    // PERIODE
+    if ($type === 'month') {
+
+        $periode =
+            ($namaBulan[(int)$bulan] ?? '-') . ' ' . $tahun;
+
+    } elseif ($type === 'week') {
+
+        $periode =
+            'Per Minggu - ' .
+            ($namaBulan[(int)$bulan] ?? '-') .
+            ' ' . $tahun;
+
     } else {
+
         $periode = $tahun;
     }
 
-    $title = ($isDeleted
+    // TITLE
+    $title = $isDeleted
         ? 'Laporan Barang Rusak / Expired'
-        : 'Laporan Penjualan'
-    ) . ' - ' . $periode;
-    $pdf = Pdf::loadView('reports.sales-pdf', [
-        'bulan' => $bulan,
-        'tahun' => $tahun,
-        'type' => $type,
-        'transactions' => $transactions,
-        'total' => $total,
-        'isDeleted' => $isDeleted,
-        'title' => $title, 
-    ]);
+        : (
+            $isCanceled
+                ? 'Laporan Pembatalan'
+                : 'Laporan Penjualan'
+        );
 
-    $pdf->setPaper('A4', 'landscape');
+    $title .= ' - '.$periode;
+
+
+    $pdf = Pdf::loadView(
+        'reports.sales-pdf',
+        [
+            'bulan'        => $bulan,
+            'tahun'        => $tahun,
+            'type'         => $type,
+            'transactions' => $transactions,
+            'weeklyTotals' => $weeklyTotals,
+            'total'        => $total,
+            'isCanceled'   => $isCanceled,
+            'isDeleted'    => $isDeleted,
+            'title'        => $title,
+        ]
+    )->setPaper('A4','landscape');
+
 
     return $pdf->stream(
         $isDeleted
-            ? "laporan-barang-rusak-{$bulan}-{$tahun}.pdf"
-            : "laporan-penjualan-{$bulan}-{$tahun}.pdf"
+            ? "laporan-kerugian-{$bulan}-{$tahun}.pdf"
+            : (
+                $isCanceled
+                    ? "laporan-pembatalan-{$bulan}-{$tahun}.pdf"
+                    : "laporan-penjualan-{$bulan}-{$tahun}.pdf"
+            )
     );
 }
-
     public function payment(int $id)
     {
         $transaction = $this->service->getSaleTransaction($id);

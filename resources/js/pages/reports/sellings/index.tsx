@@ -75,6 +75,7 @@ const columnHelper = createColumnHelper<SaleTransaction>();
 type TableMeta = {
     onDeleteOrRestore: (id: number, isDelete: boolean) => void;
     onDetail: (id: number) => void;
+    isCanceledRoute: boolean;
     isDeletedRoute: boolean;
 };
 
@@ -95,7 +96,10 @@ export default function Index({
     }));
     const { data } = pagination;
     const { url } = usePage();
+
+    const isCanceledRoute = url.includes('canceled');
     const isDeletedRoute = url.includes('deleted');
+    const isActiveRoute = !isCanceledRoute && !isDeletedRoute;
 
     const query = useQuery();
     const currentMonth = new Date().getMonth() + 1;
@@ -159,14 +163,17 @@ export default function Index({
 
     const [alert, setAlert] = useState<AlertState>(initialAlertState);
 
-    const handlePrint = (type: 'month' | 'year') => {
+    const handlePrint = (type: 'month' | 'year' | 'week') => {
         let url = `/reports/print-sales-report?type=${type}&tahun=${tahun}`;
 
-        if (type === 'month') {
+        if (type === 'month' || type === 'week') {
             url += `&bulan=${bulan}`;
         }
 
-        // 🔥 TAMBAH INI
+        if (isCanceledRoute) {
+            url += `&canceled=1`;
+        }
+
         if (isDeletedRoute) {
             url += `&deleted=1`;
         }
@@ -192,17 +199,18 @@ export default function Index({
     };
 
     // 👉 Kolom khusus saat deleted
-    const deletedColumns: ColumnDef<SaleTransaction, any>[] = isDeletedRoute
-        ? [
-              columnHelper.accessor('reason', {
-                  header: 'Keterangan',
-                  cell: (info) => {
-                      const value = info.getValue();
-                      return value || '-';
-                  },
-              }),
-          ]
-        : [];
+    const deletedColumns: ColumnDef<SaleTransaction, any>[] =
+        isDeletedRoute || isCanceledRoute
+            ? [
+                  columnHelper.accessor('reason', {
+                      header: 'Keterangan',
+                      cell: (info) => {
+                          const value = info.getValue();
+                          return value || '-';
+                      },
+                  }),
+              ]
+            : [];
     const baseColumns: ColumnDef<SaleTransaction, any>[] = [
         {
             id: 'no',
@@ -228,6 +236,9 @@ export default function Index({
         columnHelper.accessor('payment_status', {
             header: 'Status Pembayaran',
             cell: (info) => {
+                if (isDeletedRoute) {
+                    return '-';
+                }
                 const status = info.getValue() as
                     | 'paid'
                     | 'pending'
@@ -242,7 +253,7 @@ export default function Index({
 
                 const label: Record<string, string> = {
                     paid: 'Lunas',
-                    pending: 'Pending',
+                    pending: 'Belum Lunas',
                     canceled: 'Dibatalkan',
                 };
 
@@ -277,7 +288,12 @@ export default function Index({
         // 🔥 Kolom dinamis (Kurang Bayar / Kerugian)
         columnHelper.display({
             id: 'financial_status',
-            header: isDeletedRoute ? 'Kerugian' : 'Kurang Bayar',
+            header: isDeletedRoute
+                ? 'Kerugian'
+                : isCanceledRoute
+                  ? 'Pengembalian'
+                  : 'Kurang Bayar',
+
             cell: (info) => {
                 const row = info.row.original;
 
@@ -286,9 +302,13 @@ export default function Index({
 
                 const kerugian = row.total_amount || 0;
 
+                const refund = (row.total_amount || 0) - (row.change || 0);
+
                 const value = isDeletedRoute
                     ? Math.max(kerugian, 0)
-                    : Math.max(kurangBayar, 0);
+                    : isCanceledRoute
+                      ? Math.max(refund, 0)
+                      : Math.max(kurangBayar, 0);
 
                 if (value > 0) {
                     return (
@@ -303,7 +323,6 @@ export default function Index({
                 );
             },
         }),
-
         columnHelper.accessor('transaction_date', {
             header: 'Tanggal Transaksi',
             cell: (info) =>
@@ -365,6 +384,7 @@ export default function Index({
             onDeleteOrRestore,
             onDetail,
             isDeletedRoute,
+            isCanceledRoute,
         } as TableMeta,
     });
 
@@ -470,61 +490,78 @@ export default function Index({
                 </CardHeader>
 
                 <CardContent>
-                    <div className="mb-4 flex gap-2">
-                        <Button
-                            onClick={() => handlePrint('month')}
-                            className="bg-emerald-600 text-white hover:bg-emerald-700"
+                    <div className="mb-4 flex items-center justify-between gap-4">
+                        <Tabs
+                            value={
+                                isDeletedRoute
+                                    ? 'deleted'
+                                    : isCanceledRoute
+                                      ? 'canceled'
+                                      : 'active'
+                            }
                         >
-                            <Printer size={16} />
-                            Cetak Laporan Bulanan
-                        </Button>
+                            <TabsList>
+                                <TabsTrigger value="active" asChild>
+                                    <Link
+                                        href={salesReport.index().url}
+                                        data={{ bulan, tahun, search }}
+                                        preserveState
+                                        preserveScroll
+                                    >
+                                        Penjualan
+                                    </Link>
+                                </TabsTrigger>
 
-                        <Button
-                            onClick={() => handlePrint('year')}
-                            className="bg-purple-600 text-white hover:bg-purple-700"
-                        >
-                            <Printer size={16} />
-                            Cetak Laporan Tahunan
-                        </Button>
+                                <TabsTrigger value="canceled" asChild>
+                                    <Link
+                                        href={salesReport.canceled().url}
+                                        data={{ bulan, tahun, search }}
+                                        preserveState
+                                        preserveScroll
+                                    >
+                                        Pembatalan
+                                    </Link>
+                                </TabsTrigger>
+
+                                <TabsTrigger value="deleted" asChild>
+                                    <Link
+                                        href={salesReport.deleted().url}
+                                        data={{ bulan, tahun, search }}
+                                        preserveState
+                                        preserveScroll
+                                    >
+                                        Kerugian
+                                    </Link>
+                                </TabsTrigger>
+                            </TabsList>
+                        </Tabs>
+
+                        <div className="flex items-center gap-2">
+                            <Button
+                                onClick={() => handlePrint('week')}
+                                className="bg-cyan-600 text-white shadow-sm hover:bg-cyan-700"
+                            >
+                                <Printer size={16} />
+                                Cetak Laporan Mingguan
+                            </Button>
+
+                            <Button
+                                onClick={() => handlePrint('month')}
+                                className="bg-emerald-600 text-white hover:bg-emerald-700"
+                            >
+                                <Printer size={16} />
+                                Cetak Laporan Bulanan
+                            </Button>
+
+                            <Button
+                                onClick={() => handlePrint('year')}
+                                className="bg-purple-600 text-white hover:bg-purple-700"
+                            >
+                                <Printer size={16} />
+                                Cetak Laporan Tahunan
+                            </Button>
+                        </div>
                     </div>
-
-                    <Tabs
-                        value={isDeletedRoute ? 'deleted' : 'active'}
-                        className="mb-4"
-                    >
-                        <TabsList>
-                            <TabsTrigger value="active" asChild>
-                                <Link
-                                    href={salesReport.index().url}
-                                    data={{
-                                        bulan,
-                                        tahun,
-                                        search,
-                                    }}
-                                    preserveState
-                                    preserveScroll
-                                >
-                                    Penjualan
-                                </Link>
-                            </TabsTrigger>
-
-                            <TabsTrigger value="deleted" asChild>
-                                <Link
-                                    href={salesReport.deleted().url}
-                                    data={{
-                                        bulan,
-                                        tahun,
-                                        search,
-                                    }}
-                                    preserveState
-                                    preserveScroll
-                                >
-                                    Kerugian
-                                </Link>
-                            </TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-
                     <DataTable columns={columns} table={table} />
                     <TablePagination pagination={pagination} />
                 </CardContent>

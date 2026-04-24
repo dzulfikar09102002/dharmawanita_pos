@@ -23,19 +23,21 @@ class StoreSalesSummaryRequest extends FormRequest
    public function rules(): array
 {
     return [
-        'date' => ['required', 'date'],
-        'total_sales' => ['required', 'numeric', 'min:0'],
-        'total_transactions' => ['required', 'integer', 'min:0'],
+        'date' => ['required'],
 
-        'details' => ['required', 'array', 'min:1'],
+        'total_sales' => ['required', 'numeric'],
 
-        'details.*.payment_method_id' => [
-            'required',
-            'integer',
-            'exists:payment_methods,id'
-        ],
-        'details.*.total_amount' => ['required', 'numeric', 'min:0'],
-        'details.*.total_transactions' => ['required', 'integer', 'min:0'],
+        'total_transactions' => ['required', 'numeric'],
+
+        'details' => ['required', 'array'],
+
+        'details.*' => ['required', 'array'],
+
+        'details.*.payment_method_id' => ['required'],
+
+        'details.*.total_amount' => ['required'],
+
+        'details.*.total_transactions' => ['required'],
     ];
 }
 }

@@ -225,6 +225,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
     };
     const autoAddedRef = useRef<string | null>(null);
     const isFirstLoad = useRef(true);
+    const [submitting, setSubmitting] = useState(false);
     useEffect(() => {
         if (isFirstLoad.current) {
             isFirstLoad.current = false;
@@ -624,8 +625,10 @@ export default function Index({ pagination, categoryOptions }: Props) {
                     </div>
                     <Button
                         className="mx-auto mt-4 w-[95%] cursor-pointer"
-                        disabled={processing || data.items.length === 0}
+                        disabled={submitting || data.items.length === 0}
                         onClick={() => {
+                            if (submitting) return; // anti double click
+
                             if (!data.transaction_date) {
                                 toast.error('Tanggal wajib diisi');
                                 return;
@@ -647,18 +650,29 @@ export default function Index({ pagination, categoryOptions }: Props) {
                                 items: data.items,
                             };
 
+                            setSubmitting(true);
+
                             router.post(sellings.store().url, payload, {
                                 onSuccess: () => {
                                     setData({
                                         items: [],
                                         transaction_date: today,
                                     });
+
                                     toast.success('Data berhasil disimpan');
+                                },
+
+                                onError: () => {
+                                    toast.error('Gagal menyimpan data');
+                                },
+
+                                onFinish: () => {
+                                    setSubmitting(false);
                                 },
                             });
                         }}
                     >
-                        {processing ? (
+                        {submitting ? (
                             <>
                                 <Spinner /> Memproses
                             </>

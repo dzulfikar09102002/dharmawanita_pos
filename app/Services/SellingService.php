@@ -55,9 +55,6 @@ class SellingService
             COALESCE(p.code, p_from_sale.code)
         ');
 
-    /**
-     * 🔥 BASE QUERY
-     */
     $base = Purchase::query()
         ->when($search, function ($query) use ($search) {
             $query->where(function ($q) use ($search) {

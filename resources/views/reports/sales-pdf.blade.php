@@ -9,98 +9,106 @@ $namaBulan = [
 ];
 
 $now = \Carbon\Carbon::now();
-$isDeleted = request('deleted') == 1;
 @endphp
 
 <head>
-    <meta charset="utf-8">
-    <title>{{ $title }}</title>
-    <link rel="icon" href="/assets/images/logo-dharmawanita.png" type="image/png">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="utf-8">
+<title>{{ $title }}</title>
+<link rel="icon" href="/assets/images/logo-dharmawanita.png" type="image/png">
 
-        body {
-            font-family: DejaVu Sans, sans-serif;
-            font-size: 11px;
-            color: #1a1a1a;
-            padding: 30px 36px;
-        }
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-        .header {
-            text-align: center;
-            margin-bottom: 24px;
-            padding-bottom: 16px;
-            border-bottom: 2px solid #1a1a1a;
-        }
+body {
+    font-family: DejaVu Sans, sans-serif;
+    font-size: 11px;
+    color: #1a1a1a;
+    padding: 30px 36px;
+}
 
-        .header h1 {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 6px;
-        }
+.header {
+    text-align: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #1a1a1a;
+}
 
-        .header p {
-            font-size: 10px;
-            color: #555;
-        }
+.header h1 {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+.header p {
+    font-size: 10px;
+    color: #555;
+}
 
-        thead tr {
-            background-color: #1a1a1a;
-            color: #fff;
-        }
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
 
-        th, td {
-            padding: 6px 8px;
-            font-size: 10px;
-        }
+thead tr {
+    background-color: #1a1a1a;
+    color: #fff;
+}
 
-        tbody tr:nth-child(even) {
-            background-color: #f8f8f8;
-        }
+th, td {
+    padding: 6px 8px;
+    font-size: 10px;
+}
 
-        tfoot tr {
-            background-color: #f0f0f0;
-            border-top: 2px solid #1a1a1a;
-        }
+tbody tr:nth-child(even) {
+    background-color: #f8f8f8;
+}
 
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
+tfoot tr {
+    background-color: #f0f0f0;
+    border-top: 2px solid #1a1a1a;
+}
 
-        .badge {
-            padding: 2px 7px;
-            border-radius: 3px;
-            font-size: 9px;
-            font-weight: bold;
-        }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
 
-        .paid { background: #dcfce7; color: #14532d; }
-        .pending { background: #fef9c3; color: #713f12; }
-        .canceled { background: #fee2e2; color: #7f1d1d; }
+.badge {
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: bold;
+}
 
-        .no-data {
-            text-align: center;
-            padding: 16px;
-            color: #888;
-            font-style: italic;
-        }
-    </style>
+.paid { background: #dcfce7; color: #14532d; }
+.pending { background: #fef9c3; color: #713f12; }
+.canceled { background: #fee2e2; color: #7f1d1d; }
+
+.no-data {
+    text-align: center;
+    padding: 16px;
+    color: #888;
+    font-style: italic;
+}
+</style>
 </head>
 
 <body>
 
 <div class="header">
     <h1>
-        {{ $isDeleted ? 'LAPORAN BARANG RUSAK / EXPIRED' : 'LAPORAN PENJUALAN' }}
+        {{
+$isDeleted
+    ? 'LAPORAN BARANG KERUGIAN' . ($type === 'week' ? ' MINGGUAN' : '')
+    : (
+        $isCanceled
+            ? 'LAPORAN PEMBATALAN' . ($type === 'week' ? ' MINGGUAN' : '')
+            : 'LAPORAN PENJUALAN' . ($type === 'week' ? ' MINGGUAN' : '')
+      )
+}}
     </h1>
 
     <p>
         @if ($type === 'month')
-            Periode: {{ $namaBulan[(int) $bulan] ?? '-' }} {{ $tahun }}
+            Periode: {{ $namaBulan[(int)$bulan] ?? '-' }} {{ $tahun }}
         @else
             Periode: {{ $tahun }}
         @endif
@@ -108,141 +116,378 @@ $isDeleted = request('deleted') == 1;
 
     <p>
         Dicetak pada:
-        {{ $now->format('d') }} {{ $namaBulan[$now->month] }} {{ $now->format('Y') }}
+        {{ $now->format('d') }}
+        {{ $namaBulan[$now->month] }}
+        {{ $now->format('Y') }}
     </p>
 </div>
 
 <table>
-        <thead>
-        <tr>
-            <th style="width:5%">No</th>
+<thead>
+<tr>
+    <th style="width:5%">No</th>
 
-            @if ($isDeleted)
-                <th style="width:25%">Nama Barang</th>
-                <th style="width:10%" class="text-center">Jumlah</th>
-                <th style="width:20%">Tanggal</th>
-                <th style="width:20%">Alasan</th>
-                <th style="width:20%" class="text-center">Kerugian</th>
-            @else
-                <th style="width:25%">Invoice</th>
-                <th style="width:10%" class="text-center">Status</th>
-                <th style="width:15%" class="text-center">Tanggal</th>
-                <th style="width:15%" class="text-right">Total</th>
-                <th style="width:15%" class="text-right">Pembayaran</th> 
-                <th style="width:15%" class="text-right">Kembalian</th> 
-                <th style="width:15%" class="text-right">Pendapatan</th>
-            @endif
-        </tr>
-    </thead>
+    @if($isDeleted)
+        <th style="text-align: left;">Nama Barang</th>
+        <th class="text-center">Jumlah</th>
+        <th class="text-center">Tanggal</th>
+        <th style="text-align: left;">Alasan</th>
+        <th  class="text-right">Kerugian</th>
 
-    <tbody>
-        @forelse ($transactions as $i => $trx)
-            @php
-                $date = \Carbon\Carbon::parse($trx->transaction_date);
-            @endphp
+    @elseif($isCanceled)
+        <th style="text-align: left;">Invoice</th>
+        <th class="text-center">Status</th>
+        <th  class="text-center">Tanggal</th>
+        <th style="text-align: left;">Keterangan</th>
+        <th  class="text-right">Total</th>
 
-            <tr>
-                <td class="text-center">{{ $i + 1 }}</td>
+    @else
+        <th style="text-align: left;">Invoice</th>
+        <th class="text-center">Status</th>
+        <th class="text-center">Tanggal</th>
+        <th class="text-right">Total</th>
+        <th class="text-right">Pembayaran</th>
+        <th class="text-right">Kembalian</th>
+        <th class="text-right">Pendapatan</th>
+    @endif
+</tr>
+</thead>
 
-                @if ($isDeleted)
-    <td>
-        {{
-            $trx->details
-                ->map(fn($d) => ($d->purchase->product->name ?? '-') . ' (' . $d->quantity . ')')
-                ->join(', ')
-            ?: '-'
-        }}
-    </td>
+<tbody>
 
-    <td class="text-center">
-        {{ $trx->details->sum('quantity') ?: '-' }}
-    </td>
+@if($type === 'week')
 
-    <td>
-        {{ $date->format('d') }}
-        {{ $namaBulan[(int) $date->format('n')] ?? '-' }}
-        {{ $date->format('Y') }}
-    </td>
+@php $no = 1; @endphp
 
-    <td>
-        {{ $trx->reason ?? '-' }}
-    </td>
+@forelse($transactions as $week => $items)
 
-    <td class="text-right">
-        Rp {{ number_format($trx->total_amount ?? 0, 0, ',', '.') }}
-    </td>
+<tr>
+<td colspan="{{ $isDeleted || $isCanceled ? 6 : 8 }}"
+style="background:#e5e5e5;font-weight:bold;">
+Minggu ke-{{ $week }}
+</td>
+</tr>
+
+@foreach($items as $trx)
+
+@php
+$date = \Carbon\Carbon::parse($trx->transaction_date);
+@endphp
+
+<tr>
+<td class="text-center">{{ $no++ }}</td>
+
+@if($isDeleted)
+
+<td>
+{{
+$trx->details
+->map(fn($d)=>($d->purchase->product->name ?? '-') . ' ('.$d->quantity.')')
+->join(', ')
+?: '-'
+}}
+</td>
+
+<td class="text-center">
+{{ $trx->details->sum('quantity') ?: '-' }}
+</td>
+
+<td class="text-center">
+{{ $date->format('d') }}
+{{ $namaBulan[(int)$date->format('n')] }}
+{{ $date->format('Y') }}
+</td>
+
+<td>{{ $trx->reason ?? '-' }}</td>
+
+<td class="text-right">
+Rp {{ number_format($trx->total_amount ?? 0,0,',','.') }}
+</td>
+
+@elseif($isCanceled)
+
+<td>{{ $trx->invoice_number }}</td>
+
+<td class="text-center">
+<span class="badge canceled">Dibatalkan</span>
+</td>
+
+<td class="text-center">
+{{ $date->format('d') }}
+{{ $namaBulan[(int)$date->format('n')] }}
+{{ $date->format('Y') }}
+</td>
+
+<td>{{ $trx->reason ?? '-' }}</td>
+
+<td class="text-right">
+Rp {{ number_format($trx->grand_total ?? 0,0,',','.') }}
+</td>
 
 @else
-    <td>{{ $trx->invoice_number }}</td>
 
-    <td class="text-center">
-        <span class="badge {{ $trx->payment_status }}">
-            {{ ucfirst($trx->payment_status) }}
-        </span>
-    </td>
+<td>{{ $trx->invoice_number }}</td>
 
-    <td class="text-center">
-        {{ $date->format('d') }}
-        {{ $namaBulan[(int) $date->format('n')] ?? '-' }}
-        {{ $date->format('Y') }}
-    </td>
+<td class="text-center">
+<span class="badge {{ $trx->payment_status }}">
+{{
+$trx->payment_status==='paid'
+?'Lunas'
+:($trx->payment_status==='pending'
+?'Belum Lunas'
+:'Dibatalkan')
+}}
+</span>
+</td>
 
-   <td class="text-right">
-    Rp {{ number_format($trx->grand_total ?? 0, 0, ',', '.') }}
+<td class="text-center">
+{{ $date->format('d') }}
+{{ $namaBulan[(int)$date->format('n')] }}
+{{ $date->format('Y') }}
 </td>
 
 <td class="text-right">
-    Rp {{ number_format($trx->total_amount ?? 0, 0, ',', '.') }}
+Rp {{ number_format($trx->grand_total ?? 0,0,',','.') }}
 </td>
 
 <td class="text-right">
-    Rp {{ number_format($trx->change ?? 0, 0, ',', '.') }}
+Rp {{ number_format($trx->total_amount ?? 0,0,',','.') }}
 </td>
 
 <td class="text-right">
-    Rp {{ number_format(
-        max(0, ($trx->total_amount ?? 0) - ($trx->change ?? 0)),
-    0, ',', '.') }}
+Rp {{ number_format($trx->change ?? 0,0,',','.') }}
 </td>
+
+<td class="text-right">
+Rp {{
+number_format(
+max(
+0,
+($trx->total_amount ?? 0)-($trx->change ?? 0)
+),
+0,',','.'
+)
+}}
+</td>
+
 @endif
-            </tr>
 
-        @empty
-            <tr>
-                <td colspan="{{ $isDeleted ? 6 : 5 }}" class="no-data">
-                    Tidak ada data
-                </td>
-            </tr>
-        @endforelse
-    </tbody>
+</tr>
+
+@endforeach
+
+
+<tr>
+<td colspan="{{ $isDeleted || $isCanceled ? 5 : 7 }}"
+class="text-right">
+<strong>Subtotal Minggu {{ $week }}</strong>
+</td>
+
+<td class="text-right">
+<strong>
+@if($isCanceled)
+{{ $items->count() }} Transaksi
+@else
+Rp {{ number_format($weeklyTotals[$week] ?? 0,0,',','.') }}
+@endif
+</strong>
+</td>
+</tr>
+
+@empty
+
+<tr>
+<td colspan="{{ $isDeleted || $isCanceled ? 6 : 8 }}"
+class="no-data">
+Tidak ada data
+</td>
+</tr>
+
+@endforelse
+
+@else
+
+{{-- MODE NORMAL --}}
+
+@forelse($transactions as $i=>$trx)
+
 @php
-    if ($isDeleted) {
-        // ✅ khusus kerugian
-        $totalFinal = $transactions->sum('total_amount');
-    } else {
-        // ✅ khusus pendapatan (yang paid saja)
-        $totalFinal = $transactions
-    ->where('payment_status', 'paid')
-    ->sum(function ($trx) {
-        return max(0, ($trx->total_amount ?? 0) - ($trx->change ?? 0));
-    });
-    }
+$date=\Carbon\Carbon::parse($trx->transaction_date);
 @endphp
- <tfoot>
-    <tr>
-        <td colspan="7">
-            <strong>
-                {{ $isDeleted ? 'Total Kerugian' : 'Total Pendapatan' }}
-            </strong>
-        </td>
 
-        <td class="text-right">
-            <strong>
-                Rp {{ number_format($totalFinal, 0, ',', '.') }}
-            </strong>
-        </td>
-    </tr>
+<tr>
+<td class="text-center">{{ $i+1 }}</td>
+
+@if($isDeleted)
+
+<td>
+{{
+$trx->details
+->map(fn($d)=>($d->purchase->product->name ?? '-') . ' ('.$d->quantity.')')
+->join(', ')
+?: '-'
+}}
+</td>
+
+<td class="text-center">
+{{ $trx->details->sum('quantity') ?: '-' }}
+</td>
+
+<td class="text-center">
+{{ $date->format('d') }}
+{{ $namaBulan[(int)$date->format('n')] }}
+{{ $date->format('Y') }}
+</td>
+
+<td>{{ $trx->reason ?? '-' }}</td>
+
+<td class="text-right">
+Rp {{ number_format($trx->total_amount ?? 0,0,',','.') }}
+</td>
+
+
+@elseif($isCanceled)
+
+<td>{{ $trx->invoice_number }}</td>
+
+<td class="text-center">
+<span class="badge canceled">
+Dibatalkan
+</span>
+</td>
+
+<td class="text-center">
+{{ $date->format('d') }}
+{{ $namaBulan[(int)$date->format('n')] }}
+{{ $date->format('Y') }}
+</td>
+
+<td>{{ $trx->reason ?? '-' }}</td>
+
+<td class="text-right">
+Rp {{ number_format($trx->grand_total ?? 0,0,',','.') }}
+</td>
+
+
+@else
+
+<td>{{ $trx->invoice_number }}</td>
+
+<td class="text-center">
+<span class="badge {{ $trx->payment_status }}">
+{{
+$trx->payment_status==='paid'
+?'Lunas'
+:($trx->payment_status==='pending'
+?'Belum Lunas'
+:'Dibatalkan')
+}}
+</span>
+</td>
+
+<td class="text-center">
+{{ $date->format('d') }}
+{{ $namaBulan[(int)$date->format('n')] }}
+{{ $date->format('Y') }}
+</td>
+
+<td class="text-right">
+Rp {{ number_format($trx->grand_total ?? 0,0,',','.') }}
+</td>
+
+<td class="text-right">
+Rp {{ number_format($trx->total_amount ?? 0,0,',','.') }}
+</td>
+
+<td class="text-right">
+Rp {{ number_format($trx->change ?? 0,0,',','.') }}
+</td>
+
+<td class="text-right">
+Rp {{
+number_format(
+max(
+0,
+($trx->total_amount ?? 0)-($trx->change ?? 0)
+),
+0,',','.'
+)
+}}
+</td>
+
+@endif
+
+</tr>
+
+@empty
+
+<tr>
+<td colspan="{{ $isDeleted || $isCanceled ? 6 : 8 }}"
+class="no-data">
+Tidak ada data
+</td>
+</tr>
+
+@endforelse
+
+@endif
+
+</tbody>
+
+
+@php
+
+$flat = $type==='week'
+? collect($transactions)->flatten()
+: $transactions;
+
+if($isDeleted){
+    $totalFinal = $flat->sum('total_amount');
+    $labelTotal = 'Total Kerugian';
+    $colspan = 5;
+
+}elseif($isCanceled){
+    $totalFinal = $flat->count();
+    $labelTotal = 'Jumlah Pembatalan';
+    $colspan = 5;
+
+}else{
+
+    $totalFinal = $flat
+        ->where('payment_status','paid')
+        ->sum(fn($trx)=>
+            max(
+                0,
+                ($trx->total_amount ?? 0)-($trx->change ?? 0)
+            )
+        );
+
+    $labelTotal='Total Pendapatan';
+    $colspan=7;
+
+}
+
+@endphp
+
+
+<tfoot>
+<tr>
+<td colspan="{{ $colspan }}">
+<strong>{{ $labelTotal }}</strong>
+</td>
+
+<td class="text-right">
+<strong>
+@if($isCanceled)
+{{ $totalFinal }} Transaksi
+@else
+Rp {{ number_format($totalFinal,0,',','.') }}
+@endif
+</strong>
+</td>
+</tr>
 </tfoot>
+
 </table>
 
 </body>

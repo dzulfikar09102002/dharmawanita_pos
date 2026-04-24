@@ -88,36 +88,43 @@ class SalesSummaryService
     
     public function store(array $data): SalesSummary
     {
+        
         return DB::transaction(function () use ($data) {
 
-            $userId = auth()->id();
+    $userId = auth()->id();
 
-            // 🔹 simpan header
-            $summary = SalesSummary::create([
-                'date' => now(),
-                'total_sales' => $data['total_sales'],
-                'total_transactions' => $data['total_transactions'],
+    // 🔹 simpan header
+    $summary = SalesSummary::create([
+        'date' => now(),
+        'total_sales' => $data['total_sales'],
+        'total_transactions' => $data['total_transactions'],
+        'created_by' => $userId,
+    ]);
+
+    // 🔹 prepare detail (skip payment_method_id = 0 / belum dibayar)
+    $details = collect($data['details'])
+        ->filter(fn ($item) => (int) $item['payment_method_id'] > 0)
+        ->map(function ($item) use ($summary, $userId) {
+            return [
+                'sales_summary_id' => $summary->id,
+                'payment_method_id' => $item['payment_method_id'],
+                'total_amount' => $item['total_amount'],
+                'total_transactions' => $item['total_transactions'],
                 'created_by' => $userId,
-            ]);
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        })
+        ->values()
+        ->toArray();
 
-            // 🔹 prepare detail
-            $details = collect($data['details'])->map(function ($item) use ($summary, $userId) {
-                return [
-                    'sales_summary_id' => $summary->id,
-                    'payment_method_id' => $item['payment_method_id'],
-                    'total_amount' => $item['total_amount'],
-                    'total_transactions' => $item['total_transactions'],
-                    'created_by' => $userId,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            })->toArray();
+    // 🔹 insert detail
+    if (!empty($details)) {
+        SalesSummaryDetail::insert($details);
+    }
 
-            // 🔹 insert detail
-            SalesSummaryDetail::insert($details);
-
-            return $summary->load('details');
-        });
+    return $summary->load('details');
+});
     }
 
     public function getDetail($id)

@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Models\InventoryTransaction;
+use App\Models\Product;
 use App\Models\Purchase;
+use App\Models\Supplier;
 use Illuminate\Support\Facades\DB;
 
 class PurchasesReportService
@@ -14,7 +16,7 @@ class PurchasesReportService
         $month = request('month');
         $year  = request('year');
 
-        return Purchase::with(['product', 'supplier'])
+        return Purchase::with(['product', 'supplier', 'inventoryTransactions'])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     
@@ -46,6 +48,7 @@ class PurchasesReportService
             ")
             ->orderByDesc('updated_at')
             ->orderByDesc('created_at')
+            ->where('status_payment', '!=', 'canceled')
             ->paginate(request('per_page', 10))
             ->withQueryString();
     }
@@ -57,7 +60,7 @@ class PurchasesReportService
         $year  = request('year');
 
         return Purchase::onlyTrashed()
-            ->with(['product', 'supplier'])
+            ->with(['product', 'supplier', 'inventoryTransactions'])
 
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
@@ -88,28 +91,85 @@ class PurchasesReportService
     {
         DB::transaction(function () use ($purchasereport) {
 
-            $purchasereport->update([
-                'status_payment' => 'canceled',
-                'updated_by'     => auth()->id()
+            $reason = request('reason');
+
+             $purchasereport->update([
+            'status_payment' => 'canceled',
+            'updated_by'     => auth()->id(),
+            'deleted_by'     => auth()->id(),
             ]);
 
+                $purchasereport->delete();
+
             InventoryTransaction::create([
-                'product_id'     => $purchasereport->product_id,
-                'type'           => 'out',
-                'source'         => 'return',
-                'reference_id'   => $purchasereport->id,
-                'reference_table'=> 'purchase',
-                'quantity'       => $purchasereport->quantity,
-                'purchase_price' => $purchasereport->purchase_price ?? 0,
-                'selling_price'  => $purchasereport->selling_price ?? 0,
-                'note'           => 'Purchase dibatalkan',
-                'created_by'     => auth()->id(),
+                'product_id'      => $purchasereport->product_id,
+                'type'            => 'out',
+                'source'          => 'return',
+                'reference_id'    => $purchasereport->id,
+                'reference_table' => 'purchase',
+                'quantity'        => $purchasereport->quantity,
+                'purchase_price'  => $purchasereport->purchase_price ?? 0,
+                'selling_price'   => $purchasereport->selling_price ?? 0,
+                'note'            => $reason ?: 'Purchase dibatalkan',
+                'created_by'      => auth()->id(),
             ]);
         });
 
         return back();
     }
+     public function getSupplierOptions()
+    {
+        $options = Supplier::all()->map(function ($supplier) {
+            return [
+                'value' => $supplier->id,
+                'label' => $supplier->name,
+            ];
+        });
 
+        return $options;
+    }
+public function update(Purchase $purchase, array $item)
+    {
+        return DB::transaction(function () use ($purchase, $item) {
+
+            $user = auth()->id();
+
+            $purchase->update([
+                'supplier_id'     => $item['supplier_id'] ?? null,
+                'code'            => $item['code'],
+                'year'            => $item['year'],
+                'quantity'        => $item['quantity'],
+                'purchase_price'  => $item['purchase_price'],
+                'selling_price'   => $item['selling_price'],
+                'purchase_date'   => $item['purchase_date'],
+                'expired_date'    => $item['expired_date'] ?? null,
+                'updated_by'      => $user,
+            ]);
+
+            $product = Product::find($purchase->product_id);
+
+            if ($product) {
+                $product->update([
+                    'has_expired' => !empty($item['expired_date']),
+                    'expired_date' => $item['expired_date'] ?? null,
+                ]);
+            }
+
+            InventoryTransaction::where('reference_table', 'purchase')
+                ->where('reference_id', $purchase->id)
+                ->where('type', 'in')
+                ->update([
+                    'source'         => $item['source'],
+                    'quantity'       => $item['quantity'],
+                    'purchase_price' => $item['purchase_price'],
+                    'selling_price'  => $item['selling_price'],
+                    'updated_by'     => $user,
+                    'updated_at'     => now(),
+                ]);
+
+            return back();
+        });
+    }
     public function restore(int $id)
     {
         $purchasereport = Purchase::withTrashed()->findOrFail($id);

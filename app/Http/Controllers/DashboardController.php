@@ -22,7 +22,6 @@ class DashboardController extends Controller
     {
         $month = request('month', now()->month);
         $year = request('year', now()->year);
-
         return Inertia::render('dashboard', [
             'expiredProducts' => $this->service->getExpiredProducts($month, $year),
             'bestSellingProducts' => $this->service->getBestSellingProducts($month, $year),

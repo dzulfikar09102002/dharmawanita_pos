@@ -48,13 +48,14 @@ class SalesReportService
 
         return [
             'data' => $query
+            ->where('payment_status', '!=', 'canceled')
                 ->orderByRaw("
                     CASE 
                         WHEN payment_status = 'canceled' THEN 1
                         ELSE 0
                     END
                 ")
-                ->orderByDesc('transaction_date')
+                ->orderByDesc('transaction_date') 
                 ->paginate(request('per_page', 10))
                 ->withQueryString(),
 
@@ -91,7 +92,7 @@ class SalesReportService
 
             $invoice = SaleTransaction::with('details.purchase')->findOrFail($id);
 
-            $reason = request('reason'); // ✅ ambil dari FE
+            $reason = request('reason'); 
 
             // Update status + simpan reason kalau mau
             $invoice->update([
@@ -103,7 +104,7 @@ class SalesReportService
             foreach ($invoice->details as $detail) {
 
                 if (!$detail->purchase) {
-                    throw new \Exception("Purchase tidak ditemukan untuk detail ID: {$detail->id}");
+                    throw new \Exception("Produk tidak ditemukan untuk detail ID: {$detail->id}");
                 }
 
                 InventoryTransaction::create([
@@ -127,6 +128,35 @@ class SalesReportService
 
             return true;
         });
+    }
+    public function getCanceledMethod()
+    {
+        $search = request('search', '');
+
+        $data = SaleTransaction::with([
+                'paymentMethod',
+                'details.inventoryTransactions'
+            ])
+            ->when($search, function ($q) use ($search) {
+                $q->where('invoice_number', 'like', "%$search%");
+            })
+            ->orderByDesc('transaction_date')
+            ->where('payment_status', 'canceled')
+            ->paginate(request('per_page', 10))
+            ->withQueryString();
+
+        $data->getCollection()->transform(function ($item) {
+
+            $item->reason = optional(
+                $item->details
+                    ->flatMap(fn ($d) => $d->inventoryTransactions)
+                    ->first()
+            )->note;
+
+            return $item;
+        });
+
+        return $data;
     }
 
     public function getDeletedMethod()
