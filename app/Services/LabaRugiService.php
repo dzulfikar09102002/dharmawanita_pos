@@ -46,7 +46,7 @@ public function getLabaRugi(int $bulan, int $tahun)
         ->sum('grand_total');
 
     $totalPendapatanPiutang = (float) $queryPiutang
-        ->sum('grand_total');
+        ->sum('total_amount');
 
     $totalPembelian = (float) $queryPembelian
         ->sum('total_payment');
