@@ -18,6 +18,7 @@ class SaleTransactionDetail extends Model
         'purchase_price',
         'selling_price',
         'subtotal',
+        'adjustment',
         'created_by',
         'updated_by',
         'deleted_by',

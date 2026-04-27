@@ -1,4 +1,4 @@
-import { Head, Form } from '@inertiajs/react';
+import { Head, Form, Link, usePage } from '@inertiajs/react';
 import { useRef, useEffect } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, FileSpreadsheet } from 'lucide-react';
-
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     createColumnHelper,
     getCoreRowModel,
@@ -54,37 +54,83 @@ export default function Index({ pagination }: Props) {
 
     const wrapperRef = useRef<HTMLDivElement>(null);
 
-    const columns: ColumnDef<Stock, any>[] = [
-        {
-            id: 'no',
-            header: 'No',
-            cell: (info) =>
-                (pagination.current_page - 1) * pagination.per_page +
-                info.row.index +
-                1,
-        },
-        columnHelper.accessor('name', { header: 'Nama Produk' }),
-        columnHelper.accessor('brand', { header: 'Brand' }),
-        columnHelper.accessor('total_in', {
-            header: () => <div className="text-center">Stok Masuk</div>,
-            cell: (info) => (
-                <div className="text-center">{info.getValue() ?? 0}</div>
-            ),
-        }),
-        columnHelper.accessor('total_out', {
-            header: () => <div className="text-center">Stok Keluar</div>,
-            cell: (info) => (
-                <div className="text-center">{info.getValue() ?? 0}</div>
-            ),
-        }),
-        columnHelper.accessor('stock', {
-            header: () => <div className="text-center">Jumlah Stock</div>,
-            cell: (info) => (
-                <div className="text-center">{info.getValue() ?? 0}</div>
-            ),
-        }),
-    ];
+    const { url } = usePage();
+    const isCategoryRoute = url.includes('categories');
+    const columns: ColumnDef<Stock, any>[] = isCategoryRoute
+        ? [
+              {
+                  id: 'no',
+                  header: 'No',
+                  cell: (info) =>
+                      (pagination.current_page - 1) * pagination.per_page +
+                      info.row.index +
+                      1,
+              },
 
+              columnHelper.accessor('name', {
+                  header: 'Nama Kategori',
+              }),
+
+              columnHelper.accessor('total_in', {
+                  header: () => <div className="text-center">Stok Masuk</div>,
+                  cell: (info) => (
+                      <div className="text-center">{info.getValue() ?? 0}</div>
+                  ),
+              }),
+
+              columnHelper.accessor('total_out', {
+                  header: () => <div className="text-center">Stok Keluar</div>,
+                  cell: (info) => (
+                      <div className="text-center">{info.getValue() ?? 0}</div>
+                  ),
+              }),
+
+              columnHelper.accessor('stock', {
+                  header: () => <div className="text-center">Jumlah Stock</div>,
+                  cell: (info) => (
+                      <div className="text-center">{info.getValue() ?? 0}</div>
+                  ),
+              }),
+          ]
+        : [
+              {
+                  id: 'no',
+                  header: 'No',
+                  cell: (info) =>
+                      (pagination.current_page - 1) * pagination.per_page +
+                      info.row.index +
+                      1,
+              },
+
+              columnHelper.accessor('name', {
+                  header: 'Nama Produk',
+              }),
+
+              columnHelper.accessor('brand', {
+                  header: 'Brand',
+              }),
+
+              columnHelper.accessor('total_in', {
+                  header: () => <div className="text-center">Stok Masuk</div>,
+                  cell: (info) => (
+                      <div className="text-center">{info.getValue() ?? 0}</div>
+                  ),
+              }),
+
+              columnHelper.accessor('total_out', {
+                  header: () => <div className="text-center">Stok Keluar</div>,
+                  cell: (info) => (
+                      <div className="text-center">{info.getValue() ?? 0}</div>
+                  ),
+              }),
+
+              columnHelper.accessor('stock', {
+                  header: () => <div className="text-center">Jumlah Stock</div>,
+                  cell: (info) => (
+                      <div className="text-center">{info.getValue() ?? 0}</div>
+                  ),
+              }),
+          ];
     const table = useReactTable<Stock>({
         data,
         columns,
@@ -106,8 +152,6 @@ export default function Index({ pagination }: Props) {
         },
     );
 
-    // Inject <tfoot> langsung ke dalam <table> yang dirender DataTable
-    // Dengan cara ini lebar kolom Grand Total 100% ikut <thead> secara otomatis
     useEffect(() => {
         const wrapper = wrapperRef.current;
         if (!wrapper) return;
@@ -157,6 +201,24 @@ export default function Index({ pagination }: Props) {
                         Export Excel
                     </Button>
                     <br />
+                    <Tabs
+                        value={isCategoryRoute ? 'category' : 'product'}
+                        className="mb-4"
+                    >
+                        <TabsList>
+                            <TabsTrigger value="product" asChild>
+                                <Link href={reportsStocks.index().url}>
+                                    Per Produk
+                                </Link>
+                            </TabsTrigger>
+
+                            <TabsTrigger value="category" asChild>
+                                <Link href={reportsStocks.byCategories().url}>
+                                    Per Kategori
+                                </Link>
+                            </TabsTrigger>
+                        </TabsList>
+                    </Tabs>
                     <div ref={wrapperRef}>
                         <DataTable columns={columns} table={table} />
                     </div>

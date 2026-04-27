@@ -18,4 +18,10 @@ class StockReportController extends Controller
         return Inertia::render('reports/stocks/index', compact('pagination'));
     }
 
+    public function byCategories()
+    {
+        $pagination = $this->service->getStockReportByCategories();
+        return Inertia::render('reports/stocks/index', compact('pagination'));
+    }
+
 }

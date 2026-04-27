@@ -90,6 +90,7 @@ class PurchaseService
                 {
                     $status_payment = 'paid';
                     $total_payment = 0;
+                    $payment_type = 'free';
                 }
                 $purchase = Purchase::create([
                     'product_id'      => $item['product_id'],

@@ -29,6 +29,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { toast } from 'sonner';
 import { FieldLabel } from '@/components/ui/field';
 import { DatePicker } from '@/components/ui/date-picker';
+import NumberBoardDiscount from '@/components/number-board-discount';
 
 const title = 'Kasir / Penjualan';
 
@@ -52,6 +53,7 @@ type Item = {
     expired_date: string | null;
     source: string;
     stock: number;
+    discount?: number;
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -131,6 +133,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
                 code: purchase.code,
                 source: 'purchase',
                 stock: purchase.total_quantity,
+                discount: 0,
             },
         ]);
     };
@@ -153,9 +156,17 @@ export default function Index({ pagination, categoryOptions }: Props) {
         (sum, item) => sum + item.quantity,
         0,
     );
+    const getItemSubtotal = (item: Item) => {
+        const gross = item.quantity * item.selling_price;
+        return gross - (item.discount || 0);
+    };
 
+    const totalDiscount = data.items.reduce(
+        (sum, item) => sum + (item.discount || 0),
+        0,
+    );
     const subtotal = data.items.reduce(
-        (sum, item) => sum + item.quantity * item.selling_price,
+        (sum, item) => sum + getItemSubtotal(item),
         0,
     );
 
@@ -226,6 +237,22 @@ export default function Index({ pagination, categoryOptions }: Props) {
     const autoAddedRef = useRef<string | null>(null);
     const isFirstLoad = useRef(true);
     const [submitting, setSubmitting] = useState(false);
+    const [discountModalOpen, setDiscountModalOpen] = useState(false);
+    const [selectedDiscountIndex, setSelectedDiscountIndex] = useState<
+        number | null
+    >(null);
+    const openDiscountModal = (index: number) => {
+        setSelectedDiscountIndex(index);
+        setDiscountModalOpen(true);
+    };
+
+    const applyDiscount = (amount: number) => {
+        if (selectedDiscountIndex === null) return;
+
+        updateItem(selectedDiscountIndex, 'discount', amount);
+
+        setDiscountModalOpen(false);
+    };
     useEffect(() => {
         if (isFirstLoad.current) {
             isFirstLoad.current = false;
@@ -282,7 +309,25 @@ export default function Index({ pagination, categoryOptions }: Props) {
                                 )}
                                 onValueChange={(val: Option | null) => {
                                     const newValue = val?.value ?? 'all';
+
                                     setCategoryValue(newValue);
+
+                                    router.get(
+                                        sellings.index().url,
+                                        {
+                                            search: searchValue,
+                                            product_category_id:
+                                                newValue === 'all'
+                                                    ? ''
+                                                    : newValue,
+                                            page: 1,
+                                        },
+                                        {
+                                            preserveState: true,
+                                            replace: true,
+                                            only: ['pagination'],
+                                        },
+                                    );
                                 }}
                             >
                                 <ComboboxInput
@@ -395,7 +440,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
                                                         },
                                                     ).format(
                                                         Number(
-                                                            product?.selling_price ??
+                                                            purchase?.selling_price ??
                                                                 0,
                                                         ),
                                                     )}
@@ -590,6 +635,44 @@ export default function Index({ pagination, categoryOptions }: Props) {
                                             ).toLocaleString('id-ID')}
                                         </div>
                                     </div>
+                                    <div className="mt-1 flex items-center justify-between text-xs">
+                                        <div className="space-x-2">
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    openDiscountModal(index)
+                                                }
+                                                className="cursor-pointer font-medium text-blue-600 hover:underline"
+                                            >
+                                                Tambah diskon
+                                            </button>
+
+                                            {!!item.discount && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        updateItem(
+                                                            index,
+                                                            'discount',
+                                                            0,
+                                                        )
+                                                    }
+                                                    className="cursor-pointer text-blue-600 hover:underline"
+                                                >
+                                                    Hapus diskon
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {!!item.discount && (
+                                            <span className="text-muted-foreground">
+                                                Diskon :{' '}
+                                                {item.discount.toLocaleString(
+                                                    'id-ID',
+                                                )}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -684,6 +767,35 @@ export default function Index({ pagination, categoryOptions }: Props) {
                     </Button>
                 </Card>
             </div>
+            <NumberBoardDiscount
+                open={discountModalOpen}
+                onClose={() => setDiscountModalOpen(false)}
+                productName={
+                    selectedDiscountIndex !== null
+                        ? data.items[selectedDiscountIndex]?.name
+                        : ''
+                }
+                grandTotal={
+                    selectedDiscountIndex !== null
+                        ? data.items[selectedDiscountIndex].quantity *
+                          data.items[selectedDiscountIndex].selling_price
+                        : 0
+                }
+                onConfirm={(amount) => {
+                    if (selectedDiscountIndex === null) return;
+
+                    const item = data.items[selectedDiscountIndex];
+                    const max = item.quantity * item.selling_price;
+
+                    updateItem(
+                        selectedDiscountIndex,
+                        'discount',
+                        Math.min(amount, max),
+                    );
+
+                    setDiscountModalOpen(false);
+                }}
+            />
         </AppLayout>
     );
 }

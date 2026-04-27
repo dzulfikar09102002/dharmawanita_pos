@@ -1,43 +1,37 @@
+import { useState } from 'react';
+import { Delete } from 'lucide-react';
+
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-import { useState } from 'react';
-import { Delete } from 'lucide-react';
-
 type Props = {
     open: boolean;
     onClose: () => void;
-    onConfirm: (amount: number) => void;
+    onConfirm: (discountAmount: number) => void;
     grandTotal: number;
+    productName: string;
 };
 
-export default function NumberBoardModal({
+export default function NumberBoardDiscount({
     open,
     onClose,
     onConfirm,
     grandTotal,
+    productName,
 }: Props) {
     const [value, setValue] = useState('0');
+
+    // percent | nominal
+    const [mode, setMode] = useState<'percent' | 'nominal'>('nominal');
 
     const append = (v: string) => {
         setValue((prev) => (prev === '0' ? v : prev + v));
     };
 
-    const addNominal = (n: number) => {
-        setValue((prev) => String(Number(prev) + n));
-    };
-
-    const uangPas = () => {
-        setValue(String(grandTotal));
-    };
-
-    const confirm = () => {
-        onConfirm(Number(value));
-    };
-
     const reset = () => {
         setValue('0');
+        setMode('nominal');
     };
 
     const backspace = () => {
@@ -47,7 +41,7 @@ export default function NumberBoardModal({
         });
     };
 
-    const handleManualInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
         const raw = e.target.value.replace(/\D/g, '');
 
         if (!raw) {
@@ -58,25 +52,59 @@ export default function NumberBoardModal({
         setValue(raw);
     };
 
+    const confirm = () => {
+        let discount = 0;
+
+        if (mode === 'percent') {
+            const pct = Math.min(Number(value), 100);
+            discount = (grandTotal * pct) / 100;
+        } else {
+            discount = Number(value);
+        }
+
+        onConfirm(discount);
+    };
+
+    const previewDiscount =
+        mode === 'percent'
+            ? (grandTotal * Number(value || 0)) / 100
+            : Number(value || 0);
+
+    const displayValue =
+        mode === 'percent'
+            ? `${value}%`
+            : Number(value) === 0
+              ? '0'
+              : `-${Number(value).toLocaleString('id-ID')}`;
+
     return (
         <Dialog open={open} onOpenChange={onClose}>
             <DialogContent className="top-[45%] max-w-md">
-                <DialogTitle className="sr-only">Number Board</DialogTitle>
+                <DialogTitle className="sr-only">Input Diskon</DialogTitle>
 
                 <div className="space-y-4">
+                    <div>
+                        <h2 className="text-2xl font-semibold">
+                            {productName}
+                        </h2>
+
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Masukkan diskon yang tersedia
+                        </p>
+                    </div>
+
                     <Input
-                        value={Number(value).toLocaleString('id-ID')}
-                        onChange={handleManualInput}
+                        value={displayValue}
+                        onChange={handleInput}
+                        className="text-right text-xl"
                         inputMode="numeric"
-                        className="text-right text-lg"
                     />
 
-                    <div className="grid grid-cols-2 gap-2">
-                        <Button onClick={reset}>AC</Button>
-
-                        <Button variant="outline" onClick={backspace}>
-                            <Delete />
-                        </Button>
+                    <div className="text-sm text-muted-foreground">
+                        Diskon:
+                        <span className="ml-2 font-medium">
+                            Rp {previewDiscount.toLocaleString('id-ID')}
+                        </span>
                     </div>
 
                     <div className="grid grid-cols-4 gap-2">
@@ -92,9 +120,9 @@ export default function NumberBoardModal({
 
                         <Button
                             variant="outline"
-                            onClick={() => addNominal(10000)}
+                            onClick={() => setMode('percent')}
                         >
-                            10.000
+                            %
                         </Button>
 
                         {[4, 5, 6].map((n) => (
@@ -109,9 +137,9 @@ export default function NumberBoardModal({
 
                         <Button
                             variant="outline"
-                            onClick={() => addNominal(20000)}
+                            onClick={() => setMode('nominal')}
                         >
-                            20.000
+                            −
                         </Button>
 
                         {[7, 8, 9].map((n) => (
@@ -124,11 +152,8 @@ export default function NumberBoardModal({
                             </Button>
                         ))}
 
-                        <Button
-                            variant="outline"
-                            onClick={() => addNominal(50000)}
-                        >
-                            50.000
+                        <Button variant="outline" onClick={backspace}>
+                            <Delete size={16} />
                         </Button>
 
                         <Button variant="outline" onClick={() => append('0')}>
@@ -145,9 +170,9 @@ export default function NumberBoardModal({
 
                         <Button
                             variant="outline"
-                            onClick={() => addNominal(100000)}
+                            onClick={() => append('0000')}
                         >
-                            100.000
+                            0000
                         </Button>
                     </div>
 
@@ -155,9 +180,9 @@ export default function NumberBoardModal({
                         <Button
                             variant="secondary"
                             className="flex-1"
-                            onClick={uangPas}
+                            onClick={reset}
                         >
-                            Uang Pas
+                            Reset
                         </Button>
 
                         <Button
@@ -169,7 +194,7 @@ export default function NumberBoardModal({
                         </Button>
 
                         <Button className="flex-1" onClick={confirm}>
-                            Konfirmasi
+                            Konfirm
                         </Button>
                     </div>
                 </div>

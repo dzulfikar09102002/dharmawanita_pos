@@ -159,6 +159,7 @@ class SellingService
                     'purchase_price'      => $item['purchase_price'],
                     'selling_price'       => $item['selling_price'],
                     'subtotal'            => $subtotal,
+                    'adjustment'          => $item['discount'],
                     'created_by'          => $user,
                     'updated_by'          => $user,
                 ]);

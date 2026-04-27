@@ -36,6 +36,7 @@ public function rules(): array
 
         'items.*.purchase_price'=> ['required', 'numeric', 'min:0'],
         'items.*.selling_price' => ['required', 'numeric', 'min:0'],
+        'items.*.discount'      => ['required', 'numeric', 'min:0'],
 
         'items.*.code'          => ['required', 'string', 'max:50'],
 

@@ -110,6 +110,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         );
     })->name('reports.stocks.export');
 
+    Route::get(
+    '/reports/stocks/categories',
+    [StockReportController::class, 'byCategories']
+)->name('reportsStocks.byCategories');
+
     Route::resource('/reports/stocks', StockReportController::class)
     ->names('reportsStocks');
 
