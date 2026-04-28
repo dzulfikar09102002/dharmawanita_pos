@@ -26,6 +26,14 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { DatePicker } from '../ui/date-picker';
+import {
+    Combobox,
+    ComboboxContent,
+    ComboboxEmpty,
+    ComboboxInput,
+    ComboboxItem,
+    ComboboxList,
+} from '../ui/combobox';
 
 export type ModalState = {
     isOpen: boolean;
@@ -158,32 +166,51 @@ export default function Modal({
 
                         <Field>
                             <FieldLabel>Kategori</FieldLabel>
-                            <Select
-                                value={data.category_id?.toString() || ''}
-                                onValueChange={(val) =>
-                                    setData('category_id', val)
+
+                            <Combobox
+                                items={categoryOptions.filter(
+                                    (opt) => opt.value !== 'all',
+                                )}
+                                value={categoryOptions
+                                    .filter((opt) => opt.value !== 'all')
+                                    .find(
+                                        (opt) =>
+                                            String(opt.value) ===
+                                            String(data.category_id),
+                                    )}
+                                onValueChange={(val: Option | null) =>
+                                    setData('category_id', val?.value ?? '')
                                 }
                             >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Pilih kategori" />
-                                </SelectTrigger>
+                                <ComboboxInput
+                                    placeholder="Pilih kategori"
+                                    className={
+                                        errors.category_id
+                                            ? 'border-red-500'
+                                            : ''
+                                    }
+                                />
 
-                                <SelectContent>
-                                    {categoryOptions
-                                        .filter((opt) => opt.value !== 'all')
-                                        .map((opt) => (
-                                            <SelectItem
-                                                key={opt.value}
-                                                value={opt.value.toString()}
+                                <ComboboxContent>
+                                    <ComboboxEmpty>
+                                        Tidak ditemukan
+                                    </ComboboxEmpty>
+
+                                    <ComboboxList>
+                                        {(el) => (
+                                            <ComboboxItem
+                                                key={el.value}
+                                                value={el}
                                             >
-                                                {opt.label}
-                                            </SelectItem>
-                                        ))}
-                                </SelectContent>
-                            </Select>
+                                                {el.label}
+                                            </ComboboxItem>
+                                        )}
+                                    </ComboboxList>
+                                </ComboboxContent>
+                            </Combobox>
+
                             <FieldError>{errors.category_id}</FieldError>
                         </Field>
-
                         <Field>
                             <FieldLabel>Harga Beli</FieldLabel>
                             <Input

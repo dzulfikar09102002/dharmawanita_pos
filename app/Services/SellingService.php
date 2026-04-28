@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Services;
+use App\Models\CashLedger;
 use App\Models\PaymentMethod;
 use App\Models\Purchase;
 use App\Models\PurchasingMethod;
@@ -146,7 +147,6 @@ class SellingService
                 'created_by'       => $user,
                 'updated_by'       => $user,
             ]);
-
             foreach ($items as $item) {
 
                 $subtotal = $item['quantity'] * $item['selling_price'];
@@ -286,7 +286,17 @@ class SellingService
                         ]);
                     });
             }
-
+                CashLedger::create([
+                'transaction_date' => $sale->transaction_date,
+                'type' => CashLedger::TYPE_IN,
+                'category' => CashLedger::CATEGORY_OPERATING,
+                'amount' => $total_amount,
+                'description' => 'Penjualan ' . $sale->invoice_number,
+                'reference_table' => CashLedger::REF_SALE,
+                'reference_id' => $sale->id,
+                'created_by' =>  auth()->id(),
+                'updated_by' =>  auth()->id(),
+            ]);
             return $sale->fresh();
         });
     }

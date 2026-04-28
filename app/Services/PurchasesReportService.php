@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
 use App\Models\Purchase;
+use App\Models\SaleTransactionDetail;
 use App\Models\Supplier;
 use Illuminate\Support\Facades\DB;
 
@@ -128,52 +129,154 @@ class PurchasesReportService
 
         return $options;
     }
-public function update(Purchase $purchase, array $item)
+    public function getRemaining(int $purchaseId): int
+    {
+        $saleDetailIds = SaleTransactionDetail::where(
+            'purchase_id',
+            $purchaseId
+        )->pluck('id');
+
+        return (int) InventoryTransaction::where(function ($q) use ($purchaseId, $saleDetailIds) {
+
+            $q->where(function ($q) use ($purchaseId) {
+                $q->where('reference_table','purchase')
+                ->where('reference_id',$purchaseId);
+            });
+
+            if ($saleDetailIds->isNotEmpty()) {
+                $q->orWhere(function ($q) use ($saleDetailIds) {
+                    $q->where('reference_table','sale')
+                    ->whereIn('reference_id',$saleDetailIds);
+                });
+            }
+
+        })
+        ->whereNull('deleted_at')
+        ->selectRaw("
+            COALESCE(SUM(
+                CASE
+                    WHEN type='in' THEN quantity
+                    WHEN type='out' THEN -quantity
+                END
+            ),0) as remaining
+        ")
+        ->value('remaining');
+    }
+    public function update(Purchase $purchase, array $item)
     {
         return DB::transaction(function () use ($purchase, $item) {
 
             $user = auth()->id();
 
-            $purchase->update([
-                'supplier_id'     => $item['supplier_id'] ?? null,
-                'code'            => $item['code'],
-                'year'            => $item['year'],
-                'quantity'        => $item['quantity'],
-                'purchase_price'  => $item['purchase_price'],
-                'selling_price'   => $item['selling_price'],
-                'purchase_date'   => $item['purchase_date'],
-                'expired_date'    => $item['expired_date'] ?? null,
-                'updated_by'      => $user,
-            ]);
+            $hasTransaction = SaleTransactionDetail::where(
+                'purchase_id',
+                $purchase->id
+            )->exists();
 
-            $product = Product::find($purchase->product_id);
+            $oldPurchasePrice = $purchase->purchase_price;
+            $oldSellingPrice  = $purchase->selling_price;
 
-            if ($product) {
-                $product->update([
-                    'has_expired' => !empty($item['expired_date']),
-                    'expired_date' => $item['expired_date'] ?? null,
+            $newPurchasePrice = $item['purchase_price'];
+            $newSellingPrice  = $item['selling_price'];
+
+            $priceChanged =
+                $oldPurchasePrice != $newPurchasePrice ||
+                $oldSellingPrice != $newSellingPrice;
+
+            if (!$hasTransaction) {
+
+                $purchase->update([
+                    'supplier_id'     => $item['supplier_id'] ?? null,
+                    'code'            => $item['code'],
+                    'year'            => $item['year'],
+                    'quantity'        => $item['quantity'],
+                    'purchase_price'  => $newPurchasePrice,
+                    'selling_price'   => $newSellingPrice,
+                    'purchase_date'   => $item['purchase_date'],
+                    'expired_date'    => $item['expired_date'] ?? null,
+                    'updated_by'      => $user,
+                ]);
+
+                InventoryTransaction::where('reference_table','purchase')
+                    ->where('reference_id',$purchase->id)
+                    ->where('type','in')
+                    ->update([
+                        'source'         => $item['source'],
+                        'quantity'       => $item['quantity'],
+                        'purchase_price' => $newPurchasePrice,
+                        'selling_price'  => $newSellingPrice,
+                        'updated_by'     => $user,
+                        'updated_at'     => now(),
+                    ]);
+            }
+
+            else {
+
+                $remaining = $this->getRemaining($purchase->id);
+
+                if ($priceChanged && $remaining > 0) {
+
+                    // keluarkan layer valuasi lama
+                    InventoryTransaction::create([
+                        'product_id'       => $purchase->product_id,
+                        'type'             => 'out',
+                        'source'           => 'adjustment',
+                        'reference_table'  => 'purchase',
+                        'reference_id'     => $purchase->id,
+                        'quantity'         => $remaining,
+                        'purchase_price'   => $oldPurchasePrice,
+                        'selling_price'    => $oldSellingPrice,
+                        'note'             => 'Cost revaluation out',
+                        'created_by'       => $user,
+                    ]);
+
+
+                    // masukkan layer valuasi baru
+                    InventoryTransaction::create([
+                        'product_id'       => $purchase->product_id,
+                        'type'             => 'in',
+                        'source'           => 'adjustment',
+                        'reference_table'  => 'purchase',
+                        'reference_id'     => $purchase->id,
+                        'quantity'         => $remaining,
+                        'purchase_price'   => $newPurchasePrice,
+                        'selling_price'    => $newSellingPrice,
+                        'note'             => 'Cost revaluation in',
+                        'created_by'       => $user,
+                    ]);
+                }
+
+                // quantity sengaja tidak diubah kalau sudah ada penjualan
+                $purchase->update([
+                    'supplier_id'     => $item['supplier_id'] ?? null,
+                    'code'            => $item['code'],
+                    'year'            => $item['year'],
+                    'purchase_price'  => $newPurchasePrice,
+                    'selling_price'   => $newSellingPrice,
+                    'purchase_date'   => $item['purchase_date'],
+                    'expired_date'    => $item['expired_date'] ?? null,
+                    'updated_by'      => $user,
                 ]);
             }
 
-            InventoryTransaction::where('reference_table', 'purchase')
-                ->where('reference_id', $purchase->id)
-                ->where('type', 'in')
-                ->update([
-                    'source'         => $item['source'],
-                    'quantity'       => $item['quantity'],
-                    'purchase_price' => $item['purchase_price'],
-                    'selling_price'  => $item['selling_price'],
-                    'updated_by'     => $user,
-                    'updated_at'     => now(),
+
+            $product = Product::find($purchase->product_id);
+            $latestPurchase = Purchase::where('product_id', $purchase->product_id)
+                ->latest('purchase_date')
+                ->latest('id')
+                ->first();
+
+            if ($product && $latestPurchase) {
+                $product->update([
+                    'purchase_price' => $latestPurchase->purchase_price,
+                    'selling_price'  => $latestPurchase->selling_price,
+                    'has_expired'    => !empty($item['expired_date']),
+                    'expired_date'   => $item['expired_date'] ?? null,
                 ]);
+            }
 
             return back();
         });
-    }
-    public function restore(int $id)
-    {
-        $purchasereport = Purchase::withTrashed()->findOrFail($id);
-        return $purchasereport->restore();
     }
 
 

@@ -16,6 +16,7 @@ import {
     BadgePoundSterling,
     BaggageClaim,
     Calculator,
+    NotebookPen,
 } from 'lucide-react';
 
 import AppLogo from '@/components/app-logo';
@@ -42,6 +43,7 @@ import purchases from '@/routes/purchases';
 import reportsStocks from '@/routes/reportsStocks';
 import sellings from '@/routes/sellings';
 import salesSummary from '@/routes/sales-summary';
+import cashLedgers from '@/routes/cash-ledgers';
 
 const mainNavItems = [
     {
@@ -84,6 +86,11 @@ const mainNavItems = [
                 title: 'Stok',
                 href: reportsStocks.index().url,
                 icon: Boxes,
+            },
+            {
+                title: 'Keuangan',
+                href: cashLedgers.index().url,
+                icon: NotebookPen,
             },
             {
                 title: 'Laba/Rugi',

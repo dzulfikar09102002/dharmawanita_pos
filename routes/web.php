@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CashLedgerController;
 use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SalesSummaryController;
@@ -67,8 +68,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('suppliers/{id}/restore', [SupplierController::class, 'restore'])
     ->name('suppliers.restore');  
 
-    Route::resource('/purchases', PurchaseController::class)->except('show');
     Route::post('/purchases/generate-code', [PurchaseController::class, 'generateCode']);
+    Route::resource('/purchases', PurchaseController::class)->except('show');
 
     Route::resource('/reports/purchases', PurchasesReportController::class)->except('show')
     ->names('reports.purchases'); 
@@ -96,24 +97,37 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/reports/print-sales-report', [SalesReportController::class, 'printSalesReport'])
         ->name('sales-reports.print.pdf');
 
+    Route::resource('cash-ledgers', CashLedgerController::class)
+    ->except('show');
+
     Route::get('/reports/sales/{id}/payment', [SalesReportController::class, 'payment'])
     ->name('reports.sales.payment');
 
     Route::get('/reports/stocks/export', function () {
         $search = request('search');
-
         $now = Carbon::now()->format('Y-m-d_H-i-s');
 
         return Excel::download(
-            new StockReportExport($search),
-            "laporan-stok_{$now}.xlsx"
+            new StockReportExport($search, false),
+            "laporan-stok-produk_{$now}.xlsx"
         );
-    })->name('reports.stocks.export');
+    })->name('reportsStocks.export');
+
+
+    Route::get('/reports/stocks/categories/export', function () {
+        $search = request('search');
+        $now = Carbon::now()->format('Y-m-d_H-i-s');
+
+        return Excel::download(
+            new StockReportExport($search, true),
+            "laporan-stok-kategori_{$now}.xlsx"
+        );
+    })->name('reportsStocks.exportByCategories');
 
     Route::get(
     '/reports/stocks/categories',
     [StockReportController::class, 'byCategories']
-)->name('reportsStocks.byCategories');
+    )->name('reportsStocks.byCategories');
 
     Route::resource('/reports/stocks', StockReportController::class)
     ->names('reportsStocks');

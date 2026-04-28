@@ -56,6 +56,15 @@ export default function Index({ pagination }: Props) {
 
     const { url } = usePage();
     const isCategoryRoute = url.includes('categories');
+    const handleExport = () => {
+        const params = new URLSearchParams(window.location.search);
+
+        const exportUrl = isCategoryRoute
+            ? `/reports/stocks/categories/export?${params.toString()}`
+            : `/reports/stocks/export?${params.toString()}`;
+
+        window.open(exportUrl, '_blank');
+    };
     const columns: ColumnDef<Stock, any>[] = isCategoryRoute
         ? [
               {
@@ -186,19 +195,11 @@ export default function Index({ pagination }: Props) {
                 <CardContent>
                     <Button
                         type="button"
-                        onClick={() => {
-                            const params = new URLSearchParams(
-                                window.location.search,
-                            );
-                            window.open(
-                                `/reports/stocks/export?${params.toString()}`,
-                                '_blank',
-                            );
-                        }}
+                        onClick={handleExport}
                         className="flex items-center gap-2 bg-green-600 text-white hover:bg-green-700"
                     >
                         <FileSpreadsheet size={16} />
-                        Export Excel
+                        Export Excel {isCategoryRoute ? 'Kategori' : 'Produk'}
                     </Button>
                     <br />
                     <Tabs
