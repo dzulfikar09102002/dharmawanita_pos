@@ -175,3 +175,14 @@ export interface LabaRugi {
     total_pembelian: number;
     laba_rugi: number;
 }
+
+export type CashLedger = {
+    id: number;
+    transaction_date: string;
+    type: 'in' | 'out';
+    amount: number;
+    description: string;
+    category: string;
+    sale?: any;
+    purchase?: any;
+};

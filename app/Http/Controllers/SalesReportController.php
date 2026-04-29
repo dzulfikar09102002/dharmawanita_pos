@@ -247,7 +247,7 @@ public function printSalesReport(Request $request)
             'isDeleted'    => $isDeleted,
             'title'        => $title,
         ]
-    )->setPaper('A4','landscape');
+    )->setPaper('A3','landscape');
 
 
     return $pdf->stream(

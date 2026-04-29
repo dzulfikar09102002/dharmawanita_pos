@@ -224,16 +224,20 @@ class SellingService
     {
         return PurchasingMethod::all();
     }
-
+    
     
     public function pay(SaleTransaction $sale, array $input): SaleTransaction
     {
         return DB::transaction(function () use ($sale, $input) {
-
+            
             $sale = SaleTransaction::whereKey($sale->id)
-                ->where('payment_status', 'pending')
-                ->lockForUpdate()
-                ->firstOrFail();
+            ->where('payment_status', 'pending')
+            ->lockForUpdate()
+            ->firstOrFail();
+            $wasPartialPayment = $sale->total_amount > 0;
+            $description = $wasPartialPayment
+            ? 'PELUNASAN PENJUALAN ' . $sale->invoice_number
+            : 'PENJUALAN ' . $sale->invoice_number;
             $total_amount = $sale->total_amount + $input['paid_amount'];
             $methodId = $input['purchase_method_id'];
             $isCancelMethod = $methodId > 2;
@@ -286,17 +290,20 @@ class SellingService
                         ]);
                     });
             }
+
+            if (!$isCancelMethod) {
                 CashLedger::create([
-                'transaction_date' => $sale->transaction_date,
-                'type' => CashLedger::TYPE_IN,
-                'category' => CashLedger::CATEGORY_OPERATING,
-                'amount' => $total_amount,
-                'description' => 'Penjualan ' . $sale->invoice_number,
-                'reference_table' => CashLedger::REF_SALE,
-                'reference_id' => $sale->id,
-                'created_by' =>  auth()->id(),
-                'updated_by' =>  auth()->id(),
-            ]);
+                    'transaction_date' => $sale->transaction_date,
+                    'type' => CashLedger::TYPE_IN,
+                    'category' => CashLedger::CATEGORY_OPERATING,
+                    'amount' => $input['paid_amount'] - $input['change_amount'],
+                    'description' => $description,
+                    'reference_table' => CashLedger::REF_SALE,
+                    'reference_id' => $sale->id,
+                    'created_by' => auth()->id(),
+                    'updated_by' => auth()->id(),
+                ]);
+            }
             return $sale->fresh();
         });
     }

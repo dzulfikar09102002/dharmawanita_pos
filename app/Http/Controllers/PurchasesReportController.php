@@ -48,14 +48,6 @@ class PurchasesReportController extends Controller
             ->with('success', 'Data berhasil dihapus');
     }
 
-    public function restore(int $id)
-    {
-        $this->service->restore($id);
-
-        return to_route('reports.purchases.deleted', request()->only('search', 'month', 'year'))
-            ->with('success', 'Data berhasil dipulihkan');
-    }
-
     public function deleted(Request $request)
     {
         $month = $request->get('month', now()->month);
@@ -215,7 +207,7 @@ class PurchasesReportController extends Controller
             'title' => $title,
             'isDeleted' => $isDeleted,
         ]
-    )->setPaper('a4','landscape');
+    )->setPaper('A3','landscape');
 
 
     return $pdf->stream(

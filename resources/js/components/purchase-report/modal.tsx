@@ -211,10 +211,7 @@ export default function Modal({ open, item, onClose, supplierOptions }: Props) {
 
                                 <ComboboxList>
                                     {(el) => (
-                                        <ComboboxItem
-                                            key={el.value}
-                                            value={el.value}
-                                        >
+                                        <ComboboxItem key={el.value} value={el}>
                                             {el.label}
                                         </ComboboxItem>
                                     )}

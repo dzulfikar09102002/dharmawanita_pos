@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CashLedger;
 use App\Models\InventoryTransaction;
 use App\Models\SaleTransaction;
 use App\Models\SaleTransactionDetail;
@@ -92,13 +93,11 @@ class SalesReportService
 
             $invoice = SaleTransaction::with('details.purchase')->findOrFail($id);
 
-            $reason = request('reason'); 
+            $reason = request('reason');
 
-            // Update status + simpan reason kalau mau
             $invoice->update([
                 'payment_status' => 'canceled',
                 'updated_by'     => auth()->id(),
-                'cancel_reason'  => $reason, // opsional (kalau ada kolomnya)
             ]);
 
             foreach ($invoice->details as $detail) {
@@ -106,26 +105,36 @@ class SalesReportService
                 if (!$detail->purchase) {
                     throw new \Exception("Produk tidak ditemukan untuk detail ID: {$detail->id}");
                 }
-
                 InventoryTransaction::create([
-                    'product_id'     => $detail->purchase->product_id,
-                    'type'           => 'in',
-                    'source'         => 'return',
-                    'reference_id'   => $detail->id,
-                    'reference_table'=> 'sale',
-                    'quantity'       => $detail->quantity,
-                    'purchase_price' => $detail->purchase->purchase_price ?? 0,
-                    'selling_price'  => $detail->selling_price ?? 0,
-
-                    // 🔥 INI YANG DIGANTI
-                    'note' => $reason
+                    'product_id'      => $detail->purchase->product_id,
+                    'type'            => 'in',
+                    'source'          => 'return',
+                    'reference_id'    => $detail->id,
+                    'reference_table' => 'sale',
+                    'quantity'        => $detail->quantity,
+                    'purchase_price'  => $detail->purchase->purchase_price ?? 0,
+                    'selling_price'   => $detail->selling_price ?? 0,
+                    'note'            => $reason
                         ? "Return: {$reason}"
                         : 'Transaksi dibatalkan (return)',
-
-                    'created_by' => auth()->id(),
+                    'created_by'      => auth()->id(),
                 ]);
             }
 
+            $totalPaid = $invoice->total_amount - $invoice->change;
+            if ($totalPaid > 0) {
+                CashLedger::create([
+                    'transaction_date' => now(),
+                    'type'             => CashLedger::TYPE_OUT,
+                    'category'         => CashLedger::CATEGORY_ADJUSTMENT,
+                    'amount'           => $totalPaid,
+                    'description'      => 'PEMBATALAN PENJUALAN INVOICE' . $invoice->invoice_number,
+                    'reference_table'  => CashLedger::REF_SALE,
+                    'reference_id'     => $invoice->id,
+                    'created_by'       => auth()->id(),
+                    'updated_by'       => auth()->id(),
+                ]);
+            }
             return true;
         });
     }

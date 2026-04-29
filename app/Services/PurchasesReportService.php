@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CashLedger;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
 use App\Models\Purchase;
@@ -89,35 +90,47 @@ class PurchasesReportService
     }
 
     public function delete(Purchase $purchasereport)
-    {
-        DB::transaction(function () use ($purchasereport) {
+{
+    DB::transaction(function () use ($purchasereport) {
 
-            $reason = request('reason');
+        $reason = request('reason');
 
-             $purchasereport->update([
+        $purchasereport->update([
             'status_payment' => 'canceled',
             'updated_by'     => auth()->id(),
             'deleted_by'     => auth()->id(),
+        ]);
+
+        $purchasereport->delete();
+
+        InventoryTransaction::create([
+            'product_id'      => $purchasereport->product_id,
+            'type'            => 'out',
+            'source'          => 'return',
+            'reference_id'    => $purchasereport->id,
+            'reference_table' => 'purchase',
+            'quantity'        => $purchasereport->quantity,
+            'purchase_price'  => $purchasereport->purchase_price ?? 0,
+            'selling_price'   => $purchasereport->selling_price ?? 0,
+            'note'            => $reason ?: 'Purchase dibatalkan',
+            'created_by'      => auth()->id(),
+        ]);
+
+            CashLedger::create([
+                'transaction_date' => $purchasereport->purchase_date,
+                'type' => CashLedger::TYPE_IN, 
+                'category' => CashLedger::CATEGORY_ADJUSTMENT,
+                'amount' => $purchasereport->total_payment,
+                'description' => 'PEMBATALAN PEMBELIAN ' . $purchasereport->product->name,
+                'reference_table' => CashLedger::REF_PURCHASE,
+                'reference_id' => $purchasereport->id,
+                'created_by' => auth()->id(),
+                'updated_by' => auth()->id(),
             ]);
+    });
 
-                $purchasereport->delete();
-
-            InventoryTransaction::create([
-                'product_id'      => $purchasereport->product_id,
-                'type'            => 'out',
-                'source'          => 'return',
-                'reference_id'    => $purchasereport->id,
-                'reference_table' => 'purchase',
-                'quantity'        => $purchasereport->quantity,
-                'purchase_price'  => $purchasereport->purchase_price ?? 0,
-                'selling_price'   => $purchasereport->selling_price ?? 0,
-                'note'            => $reason ?: 'Purchase dibatalkan',
-                'created_by'      => auth()->id(),
-            ]);
-        });
-
-        return back();
-    }
+    return back();
+}
      public function getSupplierOptions()
     {
         $options = Supplier::all()->map(function ($supplier) {
@@ -172,6 +185,10 @@ class PurchasesReportService
                 'purchase_id',
                 $purchase->id
             )->exists();
+            $oldSource = InventoryTransaction::where('reference_table', 'purchase')
+                ->where('reference_id', $purchase->id)
+                ->where('type', 'in')
+                ->value('source');
 
             $oldPurchasePrice = $purchase->purchase_price;
             $oldSellingPrice  = $purchase->selling_price;
@@ -179,9 +196,25 @@ class PurchasesReportService
             $newPurchasePrice = $item['purchase_price'];
             $newSellingPrice  = $item['selling_price'];
 
+            $qty = $item['quantity'] ?? $purchase->quantity;
+
             $priceChanged =
                 $oldPurchasePrice != $newPurchasePrice ||
                 $oldSellingPrice != $newSellingPrice;
+
+            if ($item['source'] == 'purchase') {
+                $total_payment = $newPurchasePrice * $qty;
+                $status_payment = 'paid';
+                $payment_type = 'cash';
+            } elseif ($item['source'] == 'consignment') {
+                $total_payment = 0;
+                $status_payment = 'pending';
+                $payment_type = 'credit';
+            } else {
+                $total_payment = 0;
+                $status_payment = 'paid';
+                $payment_type = 'free';
+            }
 
             if (!$hasTransaction) {
 
@@ -189,7 +222,7 @@ class PurchasesReportService
                     'supplier_id'     => $item['supplier_id'] ?? null,
                     'code'            => $item['code'],
                     'year'            => $item['year'],
-                    'quantity'        => $item['quantity'],
+                    'quantity'        => $qty,
                     'purchase_price'  => $newPurchasePrice,
                     'selling_price'   => $newSellingPrice,
                     'purchase_date'   => $item['purchase_date'],
@@ -202,21 +235,17 @@ class PurchasesReportService
                     ->where('type','in')
                     ->update([
                         'source'         => $item['source'],
-                        'quantity'       => $item['quantity'],
+                        'quantity'       => $qty,
                         'purchase_price' => $newPurchasePrice,
                         'selling_price'  => $newSellingPrice,
                         'updated_by'     => $user,
                         'updated_at'     => now(),
                     ]);
-            }
-
-            else {
+            } else {
 
                 $remaining = $this->getRemaining($purchase->id);
 
                 if ($priceChanged && $remaining > 0) {
-
-                    // keluarkan layer valuasi lama
                     InventoryTransaction::create([
                         'product_id'       => $purchase->product_id,
                         'type'             => 'out',
@@ -230,8 +259,6 @@ class PurchasesReportService
                         'created_by'       => $user,
                     ]);
 
-
-                    // masukkan layer valuasi baru
                     InventoryTransaction::create([
                         'product_id'       => $purchase->product_id,
                         'type'             => 'in',
@@ -246,7 +273,15 @@ class PurchasesReportService
                     ]);
                 }
 
-                // quantity sengaja tidak diubah kalau sudah ada penjualan
+                InventoryTransaction::where('reference_table','purchase')
+                    ->where('reference_id',$purchase->id)
+                    ->where('type','in')
+                    ->update([
+                        'source'     => $item['source'],
+                        'updated_by' => $user,
+                        'updated_at' => now(),
+                    ]);
+
                 $purchase->update([
                     'supplier_id'     => $item['supplier_id'] ?? null,
                     'code'            => $item['code'],
@@ -258,7 +293,6 @@ class PurchasesReportService
                     'updated_by'      => $user,
                 ]);
             }
-
 
             $product = Product::find($purchase->product_id);
             $latestPurchase = Purchase::where('product_id', $purchase->product_id)
@@ -275,41 +309,137 @@ class PurchasesReportService
                 ]);
             }
 
+            $oldTotal = $oldPurchasePrice * $purchase->quantity;
+            $newTotal = $newPurchasePrice * $qty;
+            $diff = $newTotal - $oldTotal;
+
+            if ($diff < 0) {
+                CashLedger::create([
+                    'transaction_date' => now(),
+                    'type' => CashLedger::TYPE_IN,
+                    'category' => CashLedger::CATEGORY_ADJUSTMENT,
+                    'amount' => abs($diff),
+                    'description' => 'PENGEMBALIAN MODAL ' . $purchase->product->name,
+                    'reference_table' => CashLedger::REF_PURCHASE,
+                    'reference_id' => $purchase->id,
+                    'created_by' => $user,
+                    'updated_by' => $user,
+                ]);
+            } elseif ($diff > 0) {
+                CashLedger::create([
+                    'transaction_date' => now(),
+                    'type' => CashLedger::TYPE_OUT,
+                    'category' => CashLedger::CATEGORY_ADJUSTMENT,
+                    'amount' => $diff,
+                    'description' => 'TAMBAHAN MODAL ' . $purchase->product->name,
+                    'reference_table' => CashLedger::REF_PURCHASE,
+                    'reference_id' => $purchase->id,
+                    'created_by' => $user,
+                    'updated_by' => $user,
+                ]);
+            }
+
+            $newSource = $item['source'];
+            $sourceAmount = $newPurchasePrice * $qty;
+
+            if ($oldSource !== $newSource) {
+
+                $oldIsPurchase = $oldSource === 'purchase';
+                $newIsPurchase = $newSource === 'purchase';
+
+                if ($oldSource !== $newSource) {
+
+                    if ($oldIsPurchase && !$newIsPurchase) {
+                        CashLedger::create([
+                            'transaction_date' => now(),
+                            'type' => CashLedger::TYPE_IN,
+                            'category' => CashLedger::CATEGORY_ADJUSTMENT,
+                            'amount' => $sourceAmount,
+                            'description' => 'KOREKSI MODAL PERUBAHAN SUMBER '.$purchase->product->name,
+                            'reference_table' => CashLedger::REF_PURCHASE,
+                            'reference_id' => $purchase->id,
+                            'created_by' => $user,
+                            'updated_by' => $user,
+                        ]);
+                    }
+
+                    if (!$oldIsPurchase && $newIsPurchase) {
+                        CashLedger::create([
+                            'transaction_date' => now(),
+                            'type' => CashLedger::TYPE_OUT,
+                            'category' => CashLedger::CATEGORY_ADJUSTMENT,
+                            'amount' => $sourceAmount,
+                            'description' => 'TAMBAHAN MODAL PERUBAHAN SUMBER '.$purchase->product->name,
+                            'reference_table' => CashLedger::REF_PURCHASE,
+                            'reference_id' => $purchase->id,
+                            'created_by' => $user,
+                            'updated_by' => $user,
+                        ]);
+                    }
+                }
+            }
+
+            $purchase->update([
+                'total_payment'  => $total_payment,
+                'status_payment' => $status_payment,
+                'payment_type'   => $payment_type,
+            ]);
+
             return back();
         });
     }
 
+    public function pay(Purchase $purchase, array $input): Purchase
+    {
+        return DB::transaction(function () use ($purchase, $input) {
 
-public function pay(Purchase $purchase, array $input): Purchase
-{
-    return DB::transaction(function () use ($purchase, $input) {
+            $purchase = Purchase::whereKey($purchase->id)
+                ->where('status_payment', '!=', 'paid')
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $purchase = Purchase::whereKey($purchase->id)
-            ->where('status_payment', '!=', 'paid')
-            ->lockForUpdate()
-            ->firstOrFail();
+            $orderTotal = $purchase->purchase_price * $purchase->quantity;
 
-        $orderTotal = $purchase->purchase_price * $purchase->quantity;
+            $payAmount = (float) ($input['total_payment'] ?? 0);
 
-        $payAmount = (float) ($input['total_payment'] ?? 0);
+            $alreadyPaid = (float) ($purchase->total_payment ?? 0);
 
-        $alreadyPaid = (float) ($purchase->total_payment ?? 0);
+            $wasPartialPayment = $alreadyPaid > 0;
 
-        $newPaid = $alreadyPaid + $payAmount;
+            $newPaid = $alreadyPaid + $payAmount;
 
-        if ($newPaid > $orderTotal) {
-            $newPaid = $orderTotal;
-        }
+            if ($newPaid > $orderTotal) {
+                $newPaid = $orderTotal;
+            }
 
-        $remaining = $orderTotal - $newPaid;
+            $remaining = $orderTotal - $newPaid;
 
-        $purchase->update([
-            'total_payment' => $newPaid,
-            'status_payment' => $remaining == 0 ? 'paid' : 'pending',
-            'updated_by' => auth()->id(),
-        ]);
+            $purchase->update([
+                'total_payment'   => $newPaid,
+                'status_payment'  => $remaining == 0 ? 'paid' : 'pending',
+                'updated_by'      => auth()->id(),
+            ]);
 
-        return $purchase->fresh();
-    });
-}
+            if ($payAmount > 0) {
+
+                $description = $wasPartialPayment
+                    ? 'PELUNASAN UTANG ' . $purchase->product->name
+                    : 'PEMBAYARAN UTANG ' . $purchase->product->name;
+
+                CashLedger::create([
+                    'transaction_date' => now(),
+                    'type'             => CashLedger::TYPE_OUT,
+                    'category'         => CashLedger::CATEGORY_OPERATING,
+                    'amount'           => $payAmount,
+                    'description'      => $description,
+                    'reference_table'  => CashLedger::REF_PURCHASE,
+                    'reference_id'     => $purchase->id,
+                    'created_by'       => auth()->id(),
+                    'updated_by'       => auth()->id(),
+                ]);
+            }
+
+            return $purchase->fresh();
+        });
+    }
 }

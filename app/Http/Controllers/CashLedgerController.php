@@ -20,11 +20,11 @@ class CashLedgerController extends Controller
 
         $pagination = $this->cashLedgerService->getDailyReport();
         $openingBalance = $this->cashLedgerService->getOpeningBalance();
-
-        dd($pagination, $openingBalance);
+        $summary = $this->cashLedgerService->getCashSummary();
         return Inertia::render('cash-ledger/index', compact(
             'pagination',
-            'openingBalance'
+            'openingBalance',
+            'summary'
         ));
     }
 

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\InventorySource;
 use App\Enums\InventoryType;
+use App\Models\CashLedger;
 use App\Models\Category;
 use App\Models\InventoryTransaction;
 use App\Models\Product;
@@ -66,7 +67,7 @@ class PurchaseService
         return $options;
     }
 
- public function store(array $input)
+    public function store(array $input)
     {
         return DB::transaction(function () use ($input) {
 
@@ -129,6 +130,21 @@ class PurchaseService
                     'created_by'      => $user,
                     'updated_by'      => $user,
                 ]);
+
+               if($total_payment > 0)
+                {
+                    CashLedger::create([
+                    'transaction_date' => now(),
+                    'type'             => CashLedger::TYPE_OUT,
+                    'category'         => CashLedger::CATEGORY_OPERATING,
+                    'amount'           => $total_payment,
+                    'description'      => 'PEMBELIAN ' . $purchase->product->name,
+                    'reference_table'  => CashLedger::REF_PURCHASE,
+                    'reference_id'     => $purchase->id,
+                    'created_by'       => $user,
+                    'updated_by'       => $user,
+                    ]);
+                }
                 $createdPurchases[] = $purchase;
             }
 

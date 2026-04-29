@@ -217,7 +217,7 @@ export default function Index({
 
         columnHelper.accessor('purchase_price', {
             header: 'Harga',
-            cell: (info) => formatRupiah(info.getValue() || 0),
+            cell: (info) => formatRupiah(Number(info.getValue() || 0)),
         }),
 
         columnHelper.display({
@@ -225,13 +225,13 @@ export default function Index({
             header: 'Total',
             cell: (info) => {
                 const row = info.row.original;
-                const total = (row.quantity || 0) * (row.purchase_price || 0);
 
-                return total > 0 ? (
-                    <span>{formatRupiah(total)}</span>
-                ) : (
-                    <span>Rp 0</span>
-                );
+                const qty = Number(row.quantity || 0);
+                const price = Number(row.purchase_price || 0);
+
+                const total = qty * price;
+
+                return <span>{formatRupiah(total)}</span>;
             },
         }),
 
@@ -239,13 +239,8 @@ export default function Index({
             id: 'total_bayar',
             header: 'Total Bayar',
             cell: (info) => {
-                const totalBayar = info.row.original.total_payment;
-
-                return totalBayar > 0 ? (
-                    <span>{formatRupiah(totalBayar)}</span>
-                ) : (
-                    <span>Rp 0</span>
-                );
+                const totalBayar = Number(info.row.original.total_payment || 0);
+                return <span>{formatRupiah(totalBayar)}</span>;
             },
         }),
 
@@ -255,9 +250,18 @@ export default function Index({
             cell: (info) => {
                 const row = info.row.original;
 
-                const kurangBayar =
-                    (row.quantity * row.purchase_price || 0) -
-                    (row.total_payment || 0);
+                const qty = Number(row.quantity || 0);
+                const price = Number(row.purchase_price || 0);
+                const totalPayment = Number(row.total_payment || 0);
+                const status = String(row.status_payment || '')
+                    .toLowerCase()
+                    .trim();
+
+                const total = qty * price;
+
+                const isFree = totalPayment === 0 && status === 'paid';
+
+                const kurangBayar = isFree ? 0 : total - totalPayment;
 
                 return kurangBayar > 0 ? (
                     <span className="font-semibold text-red-600">
@@ -283,25 +287,30 @@ export default function Index({
             accessorKey: 'status_payment',
             header: 'Status',
             cell: (info) => {
-                const status = info.getValue();
+                const row = info.row.original;
 
-                if (!status) return '-';
+                const rawStatus = info.getValue();
+                if (!rawStatus) return '-';
+
+                const status = String(rawStatus).toLowerCase().trim();
+                const totalPayment = Number(row.total_payment || 0);
+
+                const isFree = totalPayment === 0 && status === 'paid';
+
+                let label = 'Belum Lunas';
+                let color = 'bg-yellow-100 text-yellow-700';
+
+                if (status === 'canceled') {
+                    label = 'Dibatalkan';
+                    color = 'bg-red-100 text-red-700';
+                } else if (status === 'paid') {
+                    label = isFree ? 'Gratis' : 'Lunas';
+                    color = 'bg-green-100 text-green-700';
+                }
 
                 return (
-                    <span
-                        className={`rounded px-2 py-1 text-xs ${
-                            status === 'paid'
-                                ? 'bg-green-100 text-green-700'
-                                : status === 'canceled'
-                                  ? 'bg-red-100 text-red-700'
-                                  : 'bg-yellow-100 text-yellow-700'
-                        }`}
-                    >
-                        {status === 'paid'
-                            ? 'Lunas'
-                            : status === 'canceled'
-                              ? 'Dibatalkan'
-                              : 'Belum Lunas'}
+                    <span className={`rounded px-2 py-1 text-xs ${color}`}>
+                        {label}
                     </span>
                 );
             },
@@ -315,9 +324,13 @@ export default function Index({
             cell: (info) => {
                 const row = info.row.original;
 
+                const status = String(row.status_payment || '')
+                    .toLowerCase()
+                    .trim();
+
                 return (
                     <div className="flex gap-2">
-                        {row.status_payment === 'pending' && (
+                        {status === 'pending' && (
                             <Button
                                 size="icon"
                                 className="bg-emerald-600 text-white hover:bg-emerald-700"
@@ -332,6 +345,7 @@ export default function Index({
                                 <CircleCheckBig />
                             </Button>
                         )}
+
                         <Button
                             size="icon"
                             variant="outline"
@@ -344,6 +358,7 @@ export default function Index({
                         >
                             <Pencil size={16} />
                         </Button>
+
                         <Button
                             size="icon"
                             className="bg-red-600 text-white hover:bg-red-700"
@@ -356,7 +371,6 @@ export default function Index({
             },
         });
     }
-
     const table = useReactTable({
         data: pagination.data,
         columns,
