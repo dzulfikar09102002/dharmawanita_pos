@@ -129,6 +129,7 @@ export default function Modal({
                     onModalClose();
                 }
             }}
+            modal={false}
         >
             <DialogContent className="top-[10%] translate-y-0 p-6" asChild>
                 <form onSubmit={submit}>
