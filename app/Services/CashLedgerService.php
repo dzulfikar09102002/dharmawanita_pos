@@ -16,7 +16,7 @@ class CashLedgerService
             : now()->toDateString();
 
         $pagination = CashLedger::query()
-            ->with(['sale.details.product', 'purchase.product'])
+            ->with(['sale', 'purchase'])
             ->whereDate('transaction_date', $date)
             ->orderBy('transaction_date')
             ->paginate(request('per_page', 10))
@@ -61,10 +61,7 @@ class CashLedgerService
         $date = Carbon::parse($date);
 
         $result = CashLedger::query()
-            ->whereBetween('transaction_date', [
-                $date->copy()->startOfMonth(),
-                $date->copy()->endOfDay(),
-            ])
+            ->whereDate('transaction_date', $date)
             ->selectRaw("
                 COALESCE(SUM(CASE WHEN type = 'in' THEN amount ELSE 0 END), 0) as total_masuk,
                 COALESCE(SUM(CASE WHEN type = 'out' THEN amount ELSE 0 END), 0) as total_keluar

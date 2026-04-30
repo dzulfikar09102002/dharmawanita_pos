@@ -117,7 +117,7 @@ class PurchasesReportService
         ]);
 
             CashLedger::create([
-                'transaction_date' => $purchasereport->purchase_date,
+                'transaction_date' => now(),
                 'type' => CashLedger::TYPE_IN, 
                 'category' => CashLedger::CATEGORY_ADJUSTMENT,
                 'amount' => $purchasereport->total_payment,

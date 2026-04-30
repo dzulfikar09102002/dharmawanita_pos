@@ -1,11 +1,22 @@
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 
-import { ColumnDef, flexRender, type Table as ITable } from '@tanstack/react-table'
+import {
+    ColumnDef,
+    flexRender,
+    type Table as ITable,
+} from '@tanstack/react-table';
 
 type Props<T> = {
-    table: ITable<T>,
-    columns: ColumnDef<T>[]
-}
+    table: ITable<T>;
+    columns: ColumnDef<T>[];
+};
 
 export default function <T>({ table, columns }: Props<T>) {
     return (
@@ -19,11 +30,11 @@ export default function <T>({ table, columns }: Props<T>) {
                                     {header.isPlaceholder
                                         ? null
                                         : flexRender(
-                                            header.column.columnDef.header,
-                                            header.getContext()
-                                        )}
+                                              header.column.columnDef.header,
+                                              header.getContext(),
+                                          )}
                                 </TableHead>
-                            )
+                            );
                         })}
                     </TableRow>
                 ))}
@@ -33,23 +44,29 @@ export default function <T>({ table, columns }: Props<T>) {
                     table.getRowModel().rows.map((row) => (
                         <TableRow
                             key={row.id}
-                            data-state={row.getIsSelected() && "selected"}
+                            data-state={row.getIsSelected() && 'selected'}
                         >
                             {row.getVisibleCells().map((cell) => (
                                 <TableCell key={cell.id}>
-                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                    {flexRender(
+                                        cell.column.columnDef.cell,
+                                        cell.getContext(),
+                                    )}
                                 </TableCell>
                             ))}
                         </TableRow>
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={columns.length} className="text-center">
+                        <TableCell
+                            colSpan={columns.length}
+                            className="text-center"
+                        >
                             Data tidak ditemukan
                         </TableCell>
                     </TableRow>
                 )}
             </TableBody>
         </Table>
-    )
+    );
 }

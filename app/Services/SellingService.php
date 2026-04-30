@@ -133,9 +133,11 @@ class SellingService
             $user  = auth()->id();
 
             $grandTotal = collect($items)->sum(function ($item) {
-                return $item['quantity'] * $item['selling_price'];
-            });
+                $subtotal = $item['quantity'] * $item['selling_price'];
+                $discount = $item['discount'] ?? 0;
 
+                return $subtotal - $discount;
+            });
             $sale = SaleTransaction::create([
                 'invoice_number'   => $this->generateInvoiceNumber(),
                 'payment_status'   => 'pending',

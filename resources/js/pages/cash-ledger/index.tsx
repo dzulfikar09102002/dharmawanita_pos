@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { CashLedger, Pagination } from '@/lib/model';
@@ -14,6 +14,7 @@ import DataTable from '@/components/data-table';
 import TablePagination from '@/components/table-pagination';
 import { BreadcrumbItem } from '@/types';
 import cashLedgers from '@/routes/cash-ledgers';
+import { useState } from 'react';
 
 type Props = {
     pagination: Pagination<CashLedger>;
@@ -42,8 +43,17 @@ const formatRupiah = (value: number) =>
 const columnHelper = createColumnHelper<CashLedger>();
 
 export default function Index({ pagination, openingBalance, summary }: Props) {
-    let runningBalance = openingBalance;
-
+    const [date, setDate] = useState<string | null>(null);
+    const handleSearch = () => {
+        router.get(
+            cashLedgers.index().url,
+            { date },
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
+    };
     const saldoAkhir =
         openingBalance + summary.total_masuk - summary.total_keluar;
 
@@ -58,7 +68,13 @@ export default function Index({ pagination, openingBalance, summary }: Props) {
             return acc + profit;
         }, 0);
     };
-
+    const categoryLabel: Record<string, string> = {
+        operating: 'Operasional',
+        capital: 'Modal',
+        drawing: 'Penarikan',
+        adjustment: 'Penyesuaian',
+        financing: 'Pendanaan',
+    };
     const columns: ColumnDef<CashLedger, any>[] = [
         {
             id: 'no',
@@ -122,7 +138,19 @@ export default function Index({ pagination, openingBalance, summary }: Props) {
                 );
             },
         }),
+        {
+            id: 'category',
+            header: 'Kategori',
+            cell: (info) => {
+                const row = info.row.original as any;
 
+                if (row.isSummary) return '';
+
+                const label = categoryLabel[row.category] ?? row.category;
+
+                return <span className="text-sm text-gray-700">{label}</span>;
+            },
+        },
         {
             id: 'masuk',
             header: () => <div className="text-right">Masuk</div>,
@@ -260,103 +288,115 @@ export default function Index({ pagination, openingBalance, summary }: Props) {
                 </CardHeader>
                 <CardContent>
                     {/* SALDO AWAL */}
-                    <div className="mb-3 rounded-2xl border bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-sm">
-                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                            {/* LEFT */}
-                            <div>
-                                <p className="text-xs font-semibold tracking-wide text-orange-500 uppercase">
-                                    Saldo Awal Hari Ini
-                                </p>
+                    <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                        {/* SALDO AWAL */}
+                        <div className="rounded-2xl border bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-sm">
+                            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <p className="text-xs font-semibold tracking-wide text-orange-500 uppercase">
+                                        Saldo Awal Hari Ini
+                                    </p>
 
-                                <p className="text-sm text-gray-600">
-                                    Akumulasi dari{' '}
-                                    {new Date(
-                                        new Date().getFullYear(),
-                                        new Date().getMonth(),
-                                        1,
-                                    ).toLocaleDateString('id-ID', {
-                                        day: '2-digit',
-                                        month: 'long',
-                                        year: 'numeric',
-                                    })}{' '}
-                                    s.d{' '}
-                                    {new Date().toLocaleDateString('id-ID', {
-                                        day: '2-digit',
-                                        month: 'long',
-                                        year: 'numeric',
-                                    })}{' '}
-                                    (00:00)
-                                </p>
+                                    <p className="text-sm text-gray-600">
+                                        Akumulasi dari{' '}
+                                        {new Date(
+                                            new Date().getFullYear(),
+                                            new Date().getMonth(),
+                                            1,
+                                        ).toLocaleDateString('id-ID', {
+                                            day: '2-digit',
+                                            month: 'long',
+                                            year: 'numeric',
+                                        })}{' '}
+                                        s.d{' '}
+                                        {new Date().toLocaleDateString(
+                                            'id-ID',
+                                            {
+                                                day: '2-digit',
+                                                month: 'long',
+                                                year: 'numeric',
+                                            },
+                                        )}{' '}
+                                        (00:00)
+                                    </p>
+                                </div>
+
+                                <div className="text-right">
+                                    <p
+                                        className={`text-2xl font-bold ${
+                                            openingBalance > 0
+                                                ? 'text-green-700'
+                                                : openingBalance < 0
+                                                  ? 'text-red-700'
+                                                  : 'text-gray-700'
+                                        }`}
+                                    >
+                                        {openingBalance === 0
+                                            ? '0'
+                                            : `${openingBalance > 0 ? '+' : ''}${formatRupiah(openingBalance)}`}
+                                    </p>
+
+                                    <p className="text-xs text-gray-500">
+                                        Saldo sebelum transaksi hari ini
+                                    </p>
+                                </div>
                             </div>
+                        </div>
 
-                            {/* RIGHT */}
-                            <div className="text-right">
-                                <p
-                                    className={`text-2xl font-bold ${
-                                        openingBalance > 0
-                                            ? 'text-green-700'
-                                            : openingBalance < 0
-                                              ? 'text-red-700'
-                                              : 'text-gray-700'
-                                    }`}
-                                >
-                                    {openingBalance === 0
-                                        ? '0'
-                                        : `${openingBalance > 0 ? '+' : ''}${formatRupiah(openingBalance)}`}
-                                </p>
+                        {/* SALDO AKHIR */}
+                        <div className="rounded-2xl border bg-gradient-to-r from-blue-50 to-sky-50 p-4 shadow-sm">
+                            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <p className="text-xs font-semibold tracking-wide text-blue-500 uppercase">
+                                        Saldo Akhir Hari Ini
+                                    </p>
 
-                                <p className="text-xs text-gray-500">
-                                    Saldo sebelum transaksi hari ini
-                                </p>
+                                    <p className="text-sm text-gray-600">
+                                        Akumulasi dari Saldo Awal + Transaksi{' '}
+                                        {new Date().toLocaleDateString(
+                                            'id-ID',
+                                            {
+                                                weekday: 'long',
+                                                day: '2-digit',
+                                                month: 'long',
+                                                year: 'numeric',
+                                            },
+                                        )}
+                                    </p>
+                                </div>
+
+                                <div className="text-right">
+                                    <p
+                                        className={`text-2xl font-bold ${
+                                            isPositive
+                                                ? 'text-green-700'
+                                                : isNegative
+                                                  ? 'text-red-700'
+                                                  : 'text-gray-700'
+                                        }`}
+                                    >
+                                        {saldoAkhir === 0
+                                            ? '0'
+                                            : `${isPositive ? '+' : ''}${formatRupiah(saldoAkhir)}`}
+                                    </p>
+
+                                    <p className="text-xs text-gray-500">
+                                        Saldo akhir setelah semua transaksi
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
-
-                    {/* SALDO AKHIR */}
-                    <div className="mb-4 rounded-2xl border bg-gradient-to-r from-blue-50 to-sky-50 p-4 shadow-sm">
-                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                            {/* LEFT */}
-                            <div>
-                                <p className="text-xs font-semibold tracking-wide text-blue-500 uppercase">
-                                    Saldo Akhir Hari Ini
-                                </p>
-
-                                <p className="text-sm text-gray-600">
-                                    Akumulasi dari Saldo Awal + Seluruh
-                                    Transaksi Hari{' '}
-                                    {new Date().toLocaleDateString('id-ID', {
-                                        weekday: 'long',
-                                        day: '2-digit',
-                                        month: 'long',
-                                        year: 'numeric',
-                                    })}
-                                </p>
-                            </div>
-
-                            {/* RIGHT */}
-                            <div className="text-right">
-                                <p
-                                    className={`text-2xl font-bold ${
-                                        isPositive
-                                            ? 'text-green-700'
-                                            : isNegative
-                                              ? 'text-red-700'
-                                              : 'text-gray-700'
-                                    }`}
-                                >
-                                    {saldoAkhir === 0
-                                        ? '0'
-                                        : `${isPositive ? '+' : ''}${formatRupiah(saldoAkhir)}`}
-                                </p>
-
-                                <p className="text-xs text-gray-500">
-                                    Saldo akhir setelah semua transaksi
-                                </p>
-                            </div>
+                    {pagination.data.length === 0 ? (
+                        <div className="py-10 text-center text-gray-500">
+                            Tidak ada data
                         </div>
-                    </div>
-                    <DataTable columns={columns} table={table} />
-                    <TablePagination pagination={pagination} />
+                    ) : (
+                        <>
+                            <DataTable columns={columns} table={table} />
+                            <TablePagination pagination={pagination} />
+                        </>
+                    )}
                 </CardContent>
             </Card>
         </AppLayout>
