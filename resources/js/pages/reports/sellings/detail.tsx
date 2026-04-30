@@ -128,7 +128,10 @@ export default function Index({ pagination, transaction }: Props) {
     const { data } = pagination;
 
     const grandTotal = (data ?? []).reduce((acc, item) => {
-        return acc + item.quantity * item.selling_price;
+        const subtotal = item.quantity * item.selling_price;
+        const discount = Number(item.adjustment || 0);
+
+        return acc + (subtotal - discount);
     }, 0);
 
     const kurangBayar = Math.max(
@@ -197,7 +200,27 @@ export default function Index({ pagination, transaction }: Props) {
                 );
             },
         }),
+        {
+            id: 'adjustment',
+            header: () => <div className="text-right">Diskon</div>,
+            cell: (info) => {
+                const row = info.row.original as any;
 
+                if (row.isTotal) {
+                    return (
+                        <span className="block text-right font-bold">
+                            {formatRupiah(info.getValue())}
+                        </span>
+                    );
+                }
+
+                return (
+                    <span className="block text-right text-red-600">
+                        {formatRupiah(row.adjustment || 0)}
+                    </span>
+                );
+            },
+        },
         {
             id: 'subtotal',
             header: () => <div className="text-right">Subtotal</div>,
@@ -213,10 +236,12 @@ export default function Index({ pagination, transaction }: Props) {
                 }
 
                 const subtotal = row.quantity * row.selling_price;
+                const discount = row.adjustment || 0;
+                const net = subtotal - discount;
 
                 return (
                     <span className="block text-right">
-                        {formatRupiah(subtotal)}
+                        {formatRupiah(net)}
                     </span>
                 );
             },

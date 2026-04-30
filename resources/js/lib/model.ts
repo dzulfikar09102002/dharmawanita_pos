@@ -144,6 +144,7 @@ export interface SaleTransactionDetail {
     purchase_price: number;
     selling_price: number;
     subtotal: number;
+    adjustment: number;
     return_transaction?: InventoryTransaction[];
 }
 
