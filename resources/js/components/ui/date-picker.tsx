@@ -12,9 +12,10 @@ import {
 type DatePickerProps = {
     value: string | null;
     onChange: (value: string | null) => void;
+    maxDate?: Date; 
 };
 
-export function DatePicker({ value, onChange }: DatePickerProps) {
+export function DatePicker({ value, onChange, maxDate }: DatePickerProps) {
     const date = value ? new Date(value) : undefined;
 
     return (
@@ -36,6 +37,7 @@ export function DatePicker({ value, onChange }: DatePickerProps) {
                 <Calendar
                     mode="single"
                     selected={date}
+                    disabled={maxDate ? { after: maxDate } : undefined}
                     onSelect={(d) =>
                         onChange(
                             d

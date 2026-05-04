@@ -44,6 +44,7 @@ import reportsStocks from '@/routes/reportsStocks';
 import sellings from '@/routes/sellings';
 import salesSummary from '@/routes/sales-summary';
 import cashLedgers from '@/routes/cash-ledgers';
+import supplierTransactions from '@/routes/supplier-transactions';
 
 const mainNavItems = [
     {
@@ -96,6 +97,11 @@ const mainNavItems = [
                 title: 'Laba/Rugi',
                 href: '/reports/laba-rugi',
                 icon: BadgePoundSterling,
+            },
+            {
+                title: 'Supplier',
+                href: supplierTransactions.index().url,
+                icon: Truck,
             },
         ],
     },

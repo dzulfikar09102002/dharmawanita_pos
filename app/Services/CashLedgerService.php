@@ -16,11 +16,11 @@ class CashLedgerService
             : now()->toDateString();
 
         $pagination = CashLedger::query()
-            ->with(['sale', 'purchase'])
+            ->with(['sale.details', 'purchase'])
             ->whereDate('transaction_date', $date)
             ->orderBy('transaction_date')
             ->paginate(request('per_page', 10))
-            ->withQueryString();
+            ->withQueryString();    
 
         return $pagination;
     }
