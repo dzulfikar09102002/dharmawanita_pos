@@ -33,6 +33,7 @@ class StoreCashLedgerRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:255'],
             'reference_table' => ['required', 'in:sale,purchase,manual'],
             'reference_id' => ['nullable', 'integer'],
-        ];
+            'cash_flow_type' => ['required', 'string']
+        ]; 
     }
 }

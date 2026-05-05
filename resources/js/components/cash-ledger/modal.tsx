@@ -61,11 +61,9 @@ export default function Modal({
         description: '',
         reference_table: 'manual',
         reference_id: '',
+        cash_flow_type: '',
     });
 
-    // =========================
-    // SUBMIT
-    // =========================
     const submit: SubmitEventHandler<HTMLFormElement> = (e) => {
         e.preventDefault();
 
@@ -94,9 +92,6 @@ export default function Modal({
         });
     };
 
-    // =========================
-    // LOAD DATA EDIT / RESET
-    // =========================
     useEffect(() => {
         if (!modalState.isOpen) return;
 
@@ -200,14 +195,20 @@ export default function Modal({
                                 onValueChange={(val) => setData('type', val)}
                                 disabled={processing}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger className="cursor-pointer">
                                     <SelectValue placeholder="Pilih tipe" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="in">
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="in"
+                                    >
                                         Pemasukan
                                     </SelectItem>
-                                    <SelectItem value="out">
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="out"
+                                    >
                                         Pengeluaran
                                     </SelectItem>
                                 </SelectContent>
@@ -225,23 +226,38 @@ export default function Modal({
                                 }
                                 disabled={processing}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger className="cursor-pointer">
                                     <SelectValue placeholder="Pilih kategori" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="operating">
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="operating"
+                                    >
                                         Operasional
                                     </SelectItem>
-                                    <SelectItem value="capital">
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="capital"
+                                    >
                                         Modal
                                     </SelectItem>
-                                    <SelectItem value="drawing">
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="drawing"
+                                    >
                                         Penarikan
                                     </SelectItem>
-                                    <SelectItem value="adjustment">
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="adjustment"
+                                    >
                                         Penyesuaian
                                     </SelectItem>
-                                    <SelectItem value="financing">
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="financing"
+                                    >
                                         Pendanaan
                                     </SelectItem>
                                 </SelectContent>
@@ -261,6 +277,35 @@ export default function Modal({
                                 disabled={processing}
                             />
                             <FieldError>{errors.amount}</FieldError>
+                        </Field>
+                        <Field>
+                            <FieldLabel>Jenis Kas</FieldLabel>
+                            <Select
+                                value={data.cash_flow_type}
+                                onValueChange={(val) =>
+                                    setData('cash_flow_type', val)
+                                }
+                                disabled={processing}
+                            >
+                                <SelectTrigger className="cursor-pointer">
+                                    <SelectValue placeholder="Pilih jenis kas" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="cash"
+                                    >
+                                        Tunai
+                                    </SelectItem>
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="bank"
+                                    >
+                                        Bank
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FieldError>{errors.cash_flow_type}</FieldError>
                         </Field>
                     </FieldSet>
 

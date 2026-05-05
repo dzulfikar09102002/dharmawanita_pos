@@ -25,7 +25,8 @@ class SalesReportController extends Controller
             'pagination' => $result['data'],
             'bulan' => $result['bulan'],  
             'tahun' => $result['tahun'], 
-            'total_profit' => $result['total_profit']
+            'total_profit' => $result['total_profit'],
+            'total_selling' =>$result['total_selling'],
         ]);
     }
 

@@ -27,7 +27,7 @@ class LabaRugiController extends Controller
         return Inertia::render('laba-rugi/index', compact('data'));
     }
 
-    public function printLabaRugi(Request $request)
+   public function printLabaRugi(Request $request)
     {
         $request->validate([
             'type' => 'required|in:month,year',
@@ -41,18 +41,27 @@ class LabaRugiController extends Controller
 
         $queryPendapatan = SaleTransaction::query()
             ->where('payment_type', 'cash')
-            ->where('payment_status', '!=', 'canceled');
+            ->where('payment_status', '!=', 'canceled')
+                ->whereRaw('updated_at < DATE_ADD(created_at, INTERVAL 1 DAY)');
+            
 
         $queryPiutang = SaleTransaction::query()
-            ->where('payment_type', 'credit')
+            ->where(function ($q) {
+                $q->where('payment_type', 'credit')
+                ->orWhereRaw('updated_at >= DATE_ADD(created_at, INTERVAL 1 DAY)');
+            })
             ->where('payment_status', '!=', 'canceled');
 
         $queryPembelian = Purchase::query()
             ->where('payment_type', 'cash')
-            ->where('status_payment', '!=', 'canceled');
+            ->where('status_payment', '!=', 'canceled')
+                ->whereRaw('updated_at < DATE_ADD(created_at, INTERVAL 1 DAY)');
 
         $queryUtang = Purchase::query()
-            ->where('payment_type', 'credit')
+            ->where(function ($q) {
+                $q->where('payment_type', 'credit')
+                ->orWhereRaw('updated_at >= DATE_ADD(created_at, INTERVAL 1 DAY)');
+            })
             ->where('status_payment', '!=', 'canceled');
 
         if ($type === 'month') {
@@ -60,23 +69,25 @@ class LabaRugiController extends Controller
                 abort(400, 'Bulan wajib diisi');
             }
 
-            $queryPendapatan->whereMonth('transaction_date', $bulan)
-                            ->whereYear('transaction_date', $tahun);
-
-            $queryPiutang->whereMonth('transaction_date', $bulan)
-                        ->whereYear('transaction_date', $tahun);
-
-            $queryPembelian->whereMonth('purchase_date', $bulan)
-                            ->whereYear('purchase_date', $tahun);
-
-            $queryUtang->whereMonth('purchase_date', $bulan)
-                        ->whereYear('purchase_date', $tahun);
+            foreach ([
+                [$queryPendapatan, 'transaction_date'],
+                [$queryPiutang, 'transaction_date'],
+                [$queryPembelian, 'purchase_date'],
+                [$queryUtang, 'purchase_date'],
+            ] as [$query, $column]) {
+                $query->whereMonth($column, $bulan)
+                    ->whereYear($column, $tahun);
+            }
 
         } else {
-            $queryPendapatan->whereYear('transaction_date', $tahun);
-            $queryPiutang->whereYear('transaction_date', $tahun);
-            $queryPembelian->whereYear('purchase_date', $tahun);
-            $queryUtang->whereYear('purchase_date', $tahun);
+            foreach ([
+                [$queryPendapatan, 'transaction_date'],
+                [$queryPiutang, 'transaction_date'],
+                [$queryPembelian, 'purchase_date'],
+                [$queryUtang, 'purchase_date'],
+            ] as [$query, $column]) {
+                $query->whereYear($column, $tahun);
+            }
         }
 
         $totalPendapatan = (float) $queryPendapatan
@@ -84,17 +95,17 @@ class LabaRugiController extends Controller
             ->sum('grand_total');
 
         $totalPendapatanPiutang = (float) $queryPiutang
-            ->sum('total_amount'); 
+            ->sum('total_amount');
 
         $totalPembelian = (float) $queryPembelian
             ->sum('total_payment');
 
         $totalUtang = (float) $queryUtang
             ->sum('total_payment');
-            
-        $laba = $totalPendapatan 
-            + $totalPendapatanPiutang 
-            - $totalPembelian 
+
+        $laba = $totalPendapatan
+            + $totalPendapatanPiutang
+            - $totalPembelian
             - $totalUtang;
 
         $data = [

@@ -187,4 +187,5 @@ export type CashLedger = {
     category: string;
     sale?: any;
     purchase?: any;
+    cash_flow_type: string;
 };

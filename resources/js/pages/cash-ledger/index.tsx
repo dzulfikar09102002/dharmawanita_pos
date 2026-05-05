@@ -20,6 +20,14 @@ import { Button } from '@/components/ui/button';
 import { Plus, Search } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import Modal, { ModalState } from '@/components/cash-ledger/modal';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { FieldLabel } from '@/components/ui/field';
 
 type Props = {
     pagination: Pagination<CashLedger>;
@@ -50,10 +58,15 @@ const columnHelper = createColumnHelper<CashLedger>();
 export default function Index({ pagination, openingBalance, summary }: Props) {
     const params = new URLSearchParams(window.location.search);
     const queryDate = params.get('date');
+    const queryCashType = params.get('cash_type');
     const today = new Date().toISOString().split('T')[0];
 
     const [date, setDate] = useState<string | null>(queryDate ?? today);
-
+    const [cashType, setCashType] = useState(
+        queryCashType && ['cash', 'bank'].includes(queryCashType)
+            ? queryCashType
+            : 'all',
+    );
     const selectedDate = useMemo(() => {
         if (pagination.data.length > 0) {
             const firstDate = pagination.data[0].transaction_date;
@@ -64,7 +77,10 @@ export default function Index({ pagination, openingBalance, summary }: Props) {
     }, [pagination.data]);
 
     const handleSearch = () => {
-        router.get(cashLedgers.index().url, { date });
+        router.get(cashLedgers.index().url, {
+            date,
+            cash_type: cashType === 'all' ? null : cashType,
+        });
     };
     const saldoAkhir =
         openingBalance + summary.total_masuk - summary.total_keluar;
@@ -177,6 +193,26 @@ export default function Index({ pagination, openingBalance, summary }: Props) {
                     if (row.isSummary) return '';
 
                     const label = categoryLabel[row.category] ?? row.category;
+
+                    return (
+                        <span className="text-sm text-gray-700">{label}</span>
+                    );
+                },
+            },
+            {
+                id: 'cash_flow_type',
+                header: 'Jenis',
+                cell: (info) => {
+                    const row = info.row.original as any;
+
+                    if (row.isSummary) return '';
+
+                    const labelMap: Record<string, string> = {
+                        cash: 'Tunai',
+                        bank: 'Bank',
+                    };
+
+                    const label = labelMap[row.cash_flow_type] ?? '-';
 
                     return (
                         <span className="text-sm text-gray-700">{label}</span>
@@ -336,11 +372,46 @@ export default function Index({ pagination, openingBalance, summary }: Props) {
                             </Button>
                         </div>
 
-                        {/* KANAN */}
-                        <div className="flex items-end gap-2">
-                            <div className="flex flex-col">
-                                <Label className="mb-2">Tanggal</Label>
-                                <div className="w-[150px]">
+                        <div className="flex flex-wrap items-end gap-3">
+                            {/* FILTER KAS */}
+                            <div className="flex flex-col gap-1">
+                                <FieldLabel className="mb-2">Jenis</FieldLabel>
+                                <Select
+                                    value={cashType}
+                                    onValueChange={setCashType}
+                                >
+                                    <SelectTrigger className="w-[180px] cursor-pointer">
+                                        <SelectValue placeholder="Semua" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem
+                                            className="cursor-pointer"
+                                            value="all"
+                                        >
+                                            Semua
+                                        </SelectItem>
+                                        <SelectItem
+                                            className="cursor-pointer"
+                                            value="cash"
+                                        >
+                                            Tunai
+                                        </SelectItem>
+                                        <SelectItem
+                                            className="cursor-pointer"
+                                            value="bank"
+                                        >
+                                            Bank
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            {/* TANGGAL */}
+                            <div className="flex flex-col gap-1">
+                                <FieldLabel className="mb-2">
+                                    Tanggal
+                                </FieldLabel>
+                                <div className="w-[160px]">
                                     <DatePicker
                                         value={date}
                                         onChange={setDate}
@@ -349,9 +420,10 @@ export default function Index({ pagination, openingBalance, summary }: Props) {
                                 </div>
                             </div>
 
+                            {/* BUTTON */}
                             <Button
                                 onClick={handleSearch}
-                                className="bg-blue-600 text-white hover:bg-blue-700"
+                                className="h-[38px] bg-blue-600 text-white hover:bg-blue-700"
                             >
                                 <Search className="mr-1 h-4 w-4" />
                                 Cari

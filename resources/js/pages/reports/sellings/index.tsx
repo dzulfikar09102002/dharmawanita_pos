@@ -84,6 +84,7 @@ type Props = {
     bulan: number;
     tahun: number;
     total_profit: number;
+    total_selling: number;
 };
 
 export default function Index({
@@ -91,6 +92,7 @@ export default function Index({
     bulan: initialBulan,
     tahun: initialTahun,
     total_profit,
+    total_selling,
 }: Props) {
     const bulanOptions = namaBulan.map((nama, i) => ({
         value: String(i + 1),
@@ -235,7 +237,12 @@ export default function Index({
                     hour: '2-digit',
                     minute: '2-digit',
                 }),
-            footer: () => <span className="font-bold">TOTAL LABA</span>,
+
+            footer: () => (
+                <div className="flex flex-col font-bold">
+                    <span>TOTAL PENJUALAN</span>
+                </div>
+            ),
         }),
         columnHelper.accessor('payment_method', {
             header: () => <div className="text-center">Metode Pembayaran</div>,
@@ -297,11 +304,19 @@ export default function Index({
             id: 'total_amount',
             header: 'Total Pembayaran',
             cell: (info) => formatRupiah(info.getValue()),
+            footer: () => (
+                <span className="font-bold">{formatRupiah(total_selling)}</span>
+            ),
         }),
         columnHelper.accessor('change', {
             id: 'change',
             header: 'Kembalian',
             cell: (info) => formatRupiah(info.getValue()),
+            footer: () => (
+                <div className="flex flex-col font-bold">
+                    <span>TOTAL LABA</span>
+                </div>
+            ),
         }),
 
         columnHelper.display({

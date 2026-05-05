@@ -15,8 +15,8 @@ class PurchasesReportService
     public function getPurchases()
     {
         $search = request('search', '');
-        $month = request('month');
-        $year  = request('year');
+        $month = request('month') ?? now()->month;
+        $year  = request('year')  ?? now()->year;
 
         return Purchase::with(['product', 'supplier', 'inventoryTransactions'])
             ->when($search, function ($query) use ($search) {
@@ -55,6 +55,17 @@ class PurchasesReportService
             ->withQueryString();
     }
 
+    public function getTotalPurchase(): float
+    {
+        $month = request('month') ?? now()->month;
+        $year  = request('year')  ?? now()->year;
+
+        return (float) Purchase::query()
+            ->when($month, fn($q) => $q->whereMonth('purchase_date', $month))
+            ->when($year, fn($q) => $q->whereYear('purchase_date', $year))
+            ->where('status_payment', '!=', 'canceled')
+            ->sum('total_payment');
+    }
     public function getDeletedMethod()
     {
         $search = request('search', '');

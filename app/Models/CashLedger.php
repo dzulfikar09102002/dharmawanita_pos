@@ -19,6 +19,7 @@ class CashLedger extends Model
         'description',
         'reference_table',
         'reference_id',
+        'cash_flow_type',
         'created_by',
         'updated_by',
         'deleted_by',

@@ -57,6 +57,13 @@ class SalesReportService
             return ($item->total_revenue ?? 0) - ($item->total_cost ?? 0);
         });
 
+        $totalSelling = (clone $query)
+        ->where('payment_status', 'paid')
+        ->get()
+        ->sum(function ($item) {
+            return $item->total_revenue ?? 0;
+        });
+
         $data = $query
             ->where('payment_status', '!=', 'canceled')
             ->orderByDesc('transaction_date') 
@@ -74,6 +81,7 @@ class SalesReportService
             'bulan' => $bulan,
             'tahun' => $tahun,
             'total_profit' => $totalProfit,
+            'total_selling' => $totalSelling,
         ];
     }
 

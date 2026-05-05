@@ -61,6 +61,7 @@ type Props = {
     resetKey?: number;
     supplierOptions: Option[];
     onReset?: () => void;
+    total_purchase: number;
 };
 
 const formatRupiah = (value: number) =>
@@ -90,6 +91,7 @@ export default function Index({
     month: initialMonth,
     year: initialYear,
     supplierOptions,
+    total_purchase,
 }: Props) {
     const bulanOptions = namaBulan.map((nama, i) => ({
         value: String(i + 1),
@@ -176,6 +178,7 @@ export default function Index({
 
         columnHelper.accessor('code', {
             header: 'Kode',
+            footer: () => <span className="font-bold">TOTAL PEMBELIAN</span>,
         }),
 
         columnHelper.accessor('product_id', {
@@ -242,6 +245,12 @@ export default function Index({
                 const totalBayar = Number(info.row.original.total_payment || 0);
                 return <span>{formatRupiah(totalBayar)}</span>;
             },
+
+            footer: () => (
+                <span className="font-bold">
+                    {formatRupiah(total_purchase)}
+                </span>
+            ),
         }),
 
         columnHelper.display({

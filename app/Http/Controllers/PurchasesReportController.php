@@ -23,12 +23,14 @@ class PurchasesReportController extends Controller
 
         $pagination = $this->service->getPurchases();
         $supplierOptions = $this->service->getSupplierOptions();
+        $total_purchase = $this->service->getTotalPurchase();
         return Inertia::render('reports/purchasing/index', [
             'pagination' => $pagination,
             'onlyTrashed' => false,
             'month' => (int) $month,
             'year' => (int) $year,
-            'supplierOptions' => $supplierOptions
+            'supplierOptions' => $supplierOptions,
+            'total_purchase' => $total_purchase
         ]);
     }
 
