@@ -100,6 +100,22 @@ export default function Index({ pagination }: Props) {
                       <div className="text-center">{info.getValue() ?? 0}</div>
                   ),
               }),
+
+              // 💰 NILAI ASET (FE)
+              columnHelper.accessor(
+                  (row) => (row.purchase_price ?? 0) * (row.stock ?? 0),
+                  {
+                      id: 'asset',
+                      header: () => (
+                          <div className="text-right">Nilai Aset</div>
+                      ),
+                      cell: (info) => (
+                          <div className="text-right font-semibold">
+                              {formatIDR(info.getValue())}
+                          </div>
+                      ),
+                  },
+              ),
           ]
         : [
               {
@@ -139,6 +155,39 @@ export default function Index({ pagination }: Props) {
                       <div className="text-center">{info.getValue() ?? 0}</div>
                   ),
               }),
+
+              columnHelper.accessor('purchase_price', {
+                  header: () => <div className="text-right">Harga Beli</div>,
+                  cell: (info) => (
+                      <div className="text-right">
+                          {formatIDR(info.getValue())}
+                      </div>
+                  ),
+              }),
+
+              columnHelper.accessor('selling_price', {
+                  header: () => <div className="text-right">Harga Jual</div>,
+                  cell: (info) => (
+                      <div className="text-right">
+                          {formatIDR(info.getValue())}
+                      </div>
+                  ),
+              }),
+
+              columnHelper.accessor(
+                  (row) => (row.purchase_price ?? 0) * (row.stock ?? 0),
+                  {
+                      id: 'asset',
+                      header: () => (
+                          <div className="text-right">Nilai Aset</div>
+                      ),
+                      cell: (info) => (
+                          <div className="text-right font-semibold">
+                              {formatIDR(info.getValue())}
+                          </div>
+                      ),
+                  },
+              ),
           ];
     const table = useReactTable<Stock>({
         data,

@@ -133,12 +133,18 @@ export default function Index({ pagination, transaction }: Props) {
 
         return acc + (subtotal - discount);
     }, 0);
+    const totalCost = (data ?? []).reduce((acc, item) => {
+        const qty = item.quantity || 0;
+        const cost = item.purchase_price || 0; // sesuaikan kalau beda field
 
-    const kurangBayar = Math.max(
-        grandTotal - Number(transaction.total_amount || 0),
-        0,
-    );
+        return acc + qty * cost;
+    }, 0);
 
+    const totalLaba = grandTotal - totalCost;
+
+    const totalDiscount = (data ?? []).reduce((acc, item) => {
+        return acc + Number(item.adjustment || 0);
+    }, 0);
     const tableData = [
         ...(data ?? []),
         {
@@ -148,6 +154,7 @@ export default function Index({ pagination, transaction }: Props) {
             purchase_price: '',
             selling_price: '',
             isTotal: true,
+            total_cost: totalCost,
         } as any,
     ];
 
@@ -187,6 +194,19 @@ export default function Index({ pagination, transaction }: Props) {
             },
         }),
 
+        columnHelper.accessor('purchase_price', {
+            header: () => <div className="text-right">Harga Beli</div>,
+            cell: (info) => {
+                const row = info.row.original as any;
+                if (row.isTotal) return null;
+
+                return (
+                    <span className="block text-right">
+                        {formatRupiah(info.getValue())}
+                    </span>
+                );
+            },
+        }),
         columnHelper.accessor('selling_price', {
             header: () => <div className="text-right">Harga Jual</div>,
             cell: (info) => {
@@ -208,8 +228,8 @@ export default function Index({ pagination, transaction }: Props) {
 
                 if (row.isTotal) {
                     return (
-                        <span className="block text-right font-bold">
-                            {formatRupiah(info.getValue())}
+                        <span className="block text-right font-bold text-red-600">
+                            {formatRupiah(totalDiscount)}
                         </span>
                     );
                 }
@@ -246,22 +266,34 @@ export default function Index({ pagination, transaction }: Props) {
                 );
             },
         },
-
         {
-            id: 'kurang_bayar',
-            header: () => <div className="text-right">Kurang Bayar</div>,
+            id: 'laba',
+            header: () => <div className="text-right">Laba</div>,
             cell: (info) => {
                 const row = info.row.original as any;
 
                 if (row.isTotal) {
                     return (
-                        <span className="block text-right font-bold text-red-600">
-                            ({formatRupiah(kurangBayar)})
+                        <span className="block text-right font-bold text-green-700">
+                            {formatRupiah(totalLaba)}
                         </span>
                     );
                 }
 
-                return null;
+                const qty = Number(row.quantity || 0);
+                const selling = Number(row.selling_price || 0);
+                const cost = Number(row.purchase_price || 0);
+                const discount = Number(row.adjustment || 0);
+
+                const revenue = qty * selling - discount;
+                const costTotal = qty * cost;
+                const profit = revenue - costTotal;
+
+                return (
+                    <span className="block text-right text-green-600">
+                        {formatRupiah(profit)}
+                    </span>
+                );
             },
         },
     ];
