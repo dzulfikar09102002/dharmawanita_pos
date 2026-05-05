@@ -37,12 +37,13 @@ export function DatePicker({ value, onChange, maxDate }: DatePickerProps) {
                 <Calendar
                     mode="single"
                     selected={date}
+                    captionLayout="dropdown"
+                    fromYear={2000}
+                    toYear={new Date().getFullYear()}
                     disabled={maxDate ? { after: maxDate } : undefined}
                     onSelect={(d) =>
                         onChange(
-                            d
-                                ? format(d, "yyyy-MM-dd")
-                                : null
+                            d ? format(d, "yyyy-MM-dd") : null
                         )
                     }
                 />

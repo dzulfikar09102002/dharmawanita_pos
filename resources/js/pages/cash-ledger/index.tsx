@@ -17,8 +17,9 @@ import cashLedgers from '@/routes/cash-ledgers';
 import { useMemo, useState } from 'react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Button } from '@/components/ui/button';
-import { Search } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import Modal, { ModalState } from '@/components/cash-ledger/modal';
 
 type Props = {
     pagination: Pagination<CashLedger>;
@@ -77,6 +78,29 @@ export default function Index({ pagination, openingBalance, summary }: Props) {
         drawing: 'Penarikan',
         adjustment: 'Penyesuaian',
         financing: 'Pendanaan',
+    };
+    const [modalState, setModalState] = useState<ModalState>({
+        isOpen: false,
+        dataId: null,
+    });
+
+    const openCreateModal = () => {
+        setModalState({
+            isOpen: true,
+            dataId: null,
+        });
+    };
+
+    const handleCloseModal = () => {
+        setModalState({
+            isOpen: false,
+            dataId: null,
+        });
+    };
+
+    const handleSuccessModal = () => {
+        handleCloseModal();
+        router.reload();
     };
     const columns = useMemo<ColumnDef<CashLedger, any>[]>(
         () => [
@@ -300,25 +324,39 @@ export default function Index({ pagination, openingBalance, summary }: Props) {
             <Card>
                 <CardHeader>
                     <h1 className="text-lg font-semibold">Laporan Keuangan</h1>
-                    <div className="flex items-end justify-end gap-2">
-                        <div className="flex flex-col">
-                            <Label className="mb-2">Tanggal</Label>
-                            <div className="w-[150px]">
-                                <DatePicker
-                                    value={date}
-                                    onChange={setDate}
-                                    maxDate={new Date()}
-                                />
-                            </div>
+                    <div className="flex items-end justify-between">
+                        {/* KIRI */}
+                        <div className="flex items-center gap-2">
+                            <Button
+                                onClick={openCreateModal}
+                                className="bg-green-600 text-white hover:bg-green-700"
+                            >
+                                <Plus />
+                                Aktivitas Baru
+                            </Button>
                         </div>
 
-                        <Button
-                            onClick={handleSearch}
-                            className="bg-blue-600 text-white hover:bg-blue-700"
-                        >
-                            <Search className="mr-1 h-4 w-4" />
-                            Cari
-                        </Button>
+                        {/* KANAN */}
+                        <div className="flex items-end gap-2">
+                            <div className="flex flex-col">
+                                <Label className="mb-2">Tanggal</Label>
+                                <div className="w-[150px]">
+                                    <DatePicker
+                                        value={date}
+                                        onChange={setDate}
+                                        maxDate={new Date()}
+                                    />
+                                </div>
+                            </div>
+
+                            <Button
+                                onClick={handleSearch}
+                                className="bg-blue-600 text-white hover:bg-blue-700"
+                            >
+                                <Search className="mr-1 h-4 w-4" />
+                                Cari
+                            </Button>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -434,6 +472,12 @@ export default function Index({ pagination, openingBalance, summary }: Props) {
                     )}
                 </CardContent>
             </Card>
+            <Modal
+                modalState={modalState}
+                tableData={pagination.data}
+                onModalClose={handleCloseModal}
+                onModalSuccess={handleSuccessModal}
+            />
         </AppLayout>
     );
 }

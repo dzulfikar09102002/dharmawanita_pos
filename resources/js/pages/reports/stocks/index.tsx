@@ -157,14 +157,18 @@ export default function Index({ pagination, total_assets }: Props) {
                   (row) => (row.purchase_price ?? 0) * (row.stock ?? 0),
                   {
                       id: 'asset',
-                      header: () => <div>Nilai Aset</div>,
+                      header: () => (
+                          <div className="text-right">Nilai Aset</div>
+                      ),
+
                       cell: (info) => (
-                          <div className="font-semibold">
+                          <div className="text-right font-semibold">
                               {formatIDR(info.getValue())}
                           </div>
                       ),
+
                       footer: () => (
-                          <div className="font-bold">
+                          <div className="text-right font-bold">
                               {formatIDR(total_assets)}
                           </div>
                       ),

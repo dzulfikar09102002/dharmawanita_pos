@@ -73,4 +73,21 @@ class CashLedgerService
             'total_keluar' => (float) $result->total_keluar,
         ];
     }
+
+    public function store(array $validated)
+    {
+        $input = [
+            'transaction_date' => $validated['transaction_date'],
+            'type'             => $validated['type'],
+            'category'         => $validated['category'],
+            'amount'           => $validated['amount'],
+            'description'      => $validated['description'] ?? null,
+            'reference_table'  => $validated['reference_table'] ?? 'manual',
+            'reference_id'     => $validated['reference_id'] ?? null,
+            'created_by'       => auth()->id(),
+            'updated_by'       => auth()->id(),
+        ];
+        CashLedger::create($input);
+        return back()->with('success', 'Transaksi berhasil ditambahkan');
+    }
 }

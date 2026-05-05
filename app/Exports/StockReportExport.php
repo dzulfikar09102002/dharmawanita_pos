@@ -11,10 +11,8 @@ class StockReportExport implements FromCollection, WithHeadings
     protected $search;
     protected $byCategory;
 
-    public function __construct(
-        $search = null,
-        bool $byCategory = false
-    ) {
+    public function __construct($search = null, bool $byCategory = false)
+    {
         $this->search = $search;
         $this->byCategory = $byCategory;
     }
@@ -33,11 +31,7 @@ class StockReportExport implements FromCollection, WithHeadings
                 ->groupBy('category_id', 'category_name');
 
             if ($this->search) {
-                $query->having(
-                    'category_name',
-                    'like',
-                    "%{$this->search}%"
-                );
+                $query->having('category_name', 'like', "%{$this->search}%");
             }
 
             return $query
@@ -45,27 +39,30 @@ class StockReportExport implements FromCollection, WithHeadings
                 ->get();
         }
 
-        // default per produk
-        $query = DB::table('product_stocks')
-            ->select(
-                'name',
-                'brand',
-                'total_in',
-                'total_out',
-                'stock'
-            );
+        $data = DB::table('product_stocks')
+        ->select([
+            'name',
+            'brand',
+            'total_in',
+            'total_out',
+            'stock',
+            DB::raw('(purchase_price * stock) as asset'),
+        ])
+        ->orderBy('category_id')
+        ->orderBy('name')
+        ->get();
+        $totalAsset = $data->sum('asset');
 
-        if ($this->search) {
-            $query->where(
-                'name',
-                'like',
-                "%{$this->search}%"
-            );
-        }
+        $data->push((object)[
+            'name' => 'TOTAL',
+            'brand' => '',
+            'total_in' => '',
+            'total_out' => '',
+            'stock' => '',
+            'asset' => $totalAsset,
+        ]);
 
-        return $query
-            ->orderByDesc('stock')
-            ->get();
+        return $data;
     }
 
     public function headings(): array
@@ -85,6 +82,7 @@ class StockReportExport implements FromCollection, WithHeadings
             'Stok Masuk',
             'Stok Keluar',
             'Jumlah Stok',
+            'Nilai Asset',
         ];
     }
 }

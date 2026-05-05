@@ -12,7 +12,7 @@ class StoreCashLedgerRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -23,7 +23,16 @@ class StoreCashLedgerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'transaction_date' => ['required', 'date'],
+            'type' => ['required', 'in:in,out'],
+            'category' => [
+                'required',
+                'in:operating,capital,drawing,adjustment,financing'
+            ],
+            'amount' => ['required', 'numeric', 'min:1'],
+            'description' => ['nullable', 'string', 'max:255'],
+            'reference_table' => ['required', 'in:sale,purchase,manual'],
+            'reference_id' => ['nullable', 'integer'],
         ];
     }
 }

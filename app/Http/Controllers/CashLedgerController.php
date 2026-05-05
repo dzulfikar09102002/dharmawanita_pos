@@ -30,7 +30,9 @@ class CashLedgerController extends Controller
 
     public function store(StoreCashLedgerRequest $request)
     {
-        //
+        $this->cashLedgerService->store($request->validated());
+        return to_route('cash-ledgers.index')
+        ->with('success', 'Aktivitas berhasil dicatat');
     }
 
     public function update(UpdateCashLedgerRequest $request, CashLedger $cashLedger)
