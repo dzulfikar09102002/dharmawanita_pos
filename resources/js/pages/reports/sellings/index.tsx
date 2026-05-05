@@ -83,12 +83,14 @@ type Props = {
     pagination: Pagination<SaleTransaction>;
     bulan: number;
     tahun: number;
+    total_profit: number;
 };
 
 export default function Index({
     pagination,
     bulan: initialBulan,
     tahun: initialTahun,
+    total_profit,
 }: Props) {
     const bulanOptions = namaBulan.map((nama, i) => ({
         value: String(i + 1),
@@ -198,7 +200,6 @@ export default function Index({
         router.visit(`/reports/sales/${id}`);
     };
 
-    // 👉 Kolom khusus saat deleted
     const deletedColumns: ColumnDef<SaleTransaction, any>[] =
         isDeletedRoute || isCanceledRoute
             ? [
@@ -224,21 +225,37 @@ export default function Index({
         columnHelper.accessor('invoice_number', {
             header: 'Invoice Number',
         }),
-
+        columnHelper.accessor('transaction_date', {
+            header: 'Tanggal Transaksi',
+            cell: (info) =>
+                new Date(info.getValue()).toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                }),
+            footer: () => <span className="font-bold">TOTAL LABA</span>,
+        }),
         columnHelper.accessor('payment_method', {
-            header: 'Metode Pembayaran',
+            header: () => <div className="text-center">Metode Pembayaran</div>,
             cell: (info) => {
                 const row = info.row.original;
-                return row.payment_method?.name ?? '-';
+                return (
+                    <div className="text-center">
+                        {row.payment_method?.name ?? '-'}
+                    </div>
+                );
             },
         }),
 
         columnHelper.accessor('payment_status', {
-            header: 'Status Pembayaran',
+            header: () => <div className="text-center">Status Pembayaran</div>,
             cell: (info) => {
                 if (isDeletedRoute) {
-                    return '-';
+                    return <div className="text-center">-</div>;
                 }
+
                 const status = info.getValue() as
                     | 'paid'
                     | 'pending'
@@ -257,14 +274,16 @@ export default function Index({
                     canceled: 'Dibatalkan',
                 };
 
-                if (!status) return '-';
+                if (!status) return <div className="text-center">-</div>;
 
                 return (
-                    <span
-                        className={`rounded px-2 py-1 text-xs ${map[status]}`}
-                    >
-                        {label[status]}
-                    </span>
+                    <div className="text-center">
+                        <span
+                            className={`rounded px-2 py-1 text-xs ${map[status]}`}
+                        >
+                            {label[status]}
+                        </span>
+                    </div>
                 );
             },
         }),
@@ -285,7 +304,6 @@ export default function Index({
             cell: (info) => formatRupiah(info.getValue()),
         }),
 
-        // 🔥 Kolom dinamis (Kurang Bayar / Kerugian)
         columnHelper.display({
             id: 'financial_status',
             header: isDeletedRoute
@@ -323,16 +341,32 @@ export default function Index({
                 );
             },
         }),
-        columnHelper.accessor('transaction_date', {
-            header: 'Tanggal Transaksi',
-            cell: (info) =>
-                new Date(info.getValue()).toLocaleDateString('id-ID', {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric',
-                }),
-        }),
+        columnHelper.accessor('profit', {
+            header: 'Laba',
+            cell: (info) => {
+                const value = Number(info.getValue() || 0);
 
+                if (value === 0) {
+                    return <span className="text-gray-400">-</span>;
+                }
+
+                return (
+                    <span
+                        className={`font-semibold ${
+                            value >= 0 ? 'text-green-600' : 'text-red-600'
+                        }`}
+                    >
+                        {formatRupiah(value)}
+                    </span>
+                );
+            },
+
+            footer: () => (
+                <span className="font-bold text-green-700">
+                    {formatRupiah(total_profit)}
+                </span>
+            ),
+        }),
         {
             id: 'action',
             header: 'Aksi',
@@ -375,7 +409,6 @@ export default function Index({
           })()
         : baseColumns;
 
-    // ✅ TABLE
     const table = useReactTable<SaleTransaction>({
         data,
         columns,

@@ -39,6 +39,7 @@ type TableMeta = {
 
 type Props = {
     pagination: Pagination<Stock>;
+    total_assets: number;
 };
 
 const formatIDR = (value: number) =>
@@ -47,7 +48,7 @@ const formatIDR = (value: number) =>
         currency: 'IDR',
     }).format(value);
 
-export default function Index({ pagination }: Props) {
+export default function Index({ pagination, total_assets }: Props) {
     const { data } = pagination;
     const query = useQuery();
     const search = query.search || '';
@@ -100,22 +101,6 @@ export default function Index({ pagination }: Props) {
                       <div className="text-center">{info.getValue() ?? 0}</div>
                   ),
               }),
-
-              // 💰 NILAI ASET (FE)
-              columnHelper.accessor(
-                  (row) => (row.purchase_price ?? 0) * (row.stock ?? 0),
-                  {
-                      id: 'asset',
-                      header: () => (
-                          <div className="text-right">Nilai Aset</div>
-                      ),
-                      cell: (info) => (
-                          <div className="text-right font-semibold">
-                              {formatIDR(info.getValue())}
-                          </div>
-                      ),
-                  },
-              ),
           ]
         : [
               {
@@ -129,12 +114,24 @@ export default function Index({ pagination }: Props) {
 
               columnHelper.accessor('name', {
                   header: 'Nama Produk',
-              }),
 
+                  footer: () => (
+                      <div className="text-left font-bold">TOTAL ASET</div>
+                  ),
+              }),
               columnHelper.accessor('brand', {
                   header: 'Brand',
               }),
 
+              columnHelper.accessor('purchase_price', {
+                  header: () => <div>Harga Beli</div>,
+                  cell: (info) => <div>{formatIDR(info.getValue())}</div>,
+              }),
+
+              columnHelper.accessor('selling_price', {
+                  header: () => <div>Harga Jual</div>,
+                  cell: (info) => <div>{formatIDR(info.getValue())}</div>,
+              }),
               columnHelper.accessor('total_in', {
                   header: () => <div className="text-center">Stok Masuk</div>,
                   cell: (info) => (
@@ -156,34 +153,19 @@ export default function Index({ pagination }: Props) {
                   ),
               }),
 
-              columnHelper.accessor('purchase_price', {
-                  header: () => <div className="text-right">Harga Beli</div>,
-                  cell: (info) => (
-                      <div className="text-right">
-                          {formatIDR(info.getValue())}
-                      </div>
-                  ),
-              }),
-
-              columnHelper.accessor('selling_price', {
-                  header: () => <div className="text-right">Harga Jual</div>,
-                  cell: (info) => (
-                      <div className="text-right">
-                          {formatIDR(info.getValue())}
-                      </div>
-                  ),
-              }),
-
               columnHelper.accessor(
                   (row) => (row.purchase_price ?? 0) * (row.stock ?? 0),
                   {
                       id: 'asset',
-                      header: () => (
-                          <div className="text-right">Nilai Aset</div>
-                      ),
+                      header: () => <div>Nilai Aset</div>,
                       cell: (info) => (
-                          <div className="text-right font-semibold">
+                          <div className="font-semibold">
                               {formatIDR(info.getValue())}
+                          </div>
+                      ),
+                      footer: () => (
+                          <div className="font-bold">
+                              {formatIDR(total_assets)}
                           </div>
                       ),
                   },

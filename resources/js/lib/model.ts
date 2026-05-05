@@ -96,6 +96,7 @@ export interface SaleTransaction {
     bulan: number;
     tahun: number;
     reason: string;
+    profit: number;
 }
 export interface SalesSummaryDetail {
     id: number;

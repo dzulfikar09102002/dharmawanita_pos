@@ -25,6 +25,7 @@ class SalesReportController extends Controller
             'pagination' => $result['data'],
             'bulan' => $result['bulan'],  
             'tahun' => $result['tahun'], 
+            'total_profit' => $result['total_profit']
         ]);
     }
 
@@ -79,7 +80,7 @@ public function printSalesReport(Request $request)
     $isDeleted  = $request->boolean('deleted');
     $isCanceled = $request->boolean('canceled');
 
-    $type  = $request->type ?? 'month'; // month | week | year
+    $type  = $request->type ?? 'month'; 
     $bulan = $request->bulan ?? now()->month;
     $tahun = $request->tahun ?? now()->year;
 
@@ -100,7 +101,6 @@ public function printSalesReport(Request $request)
             }
         ]);
 
-    // FILTER STATUS
     if ($isCanceled) {
         $query->where('payment_status','canceled');
     } elseif ($isDeleted) {
@@ -109,7 +109,6 @@ public function printSalesReport(Request $request)
         $query->where('payment_status','!=','canceled');
     }
 
-    // FILTER PERIODE
     if ($type === 'month' || $type === 'week') {
         $query->whereMonth('transaction_date', $bulan)
               ->whereYear('transaction_date', $tahun);
@@ -143,11 +142,6 @@ public function printSalesReport(Request $request)
 
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | WEEKLY GROUPING
-    |--------------------------------------------------------------------------
-    */
     $weeklyTotals = [];
 
     if ($type === 'week') {
@@ -174,11 +168,6 @@ public function printSalesReport(Request $request)
         }
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | GRAND TOTAL
-    |--------------------------------------------------------------------------
-    */
     $flatTransactions = collect($transactions)->flatten();
 
     $total = $isDeleted
@@ -247,7 +236,7 @@ public function printSalesReport(Request $request)
             'isDeleted'    => $isDeleted,
             'title'        => $title,
         ]
-    )->setPaper('A3','landscape');
+    )->setPaper('A4','landscape');
 
 
     return $pdf->stream(

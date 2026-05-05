@@ -213,12 +213,23 @@
         <div class="section-title">Pengeluaran</div>
         <table>
             <tr>
-                <td>Total Pembelian / HPP</td>
+                <td>Total Pembelian</td>
                 <td>Rp {{ number_format($data['total_pembelian'], 0, ',', '.') }}</td>
             </tr>
+
+            <tr>
+                <td>Utang Pembelian</td>
+                <td>Rp {{ number_format($data['total_utang'], 0, ',', '.') }}</td>
+            </tr>
+
             <tr style="font-weight: bold; background: #f9f9f9;">
                 <td>Total Pengeluaran</td>
-                <td>Rp {{ number_format($data['total_pembelian'], 0, ',', '.') }}</td>
+                <td>
+                    Rp {{ number_format(
+                        $data['total_pembelian'] + $data['total_utang'],
+                        0, ',', '.'
+                    ) }}
+                </td>
             </tr>
         </table>
     </div>

@@ -15,7 +15,8 @@ class StockReportController extends Controller
     public function index()
     {
         $pagination = $this->service->getStockReport();
-        return Inertia::render('reports/stocks/index', compact('pagination'));
+        $total_assets = $this->service->getAssetsValue();
+        return Inertia::render('reports/stocks/index', compact('pagination', 'total_assets'));
     }
 
     public function byCategories()

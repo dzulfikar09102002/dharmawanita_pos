@@ -148,6 +148,7 @@ $isDeleted
         <th class="text-right">Total</th>
         <th class="text-right">Pembayaran</th>
         <th class="text-right">Kembalian</th>
+        <th class="text-right">Laba</th>
         <th class="text-right">Pendapatan</th>
     @endif
 </tr>
@@ -162,7 +163,7 @@ $isDeleted
 @forelse($transactions as $week => $items)
 
 <tr>
-<td colspan="{{ $isDeleted || $isCanceled ? 6 : 8 }}"
+<td colspan="{{ $isDeleted || $isCanceled ? 6 : 9 }}"
 style="background:#e5e5e5;font-weight:bold;">
 Minggu ke-{{ $week }}
 </td>
@@ -172,6 +173,19 @@ Minggu ke-{{ $week }}
 
 @php
 $date = \Carbon\Carbon::parse($trx->transaction_date);
+
+// HITUNG LABA
+$revenue = $trx->details->sum(fn($d) =>
+    ($d->quantity * $d->selling_price) - ($d->adjustment ?? 0)
+);
+
+$cost = $trx->details->sum(fn($d) =>
+    $d->quantity * $d->purchase_price
+);
+
+$profit = $trx->payment_status === 'paid'
+    ? ($revenue - $cost)
+    : 0;
 @endphp
 
 <tr>
@@ -193,9 +207,152 @@ $trx->details
 </td>
 
 <td class="text-center">
+{{ $date->translatedFormat('d F Y H:i') }}
+</td>
+
+<td>{{ $trx->reason ?? '-' }}</td>
+
+<td class="text-right">
+Rp {{ number_format($trx->total_amount ?? 0,0,',','.') }}
+</td>
+
+@elseif($isCanceled)
+
+<td>{{ $trx->invoice_number }}</td>
+
+<td class="text-center">
+<span class="badge canceled">Dibatalkan</span>
+</td>
+
+<td class="text-center">
+{{ $date->translatedFormat('d F Y H:i') }}
+</td>
+
+<td>{{ $trx->reason ?? '-' }}</td>
+
+<td class="text-right">
+Rp {{ number_format($trx->grand_total ?? 0,0,',','.') }}
+</td>
+
+@else
+
+<td>{{ $trx->invoice_number }}</td>
+
+<td class="text-center">
+<span class="badge {{ $trx->payment_status }}">
+{{
+$trx->payment_status==='paid'
+?'Lunas'
+:($trx->payment_status==='pending'
+?'Belum Lunas'
+:'Dibatalkan')
+}}
+</span>
+</td>
+
+<td class="text-center">
+{{ $date->translatedFormat('d F Y H:i') }}
+</td>
+
+<td class="text-right">
+Rp {{ number_format($trx->grand_total ?? 0,0,',','.') }}
+</td>
+
+<td class="text-right">
+Rp {{ number_format($trx->total_amount ?? 0,0,',','.') }}
+</td>
+
+<td class="text-right">
+Rp {{ number_format($trx->change ?? 0,0,',','.') }}
+</td>
+
+<td class="text-right">
+<strong style="color: {{ $profit >= 0 ? '#16a34a' : '#dc2626' }}">
+{{ $profit == 0 ? '-' : 'Rp '.number_format($profit,0,',','.') }}
+</strong>
+</td>
+<td class="text-right">
+Rp {{
+number_format(
+max(0, ($trx->total_amount ?? 0)-($trx->change ?? 0)),
+0,',','.'
+)
+}}
+</td>
+
+
+@endif
+
+</tr>
+
+@endforeach
+
+
+<tr>
+<td colspan="{{ $isDeleted || $isCanceled ? 5 : 8 }}"
+class="text-right">
+<strong>Subtotal Minggu {{ $week }}</strong>
+</td>
+
+<td class="text-right">
+<strong>
+@if($isCanceled)
+{{ $items->count() }} Transaksi
+@else
+Rp {{ number_format($weeklyTotals[$week] ?? 0,0,',','.') }}
+@endif
+</strong>
+</td>
+</tr>
+
+@empty
+
+<tr>
+<td colspan="{{ $isDeleted || $isCanceled ? 6 : 9 }}"
+class="no-data">
+Tidak ada data
+</td>
+</tr>
+
+@endforelse
+
+@else
+
+@forelse($transactions as $i=>$trx)
+
+@php
+$date = \Carbon\Carbon::parse($trx->transaction_date);
+
+$revenue = $trx->details->sum(fn($d) =>
+    ($d->quantity * $d->selling_price) - ($d->adjustment ?? 0)
+);
+
+$cost = $trx->details->sum(fn($d) =>
+    $d->quantity * $d->purchase_price
+);
+
+$profit = $trx->payment_status === 'paid'
+    ? ($revenue - $cost)
+    : 0;
+@endphp
+
+<tr>
+<td class="text-center">{{ $i+1 }}</td>
+
+@if($isDeleted)
+
+<td>
+{{ $trx->details->map(fn($d)=>($d->purchase->product->name ?? '-') . ' ('.$d->quantity.')')->join(', ') ?: '-' }}
+</td>
+
+<td class="text-center">
+{{ $trx->details->sum('quantity') ?: '-' }}
+</td>
+
+<td class="text-center">
 {{ $date->format('d') }}
 {{ $namaBulan[(int)$date->format('n')] }}
-{{ $date->format('Y') }}
+{{ $date->format('Y H:i') }}
 </td>
 
 <td>{{ $trx->reason ?? '-' }}</td>
@@ -215,7 +372,7 @@ Rp {{ number_format($trx->total_amount ?? 0,0,',','.') }}
 <td class="text-center">
 {{ $date->format('d') }}
 {{ $namaBulan[(int)$date->format('n')] }}
-{{ $date->format('Y') }}
+{{ $date->format('Y H:i') }}
 </td>
 
 <td>{{ $trx->reason ?? '-' }}</td>
@@ -230,20 +387,14 @@ Rp {{ number_format($trx->grand_total ?? 0,0,',','.') }}
 
 <td class="text-center">
 <span class="badge {{ $trx->payment_status }}">
-{{
-$trx->payment_status==='paid'
-?'Lunas'
-:($trx->payment_status==='pending'
-?'Belum Lunas'
-:'Dibatalkan')
-}}
+{{ $trx->payment_status==='paid' ? 'Lunas' : 'Belum Lunas' }}
 </span>
 </td>
 
 <td class="text-center">
 {{ $date->format('d') }}
 {{ $namaBulan[(int)$date->format('n')] }}
-{{ $date->format('Y') }}
+{{ $date->format('Y H:i') }}
 </td>
 
 <td class="text-right">
@@ -261,159 +412,17 @@ Rp {{ number_format($trx->change ?? 0,0,',','.') }}
 <td class="text-right">
 Rp {{
 number_format(
-max(
-0,
-($trx->total_amount ?? 0)-($trx->change ?? 0)
-),
+max(0, ($trx->total_amount ?? 0)-($trx->change ?? 0)),
 0,',','.'
 )
 }}
 </td>
 
-@endif
-
-</tr>
-
-@endforeach
-
-
-<tr>
-<td colspan="{{ $isDeleted || $isCanceled ? 5 : 7 }}"
-class="text-right">
-<strong>Subtotal Minggu {{ $week }}</strong>
-</td>
-
 <td class="text-right">
-<strong>
-@if($isCanceled)
-{{ $items->count() }} Transaksi
-@else
-Rp {{ number_format($weeklyTotals[$week] ?? 0,0,',','.') }}
-@endif
+<strong style="color: {{ $profit >= 0 ? '#16a34a' : '#dc2626' }}">
+{{ $profit == 0 ? '-' : 'Rp '.number_format($profit,0,',','.') }}
 </strong>
 </td>
-</tr>
-
-@empty
-
-<tr>
-<td colspan="{{ $isDeleted || $isCanceled ? 6 : 8 }}"
-class="no-data">
-Tidak ada data
-</td>
-</tr>
-
-@endforelse
-
-@else
-
-{{-- MODE NORMAL --}}
-
-@forelse($transactions as $i=>$trx)
-
-@php
-$date=\Carbon\Carbon::parse($trx->transaction_date);
-@endphp
-
-<tr>
-<td class="text-center">{{ $i+1 }}</td>
-
-@if($isDeleted)
-
-<td>
-{{
-$trx->details
-->map(fn($d)=>($d->purchase->product->name ?? '-') . ' ('.$d->quantity.')')
-->join(', ')
-?: '-'
-}}
-</td>
-
-<td class="text-center">
-{{ $trx->details->sum('quantity') ?: '-' }}
-</td>
-
-<td class="text-center">
-{{ $date->format('d') }}
-{{ $namaBulan[(int)$date->format('n')] }}
-{{ $date->format('Y') }}
-</td>
-
-<td>{{ $trx->reason ?? '-' }}</td>
-
-<td class="text-right">
-Rp {{ number_format($trx->total_amount ?? 0,0,',','.') }}
-</td>
-
-
-@elseif($isCanceled)
-
-<td>{{ $trx->invoice_number }}</td>
-
-<td class="text-center">
-<span class="badge canceled">
-Dibatalkan
-</span>
-</td>
-
-<td class="text-center">
-{{ $date->format('d') }}
-{{ $namaBulan[(int)$date->format('n')] }}
-{{ $date->format('Y') }}
-</td>
-
-<td>{{ $trx->reason ?? '-' }}</td>
-
-<td class="text-right">
-Rp {{ number_format($trx->grand_total ?? 0,0,',','.') }}
-</td>
-
-
-@else
-
-<td>{{ $trx->invoice_number }}</td>
-
-<td class="text-center">
-<span class="badge {{ $trx->payment_status }}">
-{{
-$trx->payment_status==='paid'
-?'Lunas'
-:($trx->payment_status==='pending'
-?'Belum Lunas'
-:'Dibatalkan')
-}}
-</span>
-</td>
-
-<td class="text-center">
-{{ $date->format('d') }}
-{{ $namaBulan[(int)$date->format('n')] }}
-{{ $date->format('Y') }}
-</td>
-
-<td class="text-right">
-Rp {{ number_format($trx->grand_total ?? 0,0,',','.') }}
-</td>
-
-<td class="text-right">
-Rp {{ number_format($trx->total_amount ?? 0,0,',','.') }}
-</td>
-
-<td class="text-right">
-Rp {{ number_format($trx->change ?? 0,0,',','.') }}
-</td>
-
-<td class="text-right">
-Rp {{
-number_format(
-max(
-0,
-($trx->total_amount ?? 0)-($trx->change ?? 0)
-),
-0,',','.'
-)
-}}
-</td>
 
 @endif
 
@@ -422,7 +431,7 @@ max(
 @empty
 
 <tr>
-<td colspan="{{ $isDeleted || $isCanceled ? 6 : 8 }}"
+<td colspan="{{ $isDeleted || $isCanceled ? 6 : 10 }}"
 class="no-data">
 Tidak ada data
 </td>
@@ -462,8 +471,8 @@ if($isDeleted){
             )
         );
 
-    $labelTotal='Total Pendapatan';
-    $colspan=7;
+    $labelTotal='Total Penjualan';
+    $colspan=8;
 
 }
 
@@ -483,6 +492,34 @@ if($isDeleted){
 @else
 Rp {{ number_format($totalFinal,0,',','.') }}
 @endif
+</strong>
+</td>
+</tr>
+@php
+$totalProfit = $flat
+    ->where('payment_status','paid')
+    ->sum(function ($trx) {
+
+        $revenue = $trx->details->sum(fn($d) =>
+            ($d->quantity * $d->selling_price) - ($d->adjustment ?? 0)
+        );
+
+        $cost = $trx->details->sum(fn($d) =>
+            $d->quantity * $d->purchase_price
+        );
+
+        return $revenue - $cost;
+    });
+@endphp
+
+<tr>
+<td colspan="{{ $colspan }}">
+<strong>Total Laba</strong>
+</td>
+
+<td class="text-right">
+<strong style="color:#16a34a;">
+{{ $totalProfit == 0 ? '-' : 'Rp '.number_format($totalProfit,0,',','.') }}
 </strong>
 </td>
 </tr>

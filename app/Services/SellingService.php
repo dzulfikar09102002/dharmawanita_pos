@@ -138,14 +138,20 @@ class SellingService
 
                 return $subtotal - $discount;
             });
+
+            $dateInput = Carbon::parse($input['transaction_date']);
+            $now = now();
+
+            $dateTime = $dateInput->isSameDay($now)
+                ? $now
+                : $dateInput->setTimeFrom($now);
+
             $sale = SaleTransaction::create([
-                'invoice_number'   => $this->generateInvoiceNumber(),
+                'invoice_number'   => $this->generateInvoiceNumber($dateInput),
                 'payment_status'   => 'pending',
                 'grand_total'      => $grandTotal,
                 'payment_type'     => 'cash',
-                'transaction_date' => Carbon::parse($input['transaction_date'])->isToday()
-                    ? now()
-                    : Carbon::parse($input['transaction_date'])->startOfDay(),
+                'transaction_date' => $dateTime,
                 'created_by'       => $user,
                 'updated_by'       => $user,
             ]);
@@ -185,14 +191,15 @@ class SellingService
         });
     }
 
-    private function generateInvoiceNumber(): string
+    private function generateInvoiceNumber(?string $date = null): string
     {
-        $date = now()->format('Ymd');
+        $date = $date ? Carbon::parse($date) : now();
 
-        $prefix = $date . '/DWPSBY/';
+        $dateFormat = $date->format('Ymd');
+        $prefix = $dateFormat . '/DWPSBY/';
 
         $last = SaleTransaction::withTrashed()
-            ->whereDate('transaction_date', now()->toDateString())
+            ->whereDate('transaction_date', $date->toDateString())
             ->where('invoice_number', 'like', $prefix . '%')
             ->orderByDesc('id')
             ->value('invoice_number');
@@ -200,7 +207,7 @@ class SellingService
         $nextNumber = 1;
 
         if ($last) {
-            $lastSequence = (int) substr($last, -3);
+            $lastSequence = (int) substr($last, -4); 
             $nextNumber = $lastSequence + 1;
         }
 

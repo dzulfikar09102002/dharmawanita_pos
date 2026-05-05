@@ -29,30 +29,35 @@ class LabaRugiController extends Controller
 
     public function printLabaRugi(Request $request)
     {
-        // ✅ Validasi
         $request->validate([
             'type' => 'required|in:month,year',
             'tahun' => 'required|integer',
             'bulan' => 'nullable|integer|min:1|max:12',
         ]);
 
-        $type = $request->type;
+        $type  = $request->type;
         $bulan = $request->bulan;
         $tahun = $request->tahun;
 
-        // ✅ Base query
         $queryPendapatan = SaleTransaction::query()
-            ->where('payment_status', 'paid');
+            ->where('payment_type', 'cash')
+            ->where('payment_status', '!=', 'canceled');
 
         $queryPiutang = SaleTransaction::query()
-            ->where('created_at', '!=', 'updated_at');
+            ->where('payment_type', 'credit')
+            ->where('payment_status', '!=', 'canceled');
 
-        $queryPembelian = Purchase::query();
+        $queryPembelian = Purchase::query()
+            ->where('payment_type', 'cash')
+            ->where('status_payment', '!=', 'canceled');
 
-        // ✅ Filter berdasarkan type
+        $queryUtang = Purchase::query()
+            ->where('payment_type', 'credit')
+            ->where('status_payment', '!=', 'canceled');
+
         if ($type === 'month') {
             if (!$bulan) {
-                abort(400, 'Bulan wajib diisi untuk laporan bulanan');
+                abort(400, 'Bulan wajib diisi');
             }
 
             $queryPendapatan->whereMonth('transaction_date', $bulan)
@@ -62,21 +67,35 @@ class LabaRugiController extends Controller
                         ->whereYear('transaction_date', $tahun);
 
             $queryPembelian->whereMonth('purchase_date', $bulan)
-                        ->whereYear('purchase_date', $tahun);
-        }
+                            ->whereYear('purchase_date', $tahun);
 
-        if ($type === 'year') {
+            $queryUtang->whereMonth('purchase_date', $bulan)
+                        ->whereYear('purchase_date', $tahun);
+
+        } else {
             $queryPendapatan->whereYear('transaction_date', $tahun);
             $queryPiutang->whereYear('transaction_date', $tahun);
             $queryPembelian->whereYear('purchase_date', $tahun);
+            $queryUtang->whereYear('purchase_date', $tahun);
         }
 
-        // ✅ Hitung
-        $totalPendapatan = $queryPendapatan->sum('grand_total');
-        $totalPendapatanPiutang = $queryPiutang->sum('grand_total');
-        $totalPembelian = $queryPembelian->sum('total_payment');
+        $totalPendapatan = (float) $queryPendapatan
+            ->where('payment_status', 'paid')
+            ->sum('grand_total');
 
-        $laba = $totalPendapatan + $totalPendapatanPiutang - $totalPembelian;
+        $totalPendapatanPiutang = (float) $queryPiutang
+            ->sum('total_amount'); 
+
+        $totalPembelian = (float) $queryPembelian
+            ->sum('total_payment');
+
+        $totalUtang = (float) $queryUtang
+            ->sum('total_payment');
+            
+        $laba = $totalPendapatan 
+            + $totalPendapatanPiutang 
+            - $totalPembelian 
+            - $totalUtang;
 
         $data = [
             'type' => $type,
@@ -85,10 +104,10 @@ class LabaRugiController extends Controller
             'total_pendapatan' => $totalPendapatan,
             'total_pendapatan_piutang' => $totalPendapatanPiutang,
             'total_pembelian' => $totalPembelian,
+            'total_utang' => $totalUtang,
             'laba_rugi' => $laba,
         ];
 
-        // ✅ Generate PDF
         $pdf = Pdf::loadView('reports.laba-rugi-pdf', [
             'data' => $data,
             'type' => $type,

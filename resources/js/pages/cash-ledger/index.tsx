@@ -18,6 +18,7 @@ import { useMemo, useState } from 'react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { Button } from '@/components/ui/button';
 import { Search } from 'lucide-react';
+import { Label } from '@/components/ui/label';
 
 type Props = {
     pagination: Pagination<CashLedger>;
@@ -299,13 +300,16 @@ export default function Index({ pagination, openingBalance, summary }: Props) {
             <Card>
                 <CardHeader>
                     <h1 className="text-lg font-semibold">Laporan Keuangan</h1>
-                    <div className="flex items-center justify-end gap-2">
-                        <div className="w-[150px]">
-                            <DatePicker
-                                value={date}
-                                onChange={setDate}
-                                maxDate={new Date()}
-                            />
+                    <div className="flex items-end justify-end gap-2">
+                        <div className="flex flex-col">
+                            <Label className="mb-2">Tanggal</Label>
+                            <div className="w-[150px]">
+                                <DatePicker
+                                    value={date}
+                                    onChange={setDate}
+                                    maxDate={new Date()}
+                                />
+                            </div>
                         </div>
 
                         <Button

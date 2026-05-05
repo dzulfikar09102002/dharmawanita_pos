@@ -2,6 +2,7 @@ import {
     Table,
     TableBody,
     TableCell,
+    TableFooter,
     TableHead,
     TableHeader,
     TableRow,
@@ -67,6 +68,22 @@ export default function <T>({ table, columns }: Props<T>) {
                     </TableRow>
                 )}
             </TableBody>
+            <TableFooter>
+                {table.getFooterGroups().map((footerGroup) => (
+                    <TableRow key={footerGroup.id}>
+                        {footerGroup.headers.map((header) => (
+                            <TableCell key={header.id}>
+                                {header.isPlaceholder
+                                    ? null
+                                    : flexRender(
+                                          header.column.columnDef.footer,
+                                          header.getContext(),
+                                      )}
+                            </TableCell>
+                        ))}
+                    </TableRow>
+                ))}
+            </TableFooter>
         </Table>
     );
 }

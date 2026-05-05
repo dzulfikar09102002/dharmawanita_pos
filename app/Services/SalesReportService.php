@@ -18,9 +18,10 @@ class SalesReportService
         $search = request('search', '');
         $payment_method_id = request('payment_method_id', 'all');
 
-        $query = SaleTransaction::with('paymentMethod');
+        $query = SaleTransaction::with('paymentMethod', 'details')
+        ->withSum('details as total_revenue', \DB::raw('(quantity * selling_price) - COALESCE(adjustment,0)'))
+        ->withSum('details as total_cost', \DB::raw('quantity * purchase_price'));
 
-        // 🔥 Kalau search ada → ambil tanggal dari invoice
         if ($search) {
             $invoice = SaleTransaction::whereLike('invoice_number', "%$search%")
                 ->orderByDesc('transaction_date')
@@ -46,22 +47,33 @@ class SalesReportService
         if ($payment_method_id !== 'all') {
             $query->where('payment_method_id', $payment_method_id);
         }
+        
+        $profitSummaryQuery = clone $query;
+
+        $totalProfit = $profitSummaryQuery
+        ->where('payment_status', 'paid')
+        ->get()
+        ->sum(function ($item) {
+            return ($item->total_revenue ?? 0) - ($item->total_cost ?? 0);
+        });
+
+        $data = $query
+            ->where('payment_status', '!=', 'canceled')
+            ->orderByDesc('transaction_date') 
+            ->paginate(request('per_page', 10))
+            ->withQueryString();
+
+        $data->getCollection()->transform(function ($item) {
+            $profit = ($item->total_revenue ?? 0) - ($item->total_cost ?? 0);
+            $item->profit = $item->payment_status === 'paid' ? $profit : 0; 
+            return $item;
+        });
 
         return [
-            'data' => $query
-            ->where('payment_status', '!=', 'canceled')
-                ->orderByRaw("
-                    CASE 
-                        WHEN payment_status = 'canceled' THEN 1
-                        ELSE 0
-                    END
-                ")
-                ->orderByDesc('transaction_date') 
-                ->paginate(request('per_page', 10))
-                ->withQueryString(),
-
+            'data' => $data,
             'bulan' => $bulan,
             'tahun' => $tahun,
+            'total_profit' => $totalProfit,
         ];
     }
 
