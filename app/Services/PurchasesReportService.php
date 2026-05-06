@@ -15,33 +15,28 @@ class PurchasesReportService
     public function getPurchases()
     {
         $search = request('search', '');
-        $month = request('month') ?? now()->month;
-        $year  = request('year')  ?? now()->year;
+        $startDate = request('start_date');
+        $endDate   = request('end_date');
 
+        if (!$startDate || !$endDate) {
+            $startDate = now()->startOfMonth()->toDateString();
+            $endDate   = now()->endOfMonth()->toDateString();
+        }
+    
         return Purchase::with(['product', 'supplier', 'inventoryTransactions'])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
-                    
-                    $q->where('purchases.code', 'like', "%{$search}%") // ✅ TAMBAH INI
-                    
-                    ->orWhereHas('product', function ($q2) use ($search) {
-                        $q2->where('name', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('supplier', function ($q2) use ($search) {
-                        $q2->where('name', 'like', "%{$search}%");
-                    });
+                    $q->where('purchases.code', 'like', "%{$search}%")
+                        ->orWhereHas('product', function ($q2) use ($search) {
+                            $q2->where('name', 'like', "%{$search}%");
+                        })
+                        ->orWhereHas('supplier', function ($q2) use ($search) {
+                            $q2->where('name', 'like', "%{$search}%");
+                        });
                 });
             })
+            ->whereBetween('purchase_date', [$startDate, $endDate])
 
-            // ✅ FILTER BULAN
-            ->when($month, function ($query) use ($month) {
-                $query->whereMonth('purchase_date', $month);
-            })
-
-            // ✅ FILTER TAHUN
-            ->when($year, function ($query) use ($year) {
-                $query->whereYear('purchase_date', $year);
-            })
             ->orderByRaw("
                 CASE 
                     WHEN status_payment = 'canceled' THEN 1
@@ -57,20 +52,30 @@ class PurchasesReportService
 
     public function getTotalPurchase(): float
     {
-        $month = request('month') ?? now()->month;
-        $year  = request('year')  ?? now()->year;
+        $startDate = request('start_date');
+        $endDate   = request('end_date');
+
+        if (!$startDate || !$endDate) {
+            $startDate = now()->startOfMonth()->toDateString();
+            $endDate   = now()->endOfMonth()->toDateString();
+        }
 
         return (float) Purchase::query()
-            ->when($month, fn($q) => $q->whereMonth('purchase_date', $month))
-            ->when($year, fn($q) => $q->whereYear('purchase_date', $year))
+            ->whereBetween('purchase_date', [$startDate, $endDate])
             ->where('status_payment', '!=', 'canceled')
             ->sum('total_payment');
     }
     public function getDeletedMethod()
     {
         $search = request('search', '');
-        $month = request('month');
-        $year  = request('year');
+
+        $startDate = request('start_date');
+        $endDate   = request('end_date');
+
+        if (!$startDate || !$endDate) {
+            $startDate = now()->startOfMonth()->toDateString();
+            $endDate   = now()->endOfMonth()->toDateString();
+        }
 
         return Purchase::onlyTrashed()
             ->with(['product', 'supplier', 'inventoryTransactions'])
@@ -86,15 +91,7 @@ class PurchasesReportService
                 });
             })
 
-            // ✅ FILTER BULAN
-            ->when($month, function ($query) use ($month) {
-                $query->whereMonth('purchase_date', $month);
-            })
-
-            // ✅ FILTER TAHUN
-            ->when($year, function ($query) use ($year) {
-                $query->whereYear('purchase_date', $year);
-            })
+            ->whereBetween('purchase_date', [$startDate, $endDate])
 
             ->paginate(request('per_page', 10))
             ->withQueryString();
@@ -444,6 +441,7 @@ class PurchasesReportService
                     'amount'           => $payAmount,
                     'description'      => $description,
                     'reference_table'  => CashLedger::REF_PURCHASE,
+                    'cash_flow_type'   => 'bank',
                     'reference_id'     => $purchase->id,
                     'created_by'       => auth()->id(),
                     'updated_by'       => auth()->id(),

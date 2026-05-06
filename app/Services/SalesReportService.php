@@ -13,73 +13,61 @@ use Illuminate\Support\Facades\DB;
 class SalesReportService
 {
     
-    public function getSalesReport(?int $bulan = null, ?int $tahun = null)
+    public function getSalesReport()
     {
         $search = request('search', '');
         $payment_method_id = request('payment_method_id', 'all');
 
+        $startDate = request('start_date');
+        $endDate   = request('end_date');
+
+        if (!$startDate || !$endDate) {
+            $startDate = now()->startOfMonth()->toDateString();
+            $endDate   = now()->endOfMonth()->toDateString();
+        }
+
+        $startDate = Carbon::parse($startDate)->startOfDay();
+        $endDate   = Carbon::parse($endDate)->endOfDay();
+
         $query = SaleTransaction::with('paymentMethod', 'details')
-        ->withSum('details as total_revenue', \DB::raw('(quantity * selling_price) - COALESCE(adjustment,0)'))
-        ->withSum('details as total_cost', \DB::raw('quantity * purchase_price'));
+            ->withSum('details as total_revenue', \DB::raw('(quantity * selling_price) - COALESCE(adjustment,0)'))
+            ->withSum('details as total_cost', \DB::raw('quantity * purchase_price'))
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('invoice_number', 'like', "%{$search}%");
+                });
+            })
+            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->when($payment_method_id !== 'all', function ($q) use ($payment_method_id) {
+                $q->where('payment_method_id', $payment_method_id);
+            });
 
-        if ($search) {
-            $invoice = SaleTransaction::whereLike('invoice_number', "%$search%")
-                ->orderByDesc('transaction_date')
-                ->first();
-
-            if ($invoice) {
-                $date = \Carbon\Carbon::parse($invoice->transaction_date);
-                $bulan = $date->month;
-                $tahun = $date->year;
-            }
-
-            $query->whereLike('invoice_number', "%$search%");
-        }
-
-        if (!is_null($bulan)) {
-            $query->whereMonth('transaction_date', $bulan);
-        }
-
-        if (!is_null($tahun)) {
-            $query->whereYear('transaction_date', $tahun);
-        }
-
-        if ($payment_method_id !== 'all') {
-            $query->where('payment_method_id', $payment_method_id);
-        }
-        
         $profitSummaryQuery = clone $query;
 
         $totalProfit = $profitSummaryQuery
-        ->where('payment_status', 'paid')
-        ->get()
-        ->sum(function ($item) {
-            return ($item->total_revenue ?? 0) - ($item->total_cost ?? 0);
-        });
+            ->where('payment_status', 'paid')
+            ->get()
+            ->sum(fn ($item) => ($item->total_revenue ?? 0) - ($item->total_cost ?? 0));
 
         $totalSelling = (clone $query)
-        ->where('payment_status', 'paid')
-        ->get()
-        ->sum(function ($item) {
-            return $item->total_revenue ?? 0;
-        });
+            ->where('payment_status', 'paid')
+            ->get()
+            ->sum(fn ($item) => $item->total_revenue ?? 0);
 
         $data = $query
             ->where('payment_status', '!=', 'canceled')
-            ->orderByDesc('transaction_date') 
+            ->orderByDesc('transaction_date')
             ->paginate(request('per_page', 10))
             ->withQueryString();
 
         $data->getCollection()->transform(function ($item) {
             $profit = ($item->total_revenue ?? 0) - ($item->total_cost ?? 0);
-            $item->profit = $item->payment_status === 'paid' ? $profit : 0; 
+            $item->profit = $item->payment_status === 'paid' ? $profit : 0;
             return $item;
         });
 
         return [
             'data' => $data,
-            'bulan' => $bulan,
-            'tahun' => $tahun,
             'total_profit' => $totalProfit,
             'total_selling' => $totalSelling,
         ];
@@ -111,7 +99,7 @@ class SalesReportService
     {
         return DB::transaction(function () use ($id) {
 
-            $invoice = SaleTransaction::with('details.purchase')->findOrFail($id);
+            $invoice = SaleTransaction::with('details.purchase', 'paymentMethod')->findOrFail($id);
 
             $reason = request('reason');
 
@@ -143,6 +131,9 @@ class SalesReportService
 
             $totalPaid = $invoice->total_amount - $invoice->change;
             if ($totalPaid > 0) {
+                $cashFlowType = strtolower($invoice->paymentMethod?->kind ?? '') === 'cash'
+                ? 'cash'
+                : 'bank';
                 CashLedger::create([
                     'transaction_date' => now(),
                     'type'             => CashLedger::TYPE_OUT,
@@ -150,6 +141,7 @@ class SalesReportService
                     'amount'           => $totalPaid,
                     'description'      => 'PEMBATALAN PENJUALAN INVOICE' . $invoice->invoice_number,
                     'reference_table'  => CashLedger::REF_SALE,
+                    'cash_flow_type'   => $cashFlowType,
                     'reference_id'     => $invoice->id,
                     'created_by'       => auth()->id(),
                     'updated_by'       => auth()->id(),
@@ -158,9 +150,20 @@ class SalesReportService
             return true;
         });
     }
+
     public function getCanceledMethod()
     {
         $search = request('search', '');
+        $startDate = request('start_date');
+        $endDate   = request('end_date');
+
+        if (!$startDate || !$endDate) {
+            $startDate = now()->startOfMonth();
+            $endDate   = now()->endOfMonth();
+        } else {
+            $startDate = Carbon::parse($startDate)->startOfDay();
+            $endDate   = Carbon::parse($endDate)->endOfDay();
+        }
 
         $data = SaleTransaction::with([
                 'paymentMethod',
@@ -169,13 +172,13 @@ class SalesReportService
             ->when($search, function ($q) use ($search) {
                 $q->where('invoice_number', 'like', "%$search%");
             })
-            ->orderByDesc('transaction_date')
+            ->whereBetween('transaction_date', [$startDate, $endDate])
             ->where('payment_status', 'canceled')
+            ->orderByDesc('transaction_date')
             ->paginate(request('per_page', 10))
             ->withQueryString();
 
         $data->getCollection()->transform(function ($item) {
-
             $item->reason = optional(
                 $item->details
                     ->flatMap(fn ($d) => $d->inventoryTransactions)
@@ -191,6 +194,16 @@ class SalesReportService
     public function getDeletedMethod()
     {
         $search = request('search', '');
+        $startDate = request('start_date');
+        $endDate   = request('end_date');
+
+        if (!$startDate || !$endDate) {
+            $startDate = now()->startOfMonth();
+            $endDate   = now()->endOfMonth();
+        } else {
+            $startDate = Carbon::parse($startDate)->startOfDay();
+            $endDate   = Carbon::parse($endDate)->endOfDay();
+        }
 
         $data = SaleTransaction::onlyTrashed()
             ->with([
@@ -200,12 +213,12 @@ class SalesReportService
             ->when($search, function ($q) use ($search) {
                 $q->where('invoice_number', 'like', "%$search%");
             })
+            ->whereBetween('transaction_date', [$startDate, $endDate])
             ->orderByDesc('transaction_date')
             ->paginate(request('per_page', 10))
             ->withQueryString();
 
         $data->getCollection()->transform(function ($item) {
-
             $item->reason = optional(
                 $item->details
                     ->flatMap(fn ($d) => $d->inventoryTransactions)

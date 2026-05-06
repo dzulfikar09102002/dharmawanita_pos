@@ -25,7 +25,7 @@ $totalPembatalan = $transactions->count();
 <head>
 <meta charset="utf-8">
 <title>{{ $title }}</title>
-
+<link rel="icon" href="/assets/images/logo-dharmawanita.png" type="image/png">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 
@@ -152,7 +152,7 @@ Dicetak:
 @if($isDeleted)
 <th>Alasan Pembatalan</th>
 @else
-<th class="text-right">Pengeluaran</th>
+<th class="text-right">Pembayaran</th>
 @endif
 
 </tr>
@@ -289,6 +289,13 @@ $subtotal=$trx->quantity * $trx->purchase_price;
 <td class="text-center">{{ $i+1 }}</td>
 <td>{{ $trx->code }}</td>
 <td>{{ $trx->product->name ?? '-' }}</td>
+@if($isDeleted)
+<td class="text-center">
+    <span class="badge canceled">Dibatalkan</span>
+</td>
+@else
+<td>{{ $trx->source_label }}</td>
+@endif
 <td>{{ $trx->supplier->name ?? '-' }}</td>
 
 <td class="text-center">
@@ -376,7 +383,7 @@ $totalPembatalan = $flat->count();
 @else
 
 <td colspan="10">
-<strong>Total Pengeluaran</strong>
+<strong>Total Pembayaran</strong>
 </td>
 
 <td class="text-right">

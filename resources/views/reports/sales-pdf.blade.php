@@ -14,7 +14,7 @@ $now = \Carbon\Carbon::now();
 <head>
 <meta charset="utf-8">
 <title>{{ $title }}</title>
-<link rel="icon" href="/assets/images/logo-dharmawanita.png" type="image/png">
+<link rel="icon" href="~/assets/images/logo-dharmawanita.png" type="image/png">
 
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -107,11 +107,25 @@ $isDeleted
     </h1>
 
     <p>
-        @if ($type === 'month')
-            Periode: {{ $namaBulan[(int)$bulan] ?? '-' }} {{ $tahun }}
-        @else
-            Periode: {{ $tahun }}
-        @endif
+@php
+    $start = request('start_date');
+    $end   = request('end_date');
+@endphp
+
+    @if($start && $end)
+        Periode:
+        {{ \Carbon\Carbon::parse($start)->translatedFormat('d F Y') }}
+        -
+        {{ \Carbon\Carbon::parse($end)->translatedFormat('d F Y') }}
+
+    @elseif(isset($bulan) && isset($tahun))
+        Periode:
+        {{ $namaBulan[(int)$bulan] ?? '-' }} {{ $tahun }}
+
+    @else
+        Periode:
+        {{ $now->translatedFormat('F Y') }}
+    @endif
     </p>
 
     <p>

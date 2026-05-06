@@ -132,19 +132,6 @@ export default function Index({ pagination, total_assets }: Props) {
                   header: () => <div>Harga Jual</div>,
                   cell: (info) => <div>{formatIDR(info.getValue())}</div>,
               }),
-              columnHelper.accessor('total_in', {
-                  header: () => <div className="text-center">Stok Masuk</div>,
-                  cell: (info) => (
-                      <div className="text-center">{info.getValue() ?? 0}</div>
-                  ),
-              }),
-
-              columnHelper.accessor('total_out', {
-                  header: () => <div className="text-center">Stok Keluar</div>,
-                  cell: (info) => (
-                      <div className="text-center">{info.getValue() ?? 0}</div>
-                  ),
-              }),
 
               columnHelper.accessor('stock', {
                   header: () => <div className="text-center">Jumlah Stock</div>,

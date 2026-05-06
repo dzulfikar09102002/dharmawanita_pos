@@ -4,15 +4,7 @@ import type { BreadcrumbItem } from '@/types';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import {
-    Search,
-    X,
-    ArchiveRestore,
-    FilterX,
-    Printer,
-    CircleCheckBig,
-    Pencil,
-} from 'lucide-react';
+import { Search, X, Printer, CircleCheckBig, Pencil } from 'lucide-react';
 
 import {
     createColumnHelper,
@@ -27,21 +19,22 @@ import DataTable from '@/components/data-table';
 import TablePagination from '@/components/table-pagination';
 import { Option, Pagination, Purchase } from '@/lib/model';
 import { useQuery } from '@/hooks/use-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import purchases from '@/routes/reports/purchases';
 import Alert, { AlertState } from '@/components/purchase-report/alert';
 import { Field, FieldLabel } from '@/components/ui/field';
-import {
-    Combobox,
-    ComboboxContent,
-    ComboboxEmpty,
-    ComboboxInput,
-    ComboboxItem,
-    ComboboxList,
-} from '@/components/ui/combobox';
 import Modal from '@/components/purchase-report/modal';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { DateRange } from 'react-day-picker';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 
 const title = 'Laporan Pembelian';
 
@@ -49,18 +42,11 @@ const breadcrumbs: BreadcrumbItem[] = [{ title, href: purchases.index().url }];
 
 const columnHelper = createColumnHelper<Purchase>();
 
-type TableMeta = {
-    onDeleteOrRestore: (id: number, action: boolean) => void;
-    isDeletedRoute: boolean;
-};
-
 type Props = {
     pagination: Pagination<Purchase>;
     month: number;
     year: number;
-    resetKey?: number;
     supplierOptions: Option[];
-    onReset?: () => void;
     total_purchase: number;
 };
 
@@ -71,70 +57,60 @@ const formatRupiah = (value: number) =>
         minimumFractionDigits: 0,
     }).format(value || 0);
 
-const namaBulan = [
-    'Januari',
-    'Februari',
-    'Maret',
-    'April',
-    'Mei',
-    'Juni',
-    'Juli',
-    'Agustus',
-    'September',
-    'Oktober',
-    'November',
-    'Desember',
-];
-
 export default function Index({
     pagination,
-    month: initialMonth,
-    year: initialYear,
+    month,
+    year,
     supplierOptions,
     total_purchase,
 }: Props) {
-    const bulanOptions = namaBulan.map((nama, i) => ({
-        value: String(i + 1),
-        label: nama,
-    }));
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(
+        undefined,
+    );
+    const formatDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    const [startDate, setStartDate] = useState<string | null>(null);
+    const [endDate, setEndDate] = useState<string | null>(null);
+    const { url } = usePage();
+    const isDeletedRoute = url.includes('deleted');
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
 
-    const now = new Date();
-
-    const [month, setMonth] = useState(initialMonth ?? now.getMonth() + 1);
-    const [year, setYear] = useState(initialYear ?? now.getFullYear());
-
+        const start = params.get('start_date');
+        const end = params.get('end_date');
+        if (start && end) {
+            setDateRange({
+                from: new Date(start),
+                to: new Date(end),
+            });
+            setStartDate(start);
+            setEndDate(end);
+            return;
+        }
+        setDateRange(undefined);
+        setStartDate(null);
+        setEndDate(null);
+    }, [url]);
     const [alert, setAlert] = useState<AlertState>({
         delete: true,
         isOpen: false,
         dataId: undefined,
         proccessing: false,
     });
+
     const [editModal, setEditModal] = useState<{
         open: boolean;
         data?: Purchase;
     }>({
         open: false,
-        data: undefined,
     });
-    const { url } = usePage();
-    const isDeletedRoute = url.includes('deleted');
 
     const query = useQuery();
     const search = query.search || '';
-
-    const handleReset = () => {
-        const m = new Date().getMonth() + 1;
-        const y = new Date().getFullYear();
-
-        setMonth(m);
-        setYear(y);
-
-        router.get(
-            purchases.index().url,
-            { search: '', month: m, year: y, page: 1 },
-            { preserveState: true, replace: true },
-        );
-    };
 
     const [payModal, setPayModal] = useState<{
         open: boolean;
@@ -153,19 +129,41 @@ export default function Index({
             proccessing: false,
         });
 
-    const handlePrint = (type: 'month' | 'year' | 'week') => {
-        let url = `/reports/print-purchases-report?type=${type}&year=${year}`;
+    const handlePrint = (type: 'month' | 'year' | 'week' | 'range') => {
+        const params = new URLSearchParams({ type });
+
+        if (type === 'year') {
+            params.append('year', String(year));
+        }
 
         if (type === 'month' || type === 'week') {
-            url += `&month=${month}`;
+            params.append('month', String(month));
+            params.append('year', String(year));
+        }
+
+        if (type === 'range') {
+            if (!dateRange?.from || !dateRange?.to) {
+                toast.error('Pilih tanggal dulu');
+                return;
+            }
+
+            params.append('start_date', formatDate(dateRange.from));
+            params.append('end_date', formatDate(dateRange.to));
         }
 
         if (isDeletedRoute) {
-            url += '&deleted=1';
+            params.append('deleted', '1');
         }
 
-        window.open(url, '_blank');
+        window.open(
+            `/reports/print-purchases-report?${params.toString()}`,
+            '_blank',
+        );
     };
+
+    const getTotal = (row?: Purchase) =>
+        Number(row?.quantity || 0) * Number(row?.purchase_price || 0);
+
     const columns: ColumnDef<Purchase, any>[] = [
         {
             id: 'no',
@@ -175,17 +173,27 @@ export default function Index({
                 info.row.index +
                 1,
         },
-
         columnHelper.accessor('code', {
             header: 'Kode',
             footer: () => <span className="font-bold">TOTAL PEMBELIAN</span>,
         }),
-
         columnHelper.accessor('product_id', {
             header: 'Produk',
-            cell: (info) => info.row.original.product?.name ?? '-',
+            cell: (info) => (
+                <div className="max-w-[200px] break-words whitespace-normal">
+                    {info.row.original.product?.name ?? '-'}
+                </div>
+            ),
         }),
-
+        columnHelper.accessor('purchase_date', {
+            header: 'Tanggal',
+            cell: (info) =>
+                new Date(info.getValue()).toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                }),
+        }),
         columnHelper.display({
             id: 'source',
             header: 'Sumber',
@@ -208,36 +216,25 @@ export default function Index({
                 return labels[source ?? ''] ?? '-';
             },
         }),
-
         columnHelper.accessor('supplier_id', {
             header: 'Supplier',
             cell: (info) => info.row.original.supplier?.name ?? '-',
         }),
-
         columnHelper.accessor('quantity', {
             header: 'Qty',
         }),
-
         columnHelper.accessor('purchase_price', {
             header: 'Harga',
             cell: (info) => formatRupiah(Number(info.getValue() || 0)),
         }),
-
         columnHelper.display({
             id: 'total',
             header: 'Total',
             cell: (info) => {
-                const row = info.row.original;
-
-                const qty = Number(row.quantity || 0);
-                const price = Number(row.purchase_price || 0);
-
-                const total = qty * price;
-
+                const total = getTotal(info.row.original);
                 return <span>{formatRupiah(total)}</span>;
             },
         }),
-
         columnHelper.display({
             id: 'total_bayar',
             header: 'Total Bayar',
@@ -245,31 +242,24 @@ export default function Index({
                 const totalBayar = Number(info.row.original.total_payment || 0);
                 return <span>{formatRupiah(totalBayar)}</span>;
             },
-
             footer: () => (
                 <span className="font-bold">
                     {formatRupiah(total_purchase)}
                 </span>
             ),
         }),
-
         columnHelper.display({
             id: 'kurang_bayar',
             header: 'Kurang Bayar',
             cell: (info) => {
                 const row = info.row.original;
-
-                const qty = Number(row.quantity || 0);
-                const price = Number(row.purchase_price || 0);
+                const total = getTotal(row);
                 const totalPayment = Number(row.total_payment || 0);
                 const status = String(row.status_payment || '')
                     .toLowerCase()
                     .trim();
 
-                const total = qty * price;
-
-                const isFree = totalPayment === 0 && status === 'paid';
-
+                const isFree = status === 'paid' && totalPayment === 0;
                 const kurangBayar = isFree ? 0 : total - totalPayment;
 
                 return kurangBayar > 0 ? (
@@ -281,30 +271,18 @@ export default function Index({
                 );
             },
         }),
-
-        columnHelper.accessor('purchase_date', {
-            header: 'Tanggal',
-            cell: (info) =>
-                new Date(info.getValue()).toLocaleDateString('id-ID', {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric',
-                }),
-        }),
-
         {
             accessorKey: 'status_payment',
             header: 'Status',
             cell: (info) => {
                 const row = info.row.original;
-
                 const rawStatus = info.getValue();
                 if (!rawStatus) return '-';
 
                 const status = String(rawStatus).toLowerCase().trim();
                 const totalPayment = Number(row.total_payment || 0);
 
-                const isFree = totalPayment === 0 && status === 'paid';
+                const isFree = status === 'paid' && totalPayment === 0;
 
                 let label = 'Belum Lunas';
                 let color = 'bg-yellow-100 text-yellow-700';
@@ -332,7 +310,6 @@ export default function Index({
             header: 'Aksi',
             cell: (info) => {
                 const row = info.row.original;
-
                 const status = String(row.status_payment || '')
                     .toLowerCase()
                     .trim();
@@ -380,16 +357,25 @@ export default function Index({
             },
         });
     }
+
     const table = useReactTable({
         data: pagination.data,
         columns,
         getCoreRowModel: getCoreRowModel(),
-        meta: { onDeleteOrRestore, isDeletedRoute },
     });
 
+    const isSameMonth =
+        dateRange?.from &&
+        dateRange?.to &&
+        dateRange.from.getMonth() === dateRange.to.getMonth() &&
+        dateRange.from.getFullYear() === dateRange.to.getFullYear();
+
+    const isRangeSelected = dateRange?.from && dateRange?.to;
+    const [printType, setPrintType] = useState<string>('');
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
+
             <Modal
                 open={editModal.open}
                 item={editModal.data}
@@ -397,7 +383,6 @@ export default function Index({
                 onClose={() =>
                     setEditModal({
                         open: false,
-                        data: undefined,
                     })
                 }
             />
@@ -423,21 +408,16 @@ export default function Index({
                     setPayModal({
                         open: false,
                         data: undefined,
-                        resetKey: 0, // boleh ada di state, tapi tidak dipakai modal
+                        resetKey: 0,
                     })
                 }
                 grandTotal={
-                    (payModal.data?.purchase_price ?? 0) *
-                        (payModal.data?.quantity ?? 0) -
+                    getTotal(payModal.data) -
                     (payModal.data?.total_payment ?? 0)
                 }
                 onConfirm={(amount: number) => {
-                    const total =
-                        (payModal.data?.purchase_price ?? 0) *
-                        (payModal.data?.quantity ?? 0);
-
+                    const total = getTotal(payModal.data);
                     const alreadyPaid = payModal.data?.total_payment ?? 0;
-
                     const remaining = total - alreadyPaid;
 
                     if (amount > remaining) {
@@ -469,15 +449,33 @@ export default function Index({
                 <CardHeader>
                     <Form
                         method="GET"
-                        action={purchases.index().url}
+                        action={
+                            isDeletedRoute
+                                ? purchases.deleted().url
+                                : purchases.index().url
+                        }
                         className="flex flex-wrap items-end gap-3"
                     >
-                        <input type="hidden" name="month" value={month} />
-                        <input type="hidden" name="year" value={year} />
+                        <input
+                            type="hidden"
+                            name="start_date"
+                            value={
+                                dateRange?.from
+                                    ? formatDate(dateRange.from)
+                                    : ''
+                            }
+                        />
+
+                        <input
+                            type="hidden"
+                            name="end_date"
+                            value={
+                                dateRange?.to ? formatDate(dateRange.to) : ''
+                            }
+                        />
                         <input type="hidden" name="page" value={1} />
 
-                        {/* SEARCH */}
-                        <div className="flex min-w-[250px] flex-1 flex-col">
+                        <div className="flex min-w-[1050px] flex-col">
                             <Input
                                 name="search"
                                 defaultValue={search}
@@ -485,95 +483,47 @@ export default function Index({
                             />
                         </div>
 
-                        {/* BULAN */}
-                        <div className="flex flex-col">
-                            <Field className="min-w-[180px]">
-                                <FieldLabel>Bulan</FieldLabel>
-
-                                <Combobox
-                                    items={bulanOptions}
-                                    value={
-                                        bulanOptions.find(
-                                            (b) => Number(b.value) === month,
-                                        ) ?? null
-                                    }
-                                    onValueChange={(val) => {
-                                        if (val) setMonth(Number(val.value));
-                                    }}
-                                >
-                                    <ComboboxInput placeholder="Pilih bulan" />
-
-                                    <ComboboxContent>
-                                        <ComboboxEmpty>
-                                            Tidak ditemukan
-                                        </ComboboxEmpty>
-                                        <ComboboxList>
-                                            {(item) => (
-                                                <ComboboxItem
-                                                    key={item.value}
-                                                    value={item}
-                                                >
-                                                    {item.label}
-                                                </ComboboxItem>
-                                            )}
-                                        </ComboboxList>
-                                    </ComboboxContent>
-                                </Combobox>
-                            </Field>
-                        </div>
-
-                        {/* TAHUN */}
-                        <div className="flex flex-col">
+                        <div className="flex flex-1 flex-col">
                             <Field>
-                                <FieldLabel>Tahun</FieldLabel>
-
-                                <Input
-                                    type="number"
-                                    value={year}
-                                    onChange={(e) =>
-                                        setYear(Number(e.target.value))
-                                    }
-                                    min={2000}
-                                    max={2100}
+                                <FieldLabel>Periode Tanggal</FieldLabel>
+                                <DateRangePicker
+                                    value={dateRange}
+                                    onChange={(range) => {
+                                        setDateRange(range);
+                                        setStartDate(
+                                            range?.from
+                                                ? formatDate(range.from)
+                                                : null,
+                                        );
+                                        setEndDate(
+                                            range?.to
+                                                ? formatDate(range.to)
+                                                : null,
+                                        );
+                                    }}
                                 />
                             </Field>
                         </div>
 
-                        {/* BUTTON */}
                         <div className="flex gap-2">
                             <Button
                                 type="submit"
                                 className="bg-blue-600 text-white hover:bg-blue-700"
                             >
                                 <Search size={16} />
-                                Filter
-                            </Button>
-
-                            <Button
-                                type="button"
-                                onClick={handleReset}
-                                className="bg-red-600 text-white hover:bg-red-700"
-                            >
-                                <FilterX size={16} />
-                                Reset Filter
+                                Tampilkan
                             </Button>
                         </div>
                     </Form>
                 </CardHeader>
 
                 <CardContent>
-                    {/* PRINT */}
                     <div className="mb-4 flex items-center justify-between gap-4">
                         <Tabs value={isDeletedRoute ? 'canceled' : 'active'}>
                             <TabsList>
                                 <TabsTrigger value="active" asChild>
                                     <Link
                                         href={purchases.index().url}
-                                        data={{
-                                            month,
-                                            year,
-                                            search,
-                                        }}
                                         preserveState
                                         preserveScroll
                                     >
@@ -584,11 +534,6 @@ export default function Index({
                                 <TabsTrigger value="canceled" asChild>
                                     <Link
                                         href={purchases.deleted().url}
-                                        data={{
-                                            month,
-                                            year,
-                                            search,
-                                        }}
                                         preserveState
                                         preserveScroll
                                     >
@@ -599,31 +544,57 @@ export default function Index({
                         </Tabs>
 
                         <div className="flex items-center gap-2">
-                            <Button
-                                onClick={() => handlePrint('week')}
-                                className="bg-cyan-600 text-white shadow-sm hover:bg-cyan-700"
+                            <Select
+                                value={printType}
+                                onValueChange={(val: any) => {
+                                    setPrintType(val);
+                                    handlePrint(val);
+                                    setTimeout(() => setPrintType(''), 0);
+                                }}
                             >
-                                <Printer size={16} />
-                                Cetak Laporan Mingguan
-                            </Button>
+                                <SelectTrigger className="cursor-pointer border border-cyan-600 bg-cyan-600 font-semibold text-white hover:bg-cyan-700 [&_*]:text-white">
+                                    <div className="flex items-center gap-2">
+                                        <Printer className="h-4 w-4" />
+                                        <SelectValue placeholder="Cetak Laporan" />
+                                    </div>
+                                </SelectTrigger>
 
-                            <Button
-                                onClick={() => handlePrint('month')}
-                                className="bg-emerald-600 text-white hover:bg-emerald-700"
-                            >
-                                <Printer size={16} />
-                                Cetak Laporan Bulanan
-                            </Button>
+                                <SelectContent>
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="range"
+                                        disabled={!isRangeSelected}
+                                    >
+                                        Filter Saat Ini
+                                    </SelectItem>
 
-                            <Button
-                                onClick={() => handlePrint('year')}
-                                className="bg-purple-600 text-white hover:bg-purple-700"
-                            >
-                                <Printer size={16} />
-                                Cetak Laporan Tahunan
-                            </Button>
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="week"
+                                        disabled={!isSameMonth}
+                                    >
+                                        Mingguan
+                                    </SelectItem>
+
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="month"
+                                        disabled={!isSameMonth}
+                                    >
+                                        Bulanan
+                                    </SelectItem>
+
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="year"
+                                    >
+                                        Tahunan
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
+
                     <DataTable columns={columns} table={table} />
                     <TablePagination pagination={pagination} />
                 </CardContent>

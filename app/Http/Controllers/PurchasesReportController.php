@@ -66,159 +66,171 @@ class PurchasesReportController extends Controller
     }
 
     public function printPurchasesReport(Request $request)
-{
-    $type = $request->type ?? 'month';
-    $bulan = $request->bulan ?? now()->month;
-    $tahun = $request->tahun ?? now()->year;
-    $isDeleted = $request->boolean('deleted');
+    {
+        $type = $request->type ?? 'month';
 
-    $query = Purchase::with([
-        'product',
-        'supplier',
-        'inventoryTransactions',
-        'returnTransaction',
-    ]);
+        $month = $request->month ?? now()->month;
+        $year  = $request->year ?? now()->year;
 
-    if ($isDeleted) {
-        $query->onlyTrashed();
-    }
+        $startDate = $request->start_date;
+        $endDate   = $request->end_date;
 
-    if ($type === 'month' || $type === 'week') {
-        $query->whereMonth('purchase_date', $bulan)
-              ->whereYear('purchase_date', $tahun);
-    } else {
-        $query->whereYear('purchase_date', $tahun);
-    }
+        $isDeleted = $request->boolean('deleted');
+        $query = Purchase::with([
+            'product',
+            'supplier',
+            'inventoryTransactions',
+            'returnTransaction',
+        ]);
 
-    $transactions = $query
-        ->latest('purchase_date')
-        ->get();
-
-    $transactions->each(function ($item) use ($isDeleted) {
-
-    $labels = [
-        'purchase' => 'Pembelian',
-        'sale' => 'Penjualan',
-        'adjustment' => 'Penyesuaian',
-        'return' => 'Retur',
-        'transfer' => 'Transfer',
-        'other' => 'Lainnya',
-        'damage' => 'Barang Rusak',
-        'expired' => 'Kedaluwarsa',
-        'consignment' => 'Titipan',
-    ];
-
-    if ($isDeleted) {
-
-        $return = $item->returnTransaction?->first();
-
-        $item->reason = $return?->note;
-
-        $item->source_label =
-            $labels[$return?->source] ?? '-';
-
-    } else {
-
-        $inventory = $item->inventoryTransactions?->first();
-
-        $item->reason = $inventory?->note;
-
-        $item->source_label =
-            $labels[$inventory?->source] ?? '-';
-    }
-
-});
-
-
-    $weeklyTotals = [];
-
-    if ($type === 'week') {
-
-        $transactions = $transactions
-            ->sortBy('purchase_date')
-            ->groupBy(function ($trx) {
-                $date = \Carbon\Carbon::parse($trx->purchase_date);
-                return ceil($date->day / 7);
-            });
-
-        foreach ($transactions as $week => $items) {
-
-            $weeklyTotals[$week] = $isDeleted
-                ? (float) $items->sum('total_payment')
-                : (float) $items
-                    ->where('status_payment','!=','canceled')
-                    ->sum('total_payment');
+        if ($isDeleted) {
+            $query->onlyTrashed();
         }
+        if ($type === 'range' && $startDate && $endDate) {
+
+            $query->whereBetween('purchase_date', [$startDate, $endDate]);
+
+        } elseif ($type === 'month' || $type === 'week') {
+
+            $query->whereMonth('purchase_date', $month)
+                ->whereYear('purchase_date', $year);
+
+        } elseif ($type === 'year') {
+
+            $query->whereYear('purchase_date', $year);
+        }
+
+        $transactions = $query
+            ->latest('purchase_date')
+            ->get();
+
+        $transactions->each(function ($item) use ($isDeleted) {
+
+            $labels = [
+                'purchase' => 'Pembelian',
+                'sale' => 'Penjualan',
+                'adjustment' => 'Penyesuaian',
+                'return' => 'Retur',
+                'transfer' => 'Transfer',
+                'other' => 'Lainnya',
+                'damage' => 'Barang Rusak',
+                'expired' => 'Kedaluwarsa',
+                'consignment' => 'Titipan',
+            ];
+
+            if ($isDeleted) {
+
+                $return = $item->returnTransaction?->first();
+
+                $item->reason = $return?->note;
+                $item->source_label = $labels[$return?->source] ?? '-';
+
+            } else {
+
+                $inventory = $item->inventoryTransactions?->first();
+
+                $item->reason = $inventory?->note;
+                $item->source_label = $labels[$inventory?->source] ?? '-';
+            }
+        });
+
+        $weeklyTotals = [];
+
+        if ($type === 'week') {
+
+            $transactions = $transactions
+                ->sortBy('purchase_date')
+                ->groupBy(function ($trx) {
+                    $date = \Carbon\Carbon::parse($trx->purchase_date);
+                    return ceil($date->day / 7);
+                });
+
+            foreach ($transactions as $week => $items) {
+
+                $weeklyTotals[$week] = $isDeleted
+                    ? (float) $items->sum('total_payment')
+                    : (float) $items
+                        ->where('status_payment','!=','canceled')
+                        ->sum('total_payment');
+            }
+        }
+
+        $flat = $type === 'week'
+            ? collect($transactions)->flatten()
+            : $transactions;
+
+        $total = $isDeleted
+            ? (float) $flat->sum('total_payment')
+            : (float) $flat
+                ->where('status_payment','!=','canceled')
+                ->sum('total_payment');
+
+        $namaBulan = [
+            1=>'Januari',
+            2=>'Februari',
+            3=>'Maret',
+            4=>'April',
+            5=>'Mei',
+            6=>'Juni',
+            7=>'Juli',
+            8=>'Agustus',
+            9=>'September',
+            10=>'Oktober',
+            11=>'November',
+            12=>'Desember'
+        ];
+
+        if ($type === 'range' && $startDate && $endDate) {
+
+            $periode = \Carbon\Carbon::parse($startDate)->format('d M Y')
+                . ' - ' .
+                \Carbon\Carbon::parse($endDate)->format('d M Y');
+
+        } elseif ($type === 'month') {
+
+            $periode = ($namaBulan[(int)$month] ?? '-') . ' ' . $year;
+
+        } elseif ($type === 'week') {
+
+            $periode = 'Per Minggu - ' .
+                ($namaBulan[(int)$month] ?? '-') . ' ' . $year;
+
+        } else {
+
+            $periode = $year;
+        }
+
+        $title = $isDeleted
+            ? 'Laporan Pembatalan Pembelian - ' . $periode
+            : 'Laporan Pembelian - ' . $periode;
+
+        $filename = $isDeleted
+            ? 'laporan-pembatalan-pembelian'
+            : 'laporan-pembelian';
+
+        if ($type === 'range' && $startDate && $endDate) {
+            $filename .= "-{$startDate}-to-{$endDate}.pdf";
+        } else {
+            $filename .= "-{$month}-{$year}.pdf";
+        }
+
+        $pdf = Pdf::loadView(
+            'reports.purchase-pdf',
+            [
+                'transactions' => $transactions,
+                'weeklyTotals' => $weeklyTotals,
+                'total' => $total,
+                'type' => $type,
+                'bulan' => $month,
+                'tahun' => $year,
+                'title' => $title,
+                'isDeleted' => $isDeleted,
+            ]
+        )->setPaper('A3','landscape');
+
+        return $pdf->stream($filename);
     }
-
-
-    $flat = $type === 'week'
-        ? collect($transactions)->flatten()
-        : $transactions;
-
-    $total = $isDeleted
-        ? (float) $flat->sum('total_payment')
-        : (float) $flat
-            ->where('status_payment','!=','canceled')
-            ->sum('total_payment');
-
-    $namaBulan = [
-        1=>'Januari',
-        2=>'Februari',
-        3=>'Maret',
-        4=>'April',
-        5=>'Mei',
-        6=>'Juni',
-        7=>'Juli',
-        8=>'Agustus',
-        9=>'September',
-        10=>'Oktober',
-        11=>'November',
-        12=>'Desember'
-    ];
-
-    if ($type === 'month') {
-        $periode =
-            ($namaBulan[(int)$bulan] ?? '-') . ' ' . $tahun;
-
-    } elseif ($type === 'week') {
-
-        $periode =
-            'Per Minggu - ' .
-            ($namaBulan[(int)$bulan] ?? '-') .
-            ' ' .
-            $tahun;
-
-    } else {
-        $periode = $tahun;
-    }
-
-    $title = $isDeleted
-        ? 'Laporan Pembatalan Pembelian - ' . $periode
-        : 'Laporan Pembelian - ' . $periode;
-
-    $pdf = Pdf::loadView(
-        'reports.purchase-pdf',
-        [
-            'transactions' => $transactions,
-            'weeklyTotals' => $weeklyTotals,
-            'total' => $total,
-            'type' => $type,
-            'bulan' => $bulan,
-            'tahun' => $tahun,
-            'title' => $title,
-            'isDeleted' => $isDeleted,
-        ]
-    )->setPaper('A3','landscape');
-
-
-    return $pdf->stream(
-        $isDeleted
-            ? "laporan-pembatalan-pembelian-{$bulan}-{$tahun}.pdf"
-            : "laporan-pembelian-{$bulan}-{$tahun}.pdf"
-    );
-}
-public function pay(Purchase $purchase)
+    public function pay(Purchase $purchase)
     {
         $this->service->pay($purchase, request()->all());
 

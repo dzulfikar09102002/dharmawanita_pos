@@ -1,5 +1,5 @@
 import { Head, Form, Link, usePage, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import salesReport from '@/routes/reports/sales';
@@ -26,6 +26,13 @@ import {
     ComboboxList,
 } from '@/components/ui/combobox';
 import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import {
     createColumnHelper,
     getCoreRowModel,
     useReactTable,
@@ -37,6 +44,9 @@ import TablePagination from '@/components/table-pagination';
 import { Pagination, SaleTransaction } from '@/lib/model';
 import { useQuery } from '@/hooks/use-query';
 import Alert, { AlertState } from '@/components/sales-report/alert';
+import { DateRange } from 'react-day-picker';
+import { toast } from 'sonner';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 
 const title = 'Laporan Penjualan';
 
@@ -45,21 +55,6 @@ const breadcrumbs: BreadcrumbItem[] = [
         title,
         href: salesReport.index().url,
     },
-];
-
-const namaBulan = [
-    'Januari',
-    'Februari',
-    'Maret',
-    'April',
-    'Mei',
-    'Juni',
-    'Juli',
-    'Agustus',
-    'September',
-    'Oktober',
-    'November',
-    'Desember',
 ];
 
 const formatRupiah = (value: number | string | null | undefined) =>
@@ -81,41 +76,72 @@ type TableMeta = {
 
 type Props = {
     pagination: Pagination<SaleTransaction>;
-    bulan: number;
-    tahun: number;
     total_profit: number;
     total_selling: number;
 };
 
 export default function Index({
     pagination,
-    bulan: initialBulan,
-    tahun: initialTahun,
     total_profit,
     total_selling,
 }: Props) {
-    const bulanOptions = namaBulan.map((nama, i) => ({
-        value: String(i + 1),
-        label: nama,
-    }));
-    const { data } = pagination;
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(
+        undefined,
+    );
+    const formatDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    const [startDate, setStartDate] = useState<string | null>(null);
+    const [endDate, setEndDate] = useState<string | null>(null);
     const { url } = usePage();
+    const isDeletedRoute = url.includes('deleted');
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+
+        const start = params.get('start_date');
+        const end = params.get('end_date');
+        if (start && end) {
+            setDateRange({
+                from: new Date(start),
+                to: new Date(end),
+            });
+            setStartDate(start);
+            setEndDate(end);
+            return;
+        }
+        setDateRange(undefined);
+        setStartDate(null);
+        setEndDate(null);
+    }, [url]);
+    const { data } = pagination;
 
     const isCanceledRoute = url.includes('canceled');
-    const isDeletedRoute = url.includes('deleted');
     const isActiveRoute = !isCanceledRoute && !isDeletedRoute;
 
     const query = useQuery();
     const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
 
-    const [bulan, setBulan] = useState<number>(
-        Number(query.bulan) || initialBulan || currentMonth,
-    );
+    const [printType, setPrintType] = useState<string>('');
 
-    const [tahun, setTahun] = useState<number>(
-        Number(query.tahun) || initialTahun || currentYear,
-    );
+    const isRangeSelected = !!(dateRange?.from && dateRange?.to);
+    const getBulanTahun = () => {
+        if (!dateRange?.from) return null;
+
+        return {
+            bulan: dateRange.from.getMonth() + 1,
+            tahun: dateRange.from.getFullYear(),
+        };
+    };
+    const isSameMonth =
+        dateRange?.from &&
+        dateRange?.to &&
+        dateRange.from.getMonth() === dateRange.to.getMonth() &&
+        dateRange.from.getFullYear() === dateRange.to.getFullYear();
+
     const search = query.search || '';
 
     const initialAlertState: AlertState = {
@@ -125,28 +151,6 @@ export default function Index({
         processing: false,
     };
 
-    const handleReset = () => {
-        const currentMonth = new Date().getMonth() + 1;
-        const currentYear = new Date().getFullYear();
-
-        setBulan(currentMonth);
-        setTahun(currentYear);
-
-        router.get(
-            salesReport.index().url,
-            {
-                search: '',
-                bulan: currentMonth,
-                tahun: currentYear,
-                page: 1,
-            },
-            {
-                preserveState: true,
-                replace: true,
-            },
-        );
-    };
-
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -154,8 +158,6 @@ export default function Index({
             salesReport.index().url,
             {
                 search,
-                bulan,
-                tahun,
                 page: 1,
             },
             {
@@ -167,22 +169,46 @@ export default function Index({
 
     const [alert, setAlert] = useState<AlertState>(initialAlertState);
 
-    const handlePrint = (type: 'month' | 'year' | 'week') => {
-        let url = `/reports/print-sales-report?type=${type}&tahun=${tahun}`;
+    const handlePrint = (type: 'month' | 'year' | 'week' | 'range') => {
+        const params = new URLSearchParams({ type });
+
+        if (type === 'year') {
+            if (!dateRange?.from) {
+                toast.error('Pilih tanggal dulu');
+                return;
+            }
+
+            params.append('tahun', String(dateRange.from.getFullYear()));
+        }
+
+        const periode = getBulanTahun();
 
         if (type === 'month' || type === 'week') {
-            url += `&bulan=${bulan}`;
+            if (!periode) {
+                toast.error('Pilih tanggal dulu');
+                return;
+            }
+
+            params.append('bulan', String(periode.bulan));
+            params.append('tahun', String(periode.tahun));
         }
 
-        if (isCanceledRoute) {
-            url += `&canceled=1`;
-        }
+        if (type === 'range') {
+            if (!dateRange?.from || !dateRange?.to) {
+                toast.error('Pilih tanggal dulu');
+                return;
+            }
 
-        if (isDeletedRoute) {
-            url += `&deleted=1`;
+            params.append('start_date', formatDate(dateRange.from));
+            params.append('end_date', formatDate(dateRange.to));
         }
+        if (isCanceledRoute) params.append('canceled', '1');
+        if (isDeletedRoute) params.append('deleted', '1');
 
-        window.open(url, '_blank');
+        window.open(
+            `/reports/print-sales-report?${params.toString()}`,
+            '_blank',
+        );
     };
 
     const onAlertClose = () => setAlert(initialAlertState);
@@ -417,9 +443,9 @@ export default function Index({
               );
 
               return [
-                  ...filtered.slice(0, actionIndex), // sebelum action
-                  ...deletedColumns, // reason masuk sini
-                  ...filtered.slice(actionIndex), // action tetap terakhir
+                  ...filtered.slice(0, actionIndex),
+                  ...deletedColumns,
+                  ...filtered.slice(actionIndex),
               ];
           })()
         : baseColumns;
@@ -450,13 +476,35 @@ export default function Index({
                 <CardHeader>
                     <Form
                         method="GET"
+                        action={
+                            isDeletedRoute
+                                ? salesReport.deleted().url
+                                : isCanceledRoute
+                                  ? salesReport.canceled().url
+                                  : salesReport.index().url
+                        }
                         className="flex flex-wrap items-end gap-3"
-                        onSubmit={handleFilter}
                     >
+                        <input
+                            type="hidden"
+                            name="start_date"
+                            value={
+                                dateRange?.from
+                                    ? formatDate(dateRange.from)
+                                    : ''
+                            }
+                        />
+
+                        <input
+                            type="hidden"
+                            name="end_date"
+                            value={
+                                dateRange?.to ? formatDate(dateRange.to) : ''
+                            }
+                        />
                         <input type="hidden" name="page" value={1} />
-                        <input type="hidden" name="bulan" value={bulan} />
-                        <input type="hidden" name="tahun" value={tahun} />
-                        <div className="flex min-w-[250px] flex-1 flex-col">
+
+                        <div className="flex min-w-[1050px] flex-col">
                             <Input
                                 name="search"
                                 defaultValue={search}
@@ -464,54 +512,24 @@ export default function Index({
                             />
                         </div>
 
-                        <div className="flex flex-col">
-                            <Field className="min-w-[180px]">
-                                <FieldLabel>Bulan</FieldLabel>
-
-                                <Combobox
-                                    items={bulanOptions}
-                                    value={
-                                        bulanOptions.find(
-                                            (b) => Number(b.value) === bulan,
-                                        ) ?? null
-                                    }
-                                    onValueChange={(val) => {
-                                        if (val) setBulan(Number(val.value));
-                                    }}
-                                >
-                                    <ComboboxInput placeholder="Pilih bulan" />
-
-                                    <ComboboxContent>
-                                        <ComboboxEmpty>
-                                            Tidak ditemukan
-                                        </ComboboxEmpty>
-                                        <ComboboxList>
-                                            {(item) => (
-                                                <ComboboxItem
-                                                    key={item.value}
-                                                    value={item}
-                                                >
-                                                    {item.label}
-                                                </ComboboxItem>
-                                            )}
-                                        </ComboboxList>
-                                    </ComboboxContent>
-                                </Combobox>
-                            </Field>
-                        </div>
-
-                        <div className="flex flex-col">
+                        <div className="flex flex-1 flex-col">
                             <Field>
-                                <FieldLabel>Tahun</FieldLabel>
-
-                                <Input
-                                    type="number"
-                                    value={tahun}
-                                    onChange={(e) =>
-                                        setTahun(Number(e.target.value))
-                                    }
-                                    min={2000}
-                                    max={2100}
+                                <FieldLabel>Periode Tanggal</FieldLabel>
+                                <DateRangePicker
+                                    value={dateRange}
+                                    onChange={(range) => {
+                                        setDateRange(range);
+                                        setStartDate(
+                                            range?.from
+                                                ? formatDate(range.from)
+                                                : null,
+                                        );
+                                        setEndDate(
+                                            range?.to
+                                                ? formatDate(range.to)
+                                                : null,
+                                        );
+                                    }}
                                 />
                             </Field>
                         </div>
@@ -522,16 +540,7 @@ export default function Index({
                                 className="bg-blue-600 text-white hover:bg-blue-700"
                             >
                                 <Search size={16} />
-                                Filter
-                            </Button>
-
-                            <Button
-                                type="button"
-                                onClick={handleReset}
-                                className="bg-red-600 text-white hover:bg-red-700"
-                            >
-                                <FilterX size={16} />
-                                Reset Filter
+                                Tampilkan
                             </Button>
                         </div>
                     </Form>
@@ -552,7 +561,7 @@ export default function Index({
                                 <TabsTrigger value="active" asChild>
                                     <Link
                                         href={salesReport.index().url}
-                                        data={{ bulan, tahun, search }}
+                                        data={{ search }}
                                         preserveState
                                         preserveScroll
                                     >
@@ -563,7 +572,7 @@ export default function Index({
                                 <TabsTrigger value="canceled" asChild>
                                     <Link
                                         href={salesReport.canceled().url}
-                                        data={{ bulan, tahun, search }}
+                                        data={{ search }}
                                         preserveState
                                         preserveScroll
                                     >
@@ -574,7 +583,7 @@ export default function Index({
                                 <TabsTrigger value="deleted" asChild>
                                     <Link
                                         href={salesReport.deleted().url}
-                                        data={{ bulan, tahun, search }}
+                                        data={{ search }}
                                         preserveState
                                         preserveScroll
                                     >
@@ -585,29 +594,54 @@ export default function Index({
                         </Tabs>
 
                         <div className="flex items-center gap-2">
-                            <Button
-                                onClick={() => handlePrint('week')}
-                                className="bg-cyan-600 text-white shadow-sm hover:bg-cyan-700"
+                            <Select
+                                value={printType}
+                                onValueChange={(val: any) => {
+                                    setPrintType(val);
+                                    handlePrint(val);
+                                    setTimeout(() => setPrintType(''), 0);
+                                }}
                             >
-                                <Printer size={16} />
-                                Cetak Laporan Mingguan
-                            </Button>
+                                <SelectTrigger className="cursor-pointer border border-cyan-600 bg-cyan-600 font-semibold text-white hover:bg-cyan-700 [&_*]:text-white">
+                                    <div className="flex items-center gap-2">
+                                        <Printer className="h-4 w-4" />
+                                        <SelectValue placeholder="Cetak Laporan" />
+                                    </div>
+                                </SelectTrigger>
 
-                            <Button
-                                onClick={() => handlePrint('month')}
-                                className="bg-emerald-600 text-white hover:bg-emerald-700"
-                            >
-                                <Printer size={16} />
-                                Cetak Laporan Bulanan
-                            </Button>
+                                <SelectContent>
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="range"
+                                        disabled={!isRangeSelected}
+                                    >
+                                        Filter Saat Ini
+                                    </SelectItem>
 
-                            <Button
-                                onClick={() => handlePrint('year')}
-                                className="bg-purple-600 text-white hover:bg-purple-700"
-                            >
-                                <Printer size={16} />
-                                Cetak Laporan Tahunan
-                            </Button>
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="week"
+                                        disabled={!isSameMonth}
+                                    >
+                                        Mingguan
+                                    </SelectItem>
+
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="month"
+                                        disabled={!isSameMonth}
+                                    >
+                                        Bulanan
+                                    </SelectItem>
+
+                                    <SelectItem
+                                        className="cursor-pointer"
+                                        value="year"
+                                    >
+                                        Tahunan
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                     <DataTable columns={columns} table={table} />

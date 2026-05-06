@@ -133,14 +133,17 @@ class PurchaseService
 
                if($total_payment > 0)
                 {
+                    $transactionDate = \Carbon\Carbon::parse($item['purchase_date'])
+                    ->setTimeFrom(\Carbon\Carbon::now());
                     CashLedger::create([
-                    'transaction_date' => now(),
+                    'transaction_date' => $transactionDate,
                     'type'             => CashLedger::TYPE_OUT,
                     'category'         => CashLedger::CATEGORY_OPERATING,
                     'amount'           => $total_payment,
                     'description'      => 'PEMBELIAN ' . $purchase->product->name,
                     'reference_table'  => CashLedger::REF_PURCHASE,
                     'reference_id'     => $purchase->id,
+                    'cash_flow_type'   => 'bank',
                     'created_by'       => $user,
                     'updated_by'       => $user,
                     ]);

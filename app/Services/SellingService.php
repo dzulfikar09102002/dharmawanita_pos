@@ -301,6 +301,10 @@ class SellingService
             }
 
             if (!$isCancelMethod) {
+                $paymentMethod = PaymentMethod::find($input['payment_method_id']);
+                $cashFlowType = $paymentMethod && $paymentMethod->kind === 'Cash'
+                    ? 'cash'
+                    : 'bank';
                 CashLedger::create([
                     'transaction_date' => $sale->transaction_date,
                     'type' => CashLedger::TYPE_IN,
@@ -308,6 +312,7 @@ class SellingService
                     'amount' => $input['paid_amount'] - $input['change_amount'],
                     'description' => $description,
                     'reference_table' => CashLedger::REF_SALE,
+                    'cash_flow_type'  => $cashFlowType,
                     'reference_id' => $sale->id,
                     'created_by' => auth()->id(),
                     'updated_by' => auth()->id(),
