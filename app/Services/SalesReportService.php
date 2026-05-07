@@ -137,7 +137,7 @@ class SalesReportService
                 ? 'cash'
                 : 'bank';
                 CashLedger::create([
-                    'transaction_date' => now(),
+                    'transaction_date' => $invoice->transaction_date,
                     'type'             => CashLedger::TYPE_OUT,
                     'category'         => CashLedger::CATEGORY_ADJUSTMENT,
                     'amount'           => $totalPaid,
