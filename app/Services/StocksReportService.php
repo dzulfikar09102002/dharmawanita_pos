@@ -31,14 +31,14 @@ class StocksReportService
     }
     public function getAssetsValue()
     {
-        return ProductStock::with('firstInTransaction')
+        return ProductStock::query()
             ->get()
-            ->reject(fn ($item) =>
-                $item->firstInTransaction?->source === 'consignment'
-            )
-            ->sum(fn ($item) =>
-                ($item->stock ?? 0) * ($item->purchase_price ?? 0)
-            );
+            ->sum(function ($item) {
+
+                $stockAsset = max(0, $item->stock_asset ?? 0);
+
+                return $stockAsset * ($item->purchase_price ?? 0);
+            });
     }
     public function getStockReportByCategories()
     {

@@ -160,6 +160,8 @@ export interface Stock {
     stock: number;
     minimum_stock: number;
     first_in_transaction: InventoryTransaction;
+    stock_source: string;
+    stock_asset: number;
 }
 export interface InventoryTransaction {
     id: number;

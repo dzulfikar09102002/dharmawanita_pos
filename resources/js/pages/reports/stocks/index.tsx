@@ -112,8 +112,7 @@ export default function Index({ pagination, total_assets }: Props) {
                   id: 'source',
                   header: 'Sumber',
                   cell: (info) => {
-                      const source =
-                          info.row.original.first_in_transaction?.source;
+                      const source = info.row.original.stock_source;
 
                       const labels: Record<string, string> = {
                           purchase: 'Pembelian',
@@ -158,16 +157,23 @@ export default function Index({ pagination, total_assets }: Props) {
                       <div className="text-center">{info.getValue() ?? 0}</div>
                   ),
               }),
+              columnHelper.accessor('stock_asset', {
+                  header: () => <div className="text-center">Stok Aset</div>,
 
+                  cell: (info) => {
+                      const value = Math.max(0, Number(info.getValue() ?? 0));
+
+                      return <div className="text-center">{value}</div>;
+                  },
+              }),
               columnHelper.accessor(
                   (row) => {
-                      const source = row.first_in_transaction?.source;
+                      const stockAsset = Math.max(
+                          0,
+                          Number(row.stock_asset ?? 0),
+                      );
 
-                      if (source === 'consignment') {
-                          return null;
-                      }
-
-                      return (row.purchase_price ?? 0) * (row.stock ?? 0);
+                      return (row.purchase_price ?? 0) * stockAsset;
                   },
                   {
                       id: 'asset',
@@ -177,11 +183,11 @@ export default function Index({ pagination, total_assets }: Props) {
                       ),
 
                       cell: (info) => {
-                          const value = info.getValue();
+                          const value = Number(info.getValue() ?? 0);
 
                           return (
                               <div className="text-right font-semibold">
-                                  {value == null ? '-' : formatIDR(value)}
+                                  {value <= 0 ? '-' : formatIDR(value)}
                               </div>
                           );
                       },

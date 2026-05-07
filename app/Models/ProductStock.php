@@ -24,6 +24,7 @@ class ProductStock extends Model
 
     protected $appends = [
         'minimum_stock',
+        'stock_source',
     ];
 
     public function product()
@@ -47,5 +48,25 @@ class ProductStock extends Model
     public function getMinimumStockAttribute()
     {
         return $this->product?->minimum_stock;
+    }
+    public function getStockSourceAttribute()
+    {
+        $hasConsignmentStock = $this->inventoryTransactions()
+            ->whereNull('deleted_at')
+            ->where('source', 'consignment')
+            ->selectRaw("
+                COALESCE(SUM(
+                    CASE
+                        WHEN type = 'in' THEN quantity
+                        WHEN type = 'out' THEN -quantity
+                        ELSE 0
+                    END
+                ), 0) as total
+            ")
+            ->value('total');
+
+        return $hasConsignmentStock > 0
+            ? 'consignment'
+            : 'purchase';
     }
 }
