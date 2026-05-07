@@ -415,15 +415,6 @@ Rp {{ number_format($trx->change ?? 0,0,',','.') }}
 </td>
 
 <td class="text-right">
-Rp {{
-number_format(
-max(0, ($trx->total_amount ?? 0)-($trx->change ?? 0)),
-0,',','.'
-)
-}}
-</td>
-
-<td class="text-right">
 <strong style="color: {{ $profit >= 0 ? '#16a34a' : '#dc2626' }}">
 {{ $profit == 0 ? '-' : 'Rp '.number_format($profit,0,',','.') }}
 </strong>

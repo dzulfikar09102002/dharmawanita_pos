@@ -18,11 +18,6 @@ class PurchasesReportService
         $startDate = request('start_date');
         $endDate   = request('end_date');
 
-        if (!$startDate || !$endDate) {
-            $startDate = now()->startOfMonth()->toDateString();
-            $endDate   = now()->endOfMonth()->toDateString();
-        }
-    
         return Purchase::with(['product', 'supplier', 'inventoryTransactions'])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
@@ -35,7 +30,9 @@ class PurchasesReportService
                         });
                 });
             })
-            ->whereBetween('purchase_date', [$startDate, $endDate])
+            ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('purchase_date', [$startDate, $endDate]);
+            })
 
             ->orderByRaw("
                 CASE 
@@ -55,13 +52,10 @@ class PurchasesReportService
         $startDate = request('start_date');
         $endDate   = request('end_date');
 
-        if (!$startDate || !$endDate) {
-            $startDate = now()->startOfMonth()->toDateString();
-            $endDate   = now()->endOfMonth()->toDateString();
-        }
-
         return (float) Purchase::query()
-            ->whereBetween('purchase_date', [$startDate, $endDate])
+            ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('purchase_date', [$startDate, $endDate]);
+            })
             ->where('status_payment', '!=', 'canceled')
             ->sum('total_payment');
     }
@@ -71,11 +65,6 @@ class PurchasesReportService
 
         $startDate = request('start_date');
         $endDate   = request('end_date');
-
-        if (!$startDate || !$endDate) {
-            $startDate = now()->startOfMonth()->toDateString();
-            $endDate   = now()->endOfMonth()->toDateString();
-        }
 
         return Purchase::onlyTrashed()
             ->with(['product', 'supplier', 'inventoryTransactions'])
@@ -91,7 +80,9 @@ class PurchasesReportService
                 });
             })
 
-            ->whereBetween('purchase_date', [$startDate, $endDate])
+            ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('purchase_date', [$startDate, $endDate]);
+            })
 
             ->paginate(request('per_page', 10))
             ->withQueryString();

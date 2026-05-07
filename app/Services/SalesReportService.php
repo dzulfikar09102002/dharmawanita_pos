@@ -21,13 +21,13 @@ class SalesReportService
         $startDate = request('start_date');
         $endDate   = request('end_date');
 
-        if (!$startDate || !$endDate) {
-            $startDate = now()->startOfMonth()->toDateString();
-            $endDate   = now()->endOfMonth()->toDateString();
-        }
+        $startDate = $startDate
+            ? Carbon::parse($startDate)->startOfDay()
+            : null;
 
-        $startDate = Carbon::parse($startDate)->startOfDay();
-        $endDate   = Carbon::parse($endDate)->endOfDay();
+        $endDate = $endDate
+            ? Carbon::parse($endDate)->endOfDay()
+            : null;
 
         $query = SaleTransaction::with('paymentMethod', 'details')
             ->withSum('details as total_revenue', \DB::raw('(quantity * selling_price) - COALESCE(adjustment,0)'))
@@ -37,7 +37,9 @@ class SalesReportService
                     $q->where('invoice_number', 'like', "%{$search}%");
                 });
             })
-            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('transaction_date', [$startDate, $endDate]);
+            })
             ->when($payment_method_id !== 'all', function ($q) use ($payment_method_id) {
                 $q->where('payment_method_id', $payment_method_id);
             });
@@ -157,13 +159,13 @@ class SalesReportService
         $startDate = request('start_date');
         $endDate   = request('end_date');
 
-        if (!$startDate || !$endDate) {
-            $startDate = now()->startOfMonth();
-            $endDate   = now()->endOfMonth();
-        } else {
-            $startDate = Carbon::parse($startDate)->startOfDay();
-            $endDate   = Carbon::parse($endDate)->endOfDay();
-        }
+        $startDate = $startDate
+            ? Carbon::parse($startDate)->startOfDay()
+            : null;
+
+        $endDate = $endDate
+            ? Carbon::parse($endDate)->endOfDay()
+            : null;
 
         $data = SaleTransaction::with([
                 'paymentMethod',
@@ -172,7 +174,9 @@ class SalesReportService
             ->when($search, function ($q) use ($search) {
                 $q->where('invoice_number', 'like', "%$search%");
             })
-            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('transaction_date', [$startDate, $endDate]);
+            })
             ->where('payment_status', 'canceled')
             ->orderByDesc('transaction_date')
             ->paginate(request('per_page', 10))
@@ -197,13 +201,13 @@ class SalesReportService
         $startDate = request('start_date');
         $endDate   = request('end_date');
 
-        if (!$startDate || !$endDate) {
-            $startDate = now()->startOfMonth();
-            $endDate   = now()->endOfMonth();
-        } else {
-            $startDate = Carbon::parse($startDate)->startOfDay();
-            $endDate   = Carbon::parse($endDate)->endOfDay();
-        }
+         $startDate = $startDate
+            ? Carbon::parse($startDate)->startOfDay()
+            : null;
+
+        $endDate = $endDate
+            ? Carbon::parse($endDate)->endOfDay()
+            : null;
 
         $data = SaleTransaction::onlyTrashed()
             ->with([
@@ -213,7 +217,9 @@ class SalesReportService
             ->when($search, function ($q) use ($search) {
                 $q->where('invoice_number', 'like', "%$search%");
             })
-            ->whereBetween('transaction_date', [$startDate, $endDate])
+            ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('transaction_date', [$startDate, $endDate]);
+            })
             ->orderByDesc('transaction_date')
             ->paginate(request('per_page', 10))
             ->withQueryString();
