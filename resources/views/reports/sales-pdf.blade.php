@@ -163,7 +163,6 @@ $isDeleted
         <th class="text-right">Pembayaran</th>
         <th class="text-right">Kembalian</th>
         <th class="text-right">Laba</th>
-        <th class="text-right">Pendapatan</th>
     @endif
 </tr>
 </thead>
@@ -177,7 +176,7 @@ $isDeleted
 @forelse($transactions as $week => $items)
 
 <tr>
-<td colspan="{{ $isDeleted || $isCanceled ? 6 : 9 }}"
+<td colspan="{{ $isDeleted || $isCanceled ? 6 : 8 }}"
 style="background:#e5e5e5;font-weight:bold;">
 Minggu ke-{{ $week }}
 </td>
@@ -285,14 +284,6 @@ Rp {{ number_format($trx->change ?? 0,0,',','.') }}
 {{ $profit == 0 ? '-' : 'Rp '.number_format($profit,0,',','.') }}
 </strong>
 </td>
-<td class="text-right">
-Rp {{
-number_format(
-max(0, ($trx->total_amount ?? 0)-($trx->change ?? 0)),
-0,',','.'
-)
-}}
-</td>
 
 
 @endif
@@ -303,7 +294,7 @@ max(0, ($trx->total_amount ?? 0)-($trx->change ?? 0)),
 
 
 <tr>
-<td colspan="{{ $isDeleted || $isCanceled ? 5 : 8 }}"
+<td colspan="{{ $isDeleted || $isCanceled ? 5 : 7 }}"
 class="text-right">
 <strong>Subtotal Minggu {{ $week }}</strong>
 </td>
@@ -486,7 +477,7 @@ if($isDeleted){
         );
 
     $labelTotal='Total Penjualan';
-    $colspan=8;
+    $colspan=7;
 
 }
 

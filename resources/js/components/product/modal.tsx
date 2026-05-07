@@ -17,14 +17,6 @@ import { SubmitEventHandler, useEffect } from 'react';
 import { useForm } from '@inertiajs/react';
 import { toast } from 'sonner';
 import products from '@/routes/products';
-
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { DatePicker } from '../ui/date-picker';
 import {
     Combobox,
@@ -77,6 +69,7 @@ export default function Modal({
         selling_price: '',
         has_expired: false,
         expired_date: '',
+        minimum_stock: '',
     });
 
     const submit: SubmitEventHandler<HTMLFormElement> = (e) => {
@@ -114,6 +107,7 @@ export default function Modal({
                 selling_price: existing.selling_price ?? '',
                 has_expired: existing.has_expired ?? false,
                 expired_date: existing.expired_date ?? '',
+                minimum_stock: existing.minimum_stock ?? '',
             });
         } else {
             reset();
@@ -185,11 +179,11 @@ export default function Modal({
                             >
                                 <ComboboxInput
                                     placeholder="Pilih kategori"
-                                    className={
+                                    className={`cursor-pointer ${
                                         errors.category_id
                                             ? 'border-red-500'
                                             : ''
-                                    }
+                                    }`}
                                 />
 
                                 <ComboboxContent>
@@ -200,6 +194,7 @@ export default function Modal({
                                     <ComboboxList>
                                         {(el) => (
                                             <ComboboxItem
+                                                className={'cursor-pointer'}
                                                 key={el.value}
                                                 value={el}
                                             >
@@ -230,6 +225,16 @@ export default function Modal({
                                 value={data.selling_price}
                                 onChange={(e) =>
                                     setData('selling_price', e.target.value)
+                                }
+                            />
+                        </Field>
+                        <Field>
+                            <FieldLabel>Minimum Stok</FieldLabel>
+                            <Input
+                                type="number"
+                                value={data.minimum_stock}
+                                onChange={(e) =>
+                                    setData('minimum_stock', e.target.value)
                                 }
                             />
                         </Field>

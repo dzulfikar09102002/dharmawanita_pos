@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ProductStock;
 use App\Models\SaleTransaction;
 use App\Models\SaleTransactionDetail;
 use App\Models\PaymentMethod;
@@ -15,7 +16,7 @@ class StocksReportService
     {
         $search = request('search', '');
 
-        $query = DB::table('product_stocks');
+        $query = ProductStock::with('product');
 
         if ($search) {
             $query->where('name', 'like', "%{$search}%");

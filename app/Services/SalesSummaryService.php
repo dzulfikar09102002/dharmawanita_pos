@@ -13,17 +13,17 @@ class SalesSummaryService
 
     public function getSalesSummaryToday()
     {
-        // 🔹 ambil rekap terakhir hari ini
+
         $lastSummary = SalesSummary::whereDate('date', today())
             ->latest('date')
             ->first();
-        // 🔹 tentukan start waktu
+
         $start = $lastSummary
-            ? $lastSummary->date // setelah rekap terakhir
-            : now()->startOfDay(); // kalau belum ada rekap
+            ? $lastSummary->date 
+            : now()->startOfDay();
 
         $end = now();
-        // 🔹 ambil transaksi
+
         $transactions = SaleTransaction::with(['details', 'paymentMethod'])
             ->whereBetween('transaction_date', [$start, $end])
             ->get();    
@@ -59,7 +59,7 @@ class SalesSummaryService
             ->values();
 
         return collect([
-            'start_from' => $start, // 🔥 tambahan info
+            'start_from' => $start,
             'total_transaksi' => $totalTransaksi,
             'total_item' => $totalItem,
             'total_pendapatan' => $totalPendapatan,
@@ -93,7 +93,6 @@ class SalesSummaryService
 
     $userId = auth()->id();
 
-    // 🔹 simpan header
     $summary = SalesSummary::create([
         'date' => now(),
         'total_sales' => $data['total_sales'],
@@ -101,7 +100,6 @@ class SalesSummaryService
         'created_by' => $userId,
     ]);
 
-    // 🔹 prepare detail (skip payment_method_id = 0 / belum dibayar)
     $details = collect($data['details'])
         ->filter(fn ($item) => (int) $item['payment_method_id'] > 0)
         ->map(function ($item) use ($summary, $userId) {
@@ -118,7 +116,6 @@ class SalesSummaryService
         ->values()
         ->toArray();
 
-    // 🔹 insert detail
     if (!empty($details)) {
         SalesSummaryDetail::insert($details);
     }

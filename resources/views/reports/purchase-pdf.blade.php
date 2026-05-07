@@ -152,7 +152,7 @@ Dicetak:
 @if($isDeleted)
 <th>Alasan Pembatalan</th>
 @else
-<th class="text-right">Pembayaran</th>
+<th class="text-right">Pembelian</th>
 @endif
 
 </tr>
@@ -383,7 +383,7 @@ $totalPembatalan = $flat->count();
 @else
 
 <td colspan="10">
-<strong>Total Pembayaran</strong>
+<strong>Total Pembelian</strong>
 </td>
 
 <td class="text-right">

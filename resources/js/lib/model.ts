@@ -39,7 +39,7 @@ export interface Product {
     id: number;
     category_id: number;
     category?: Category;
-
+    minimum_stock?: number;
     name: string;
     brand: string;
     purchase_price: number;
@@ -158,6 +158,7 @@ export interface Stock {
     total_in: number;
     total_out: number;
     stock: number;
+    minimum_stock: number;
 }
 export interface InventoryTransaction {
     id: number;

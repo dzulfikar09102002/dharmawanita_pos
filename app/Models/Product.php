@@ -17,6 +17,7 @@ class Product extends Model
         'has_expired',
         'purchase_price',
         'selling_price',
+        'minimum_stock',
         'expired_date',
         'created_by',
         'updated_by',
@@ -27,6 +28,7 @@ class Product extends Model
         'has_expired' => 'boolean',
         'purchase_price' => 'decimal:2',
         'selling_price' => 'decimal:2',
+        'minimum_stock' => 'integer',
         'expired_date' => 'date',
     ];
 
