@@ -16,7 +16,10 @@ class StocksReportService
     {
         $search = request('search', '');
 
-        $query = ProductStock::with('product');
+        $query = ProductStock::with([
+            'product',
+            'firstInTransaction',
+        ]);
 
         if ($search) {
             $query->where('name', 'like', "%{$search}%");
@@ -28,9 +31,14 @@ class StocksReportService
     }
     public function getAssetsValue()
     {
-        return DB::table('product_stocks')
-            ->selectRaw('COALESCE(SUM(stock * purchase_price), 0) as total_assets')
-            ->value('total_assets');
+        return ProductStock::with('firstInTransaction')
+            ->get()
+            ->reject(fn ($item) =>
+                $item->firstInTransaction?->source === 'consignment'
+            )
+            ->sum(fn ($item) =>
+                ($item->stock ?? 0) * ($item->purchase_price ?? 0)
+            );
     }
     public function getStockReportByCategories()
     {

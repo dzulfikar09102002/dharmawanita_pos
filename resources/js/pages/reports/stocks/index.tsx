@@ -108,6 +108,28 @@ export default function Index({ pagination, total_assets }: Props) {
               columnHelper.accessor('brand', {
                   header: 'Brand',
               }),
+              columnHelper.display({
+                  id: 'source',
+                  header: 'Sumber',
+                  cell: (info) => {
+                      const source =
+                          info.row.original.first_in_transaction?.source;
+
+                      const labels: Record<string, string> = {
+                          purchase: 'Pembelian',
+                          sale: 'Penjualan',
+                          adjustment: 'Penyesuaian',
+                          return: 'Retur',
+                          transfer: 'Transfer',
+                          other: 'Lainnya',
+                          damage: 'Barang Rusak',
+                          expired: 'Kedaluwarsa',
+                          consignment: 'Titipan',
+                      };
+
+                      return labels[source ?? ''] ?? '-';
+                  },
+              }),
 
               columnHelper.accessor('purchase_price', {
                   header: () => <div>Harga Beli</div>,
@@ -138,18 +160,31 @@ export default function Index({ pagination, total_assets }: Props) {
               }),
 
               columnHelper.accessor(
-                  (row) => (row.purchase_price ?? 0) * (row.stock ?? 0),
+                  (row) => {
+                      const source = row.first_in_transaction?.source;
+
+                      if (source === 'consignment') {
+                          return null;
+                      }
+
+                      return (row.purchase_price ?? 0) * (row.stock ?? 0);
+                  },
                   {
                       id: 'asset',
+
                       header: () => (
                           <div className="text-right">Nilai Aset</div>
                       ),
 
-                      cell: (info) => (
-                          <div className="text-right font-semibold">
-                              {formatIDR(info.getValue())}
-                          </div>
-                      ),
+                      cell: (info) => {
+                          const value = info.getValue();
+
+                          return (
+                              <div className="text-right font-semibold">
+                                  {value == null ? '-' : formatIDR(value)}
+                              </div>
+                          );
+                      },
 
                       footer: () => (
                           <div className="text-right font-bold">
