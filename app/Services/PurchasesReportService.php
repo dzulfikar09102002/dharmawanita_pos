@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\SaleTransactionDetail;
 use App\Models\Supplier;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class PurchasesReportService
@@ -93,7 +94,8 @@ class PurchasesReportService
     DB::transaction(function () use ($purchasereport) {
 
         $reason = request('reason');
-
+        $transactionDate = Carbon::parse($purchasereport['purchase_date'])
+            ->setTimeFrom(now());
         $purchasereport->update([
             'status_payment' => 'canceled',
             'updated_by'     => auth()->id(),
@@ -116,7 +118,7 @@ class PurchasesReportService
         ]);
 
             CashLedger::create([
-                'transaction_date' => now(),
+                'transaction_date' => $transactionDate,
                 'type' => CashLedger::TYPE_IN, 
                 'category' => CashLedger::CATEGORY_ADJUSTMENT,
                 'amount' => $purchasereport->total_payment,
@@ -311,10 +313,11 @@ class PurchasesReportService
             $oldTotal = $oldPurchasePrice * $purchase->quantity;
             $newTotal = $newPurchasePrice * $qty;
             $diff = $newTotal - $oldTotal;
-
+            $transactionDate = Carbon::parse($item['purchase_date'])
+            ->setTimeFrom(now());
             if ($diff < 0) {
                 CashLedger::create([
-                    'transaction_date' => now(),
+                    'transaction_date' => $transactionDate,
                     'type' => CashLedger::TYPE_IN,
                     'category' => CashLedger::CATEGORY_ADJUSTMENT,
                     'amount' => abs($diff),
@@ -326,7 +329,7 @@ class PurchasesReportService
                 ]);
             } elseif ($diff > 0) {
                 CashLedger::create([
-                    'transaction_date' => now(),
+                    'transaction_date' => $transactionDate,
                     'type' => CashLedger::TYPE_OUT,
                     'category' => CashLedger::CATEGORY_ADJUSTMENT,
                     'amount' => $diff,
@@ -350,7 +353,7 @@ class PurchasesReportService
 
                     if ($oldIsPurchase && !$newIsPurchase) {
                         CashLedger::create([
-                            'transaction_date' => now(),
+                            'transaction_date' => $transactionDate,
                             'type' => CashLedger::TYPE_IN,
                             'category' => CashLedger::CATEGORY_ADJUSTMENT,
                             'amount' => $sourceAmount,
@@ -364,7 +367,7 @@ class PurchasesReportService
 
                     if (!$oldIsPurchase && $newIsPurchase) {
                         CashLedger::create([
-                            'transaction_date' => now(),
+                            'transaction_date' => $transactionDate,
                             'type' => CashLedger::TYPE_OUT,
                             'category' => CashLedger::CATEGORY_ADJUSTMENT,
                             'amount' => $sourceAmount,
@@ -391,12 +394,14 @@ class PurchasesReportService
     public function pay(Purchase $purchase, array $input): Purchase
     {
         return DB::transaction(function () use ($purchase, $input) {
-
+            
             $purchase = Purchase::whereKey($purchase->id)
-                ->where('status_payment', '!=', 'paid')
-                ->lockForUpdate()
-                ->firstOrFail();
-
+            ->where('status_payment', '!=', 'paid')
+            ->lockForUpdate()
+            ->firstOrFail();
+            
+            $transactionDate = Carbon::parse($purchase['purchase_date'])
+                ->setTimeFrom(now());
             $orderTotal = $purchase->purchase_price * $purchase->quantity;
 
             $payAmount = (float) ($input['total_payment'] ?? 0);
@@ -426,7 +431,7 @@ class PurchasesReportService
                     : 'PEMBAYARAN UTANG ' . $purchase->product->name;
 
                 CashLedger::create([
-                    'transaction_date' => now(),
+                    'transaction_date' => $transactionDate,
                     'type'             => CashLedger::TYPE_OUT,
                     'category'         => CashLedger::CATEGORY_OPERATING,
                     'amount'           => $payAmount,
