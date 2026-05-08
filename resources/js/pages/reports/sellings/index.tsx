@@ -892,16 +892,29 @@ export default function Index({
                                                                     (
                                                                         detail: any,
                                                                     ) => {
-                                                                        const profit =
+                                                                        const subtotal =
                                                                             Number(
-                                                                                detail.subtotal,
+                                                                                detail.subtotal ||
+                                                                                    0,
                                                                             ) -
                                                                             Number(
-                                                                                detail.purchase_price,
+                                                                                detail.adjustment ||
+                                                                                    0,
+                                                                            );
+
+                                                                        const modal =
+                                                                            Number(
+                                                                                detail.purchase_price ||
+                                                                                    0,
                                                                             ) *
-                                                                                Number(
-                                                                                    detail.quantity,
-                                                                                );
+                                                                            Number(
+                                                                                detail.quantity ||
+                                                                                    0,
+                                                                            );
+
+                                                                        const profit =
+                                                                            subtotal -
+                                                                            modal;
 
                                                                         return (
                                                                             <TableRow
@@ -948,7 +961,8 @@ export default function Index({
 
                                                                                 <TableCell>
                                                                                     {formatRupiah(
-                                                                                        detail.subtotal,
+                                                                                        detail.subtotal -
+                                                                                            detail.adjustment,
                                                                                     )}
                                                                                 </TableCell>
 
