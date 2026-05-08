@@ -1,5 +1,5 @@
 import { Head, Form, Link, usePage, router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import salesReport from '@/routes/reports/sales';
@@ -12,6 +12,22 @@ import {
     Printer,
     SquareArrowOutUpRight,
 } from 'lucide-react';
+import {
+    flexRender,
+    getSortedRowModel,
+    SortingState,
+} from '@tanstack/react-table';
+
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -150,7 +166,7 @@ export default function Index({
         dataId: undefined,
         processing: false,
     };
-
+    console.log(data);
     const handleFilter = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -168,6 +184,35 @@ export default function Index({
     };
 
     const [alert, setAlert] = useState<AlertState>(initialAlertState);
+    const [sorting, setSorting] = useState<SortingState>([]);
+    const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>(
+        {},
+    );
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+
+        const searchValue = params.get('search');
+
+        const hasSearch = searchValue !== null && searchValue.trim() !== '';
+
+        if (hasSearch && data.length > 0) {
+            const expandedState: Record<number, boolean> = {};
+
+            data.forEach((sale) => {
+                expandedState[sale.id] = true;
+            });
+
+            setExpandedRows(expandedState);
+        } else {
+            setExpandedRows({});
+        }
+    }, [data, url]);
+    const toggleExpand = (id: number) => {
+        setExpandedRows((prev) => ({
+            ...prev,
+            [id]: !prev[id],
+        }));
+    };
 
     const handlePrint = (type: 'month' | 'year' | 'week' | 'range') => {
         const params = new URLSearchParams({ type });
@@ -242,16 +287,78 @@ export default function Index({
             : [];
     const baseColumns: ColumnDef<SaleTransaction, any>[] = [
         {
+            id: 'expand',
+            header: () => {
+                const allExpanded =
+                    data.length > 0 &&
+                    data.every((sale) => expandedRows[sale.id]);
+
+                return (
+                    <button
+                        type="button"
+                        className="cursor-pointer rounded p-1 hover:bg-muted"
+                        onClick={() => {
+                            if (allExpanded) {
+                                setExpandedRows({});
+                            } else {
+                                const expandedState: Record<number, boolean> =
+                                    {};
+
+                                data.forEach((sale) => {
+                                    expandedState[sale.id] = true;
+                                });
+
+                                setExpandedRows(expandedState);
+                            }
+                        }}
+                    >
+                        {allExpanded ? (
+                            <ChevronDown size={16} />
+                        ) : (
+                            <ChevronRight size={16} />
+                        )}
+                    </button>
+                );
+            },
+            enableSorting: true,
+            cell: ({ row }) => {
+                const sale = row.original;
+
+                const expanded = expandedRows[sale.id];
+
+                return (
+                    <button
+                        type="button"
+                        className="cursor-pointer rounded p-1 hover:bg-muted"
+                        onClick={() =>
+                            setExpandedRows((prev) => ({
+                                ...prev,
+                                [sale.id]: !prev[sale.id],
+                            }))
+                        }
+                    >
+                        {expanded ? (
+                            <ChevronDown size={16} />
+                        ) : (
+                            <ChevronRight size={16} />
+                        )}
+                    </button>
+                );
+            },
+        },
+        {
             id: 'no',
             header: 'No',
             cell: (info) =>
                 (pagination.current_page - 1) * pagination.per_page +
                 info.row.index +
                 1,
+            enableSorting: true,
         },
 
         columnHelper.accessor('invoice_number', {
             header: 'Invoice Number',
+            enableSorting: true,
         }),
         columnHelper.accessor('transaction_date', {
             header: 'Tanggal Transaksi',
@@ -263,7 +370,7 @@ export default function Index({
                     hour: '2-digit',
                     minute: '2-digit',
                 }),
-
+            enableSorting: true,
             footer: () => (
                 <div className="flex flex-col font-bold">
                     <span>TOTAL PENJUALAN</span>
@@ -274,6 +381,7 @@ export default function Index({
             id: 'purchasing_method',
             header: 'Metode Pembelian',
             cell: (info) => info.getValue() ?? '-',
+            enableSorting: true,
         }),
         columnHelper.accessor('payment_method', {
             header: () => <div className="text-center">Metode Pembayaran</div>,
@@ -285,6 +393,7 @@ export default function Index({
                     </div>
                 );
             },
+            enableSorting: true,
         }),
 
         columnHelper.accessor('payment_status', {
@@ -324,17 +433,20 @@ export default function Index({
                     </div>
                 );
             },
+            enableSorting: true,
         }),
 
         columnHelper.accessor('grand_total', {
             header: 'Jumlah',
             cell: (info) => formatRupiah(info.getValue()),
+            enableSorting: true,
         }),
 
         columnHelper.accessor('total_amount', {
             id: 'total_amount',
             header: 'Total Pembayaran',
             cell: (info) => formatRupiah(info.getValue()),
+            enableSorting: true,
             footer: () => (
                 <span className="font-bold">{formatRupiah(total_selling)}</span>
             ),
@@ -343,6 +455,7 @@ export default function Index({
             id: 'change',
             header: 'Kembalian',
             cell: (info) => formatRupiah(info.getValue()),
+            enableSorting: true,
             footer: () => (
                 <div className="flex flex-col font-bold">
                     <span>TOTAL LABA</span>
@@ -357,7 +470,7 @@ export default function Index({
                 : isCanceledRoute
                   ? 'Pengembalian'
                   : 'Kurang Bayar',
-
+            enableSorting: true,
             cell: (info) => {
                 const row = info.row.original;
 
@@ -389,6 +502,7 @@ export default function Index({
         }),
         columnHelper.accessor('profit', {
             header: 'Laba',
+            enableSorting: true,
             cell: (info) => {
                 const value = Number(info.getValue() || 0);
 
@@ -458,7 +572,13 @@ export default function Index({
     const table = useReactTable<SaleTransaction>({
         data,
         columns,
+        state: {
+            sorting,
+        },
+        onSortingChange: setSorting,
         getCoreRowModel: getCoreRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+
         meta: {
             onDeleteOrRestore,
             onDetail,
@@ -649,7 +769,209 @@ export default function Index({
                             </Select>
                         </div>
                     </div>
-                    <DataTable columns={columns} table={table} />
+                    <Table>
+                        <TableHeader>
+                            {table.getHeaderGroups().map((headerGroup) => (
+                                <TableRow key={headerGroup.id}>
+                                    {headerGroup.headers.map((header) => (
+                                        <TableHead
+                                            key={header.id}
+                                            className={
+                                                header.column.getCanSort()
+                                                    ? 'cursor-pointer select-none'
+                                                    : ''
+                                            }
+                                            onClick={header.column.getToggleSortingHandler()}
+                                        >
+                                            {header.isPlaceholder ? null : (
+                                                <div className="flex items-center gap-1">
+                                                    {flexRender(
+                                                        header.column.columnDef
+                                                            .header,
+                                                        header.getContext(),
+                                                    )}
+
+                                                    {{
+                                                        asc: (
+                                                            <span className="text-xs">
+                                                                ↑
+                                                            </span>
+                                                        ),
+                                                        desc: (
+                                                            <span className="text-xs">
+                                                                ↓
+                                                            </span>
+                                                        ),
+                                                    }[
+                                                        header.column.getIsSorted() as string
+                                                    ] ?? null}
+                                                </div>
+                                            )}
+                                        </TableHead>
+                                    ))}
+                                </TableRow>
+                            ))}
+                        </TableHeader>
+
+                        <TableBody>
+                            {table.getRowModel().rows.map((row) => {
+                                const sale = row.original;
+                                const expanded = expandedRows[sale.id];
+
+                                return (
+                                    <Fragment key={row.id}>
+                                        {/* ROW UTAMA */}
+                                        <TableRow
+                                            className={
+                                                expanded
+                                                    ? 'bg-blue-50 hover:bg-blue-100'
+                                                    : ''
+                                            }
+                                        >
+                                            {row
+                                                .getVisibleCells()
+                                                .map((cell, index) => (
+                                                    <TableCell key={cell.id}>
+                                                        <div className="flex items-center gap-2">
+                                                            {flexRender(
+                                                                cell.column
+                                                                    .columnDef
+                                                                    .cell,
+                                                                cell.getContext(),
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                ))}
+                                        </TableRow>
+
+                                        {/* DETAIL */}
+                                        {expanded && (
+                                            <TableRow>
+                                                <TableCell
+                                                    colSpan={
+                                                        row.getVisibleCells()
+                                                            .length
+                                                    }
+                                                    className="bg-muted/20"
+                                                >
+                                                    <div className="rounded-lg border p-4">
+                                                        <Table>
+                                                            <TableHeader>
+                                                                <TableRow>
+                                                                    <TableHead>
+                                                                        Kode
+                                                                    </TableHead>
+                                                                    <TableHead>
+                                                                        Produk
+                                                                    </TableHead>
+                                                                    <TableHead>
+                                                                        Qty
+                                                                    </TableHead>
+                                                                    <TableHead>
+                                                                        Harga
+                                                                        Beli
+                                                                    </TableHead>
+                                                                    <TableHead>
+                                                                        Harga
+                                                                        Jual
+                                                                    </TableHead>
+                                                                    <TableHead>
+                                                                        Diskon
+                                                                    </TableHead>
+                                                                    <TableHead>
+                                                                        Subtotal
+                                                                    </TableHead>
+                                                                    <TableHead>
+                                                                        Laba
+                                                                    </TableHead>
+                                                                </TableRow>
+                                                            </TableHeader>
+
+                                                            <TableBody>
+                                                                {sale.details?.map(
+                                                                    (
+                                                                        detail: any,
+                                                                    ) => {
+                                                                        const profit =
+                                                                            Number(
+                                                                                detail.subtotal,
+                                                                            ) -
+                                                                            Number(
+                                                                                detail.purchase_price,
+                                                                            ) *
+                                                                                Number(
+                                                                                    detail.quantity,
+                                                                                );
+
+                                                                        return (
+                                                                            <TableRow
+                                                                                key={
+                                                                                    detail.id
+                                                                                }
+                                                                            >
+                                                                                <TableCell>
+                                                                                    {
+                                                                                        detail.code
+                                                                                    }
+                                                                                </TableCell>
+                                                                                <TableCell>
+                                                                                    {
+                                                                                        detail
+                                                                                            .purchase
+                                                                                            .product
+                                                                                            .name
+                                                                                    }
+                                                                                </TableCell>
+
+                                                                                <TableCell>
+                                                                                    {
+                                                                                        detail.quantity
+                                                                                    }
+                                                                                </TableCell>
+
+                                                                                <TableCell>
+                                                                                    {formatRupiah(
+                                                                                        detail.purchase_price,
+                                                                                    )}
+                                                                                </TableCell>
+
+                                                                                <TableCell>
+                                                                                    {formatRupiah(
+                                                                                        detail.selling_price,
+                                                                                    )}
+                                                                                </TableCell>
+                                                                                <TableCell>
+                                                                                    {formatRupiah(
+                                                                                        detail.adjustment,
+                                                                                    )}
+                                                                                </TableCell>
+
+                                                                                <TableCell>
+                                                                                    {formatRupiah(
+                                                                                        detail.subtotal,
+                                                                                    )}
+                                                                                </TableCell>
+
+                                                                                <TableCell className="font-semibold text-green-600">
+                                                                                    {formatRupiah(
+                                                                                        profit,
+                                                                                    )}
+                                                                                </TableCell>
+                                                                            </TableRow>
+                                                                        );
+                                                                    },
+                                                                )}
+                                                            </TableBody>
+                                                        </Table>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </Fragment>
+                                );
+                            })}
+                        </TableBody>
+                    </Table>
                     <TablePagination pagination={pagination} />
                 </CardContent>
             </Card>

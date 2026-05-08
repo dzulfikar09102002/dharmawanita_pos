@@ -29,20 +29,34 @@ class SalesReportService
             ? Carbon::parse($endDate)->endOfDay()
             : null;
 
-        $query = SaleTransaction::with('paymentMethod', 'details', 'purchasingMethod')
-            ->withSum('details as total_revenue', \DB::raw('(quantity * selling_price) - COALESCE(adjustment,0)'))
-            ->withSum('details as total_cost', \DB::raw('quantity * purchase_price'))
-            ->when($search, function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('invoice_number', 'like', "%{$search}%");
-                });
-            })
-            ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
-                $q->whereBetween('transaction_date', [$startDate, $endDate]);
-            })
-            ->when($payment_method_id !== 'all', function ($q) use ($payment_method_id) {
-                $q->where('payment_method_id', $payment_method_id);
+        $query = SaleTransaction::with(
+            'paymentMethod',
+            'details.purchase.product',
+            'purchasingMethod'
+        )
+        ->withSum(
+            'details as total_revenue',
+            \DB::raw('(quantity * selling_price) - COALESCE(adjustment,0)')
+        )
+        ->withSum(
+            'details as total_cost',
+            \DB::raw('quantity * purchase_price')
+        )
+        ->when($search, function ($query) use ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('invoice_number', 'like', "%{$search}%")
+                    ->orWhereHas('details.purchase.product', function ($product) use ($search) {
+                        $product->where('name', 'like', "%{$search}%")
+                                ->orWhere('code', 'like', "%{$search}%");
+                    });
             });
+        })
+        ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
+            $q->whereBetween('transaction_date', [$startDate, $endDate]);
+        })
+        ->when($payment_method_id !== 'all', function ($q) use ($payment_method_id) {
+            $q->where('payment_method_id', $payment_method_id);
+        });
 
         $profitSummaryQuery = clone $query;
 
@@ -169,11 +183,18 @@ class SalesReportService
 
         $data = SaleTransaction::with([
                 'paymentMethod',
+                'details.purchase.product',
                 'details.inventoryTransactions',
                 'purchasingMethod'
             ])
-            ->when($search, function ($q) use ($search) {
-                $q->where('invoice_number', 'like', "%$search%");
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('invoice_number', 'like', "%{$search}%")
+                        ->orWhereHas('details.purchase.product', function ($product) use ($search) {
+                            $product->where('name', 'like', "%{$search}%")
+                                    ->orWhere('code', 'like', "%{$search}%");
+                        });
+                });
             })
             ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
                 $q->whereBetween('transaction_date', [$startDate, $endDate]);
@@ -213,11 +234,18 @@ class SalesReportService
         $data = SaleTransaction::onlyTrashed()
             ->with([
                 'paymentMethod',
+                'details.purchase.product',
                 'details.inventoryTransactions',
                 'purchasingMethod'
             ])
-            ->when($search, function ($q) use ($search) {
-                $q->where('invoice_number', 'like', "%$search%");
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('invoice_number', 'like', "%{$search}%")
+                        ->orWhereHas('details.purchase.product', function ($product) use ($search) {
+                            $product->where('name', 'like', "%{$search}%")
+                                    ->orWhere('code', 'like', "%{$search}%");
+                        });
+                });
             })
             ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
                 $q->whereBetween('transaction_date', [$startDate, $endDate]);
