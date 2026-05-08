@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Models\ProductStock;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -39,26 +40,59 @@ class StockReportExport implements FromCollection, WithHeadings
                 ->get();
         }
 
-        $data = DB::table('product_stocks')
-        ->select([
-            'name',
-            'brand',
-            'total_in',
-            'total_out',
-            'stock',
-            DB::raw('(purchase_price * stock) as asset'),
-        ])
-        ->orderBy('category_id')
-        ->orderBy('name')
-        ->get();
+        $items = ProductStock::query()
+            ->with('inventoryTransactions')
+            ->when($this->search, function ($q) {
+                $q->where('name', 'like', "%{$this->search}%");
+            })
+            ->orderBy('category_id')
+            ->orderBy('name')
+            ->get();
+
+        $data = $items->map(function ($item) {
+
+        $stockAsset = max(0, (int) ($item->stock_asset ?? 0));
+
+        return [
+            'name' => $item->name ?? '-',
+
+            'brand' => $item->brand ?? '-',
+
+            'stock_source' => match ($item->stock_source ?? null) {
+                'purchase' => 'Pembelian',
+                'sale' => 'Penjualan',
+                'adjustment' => 'Penyesuaian',
+                'return' => 'Retur',
+                'transfer' => 'Transfer',
+                'other' => 'Lainnya',
+                'damage' => 'Barang Rusak',
+                'expired' => 'Kedaluwarsa',
+                'consignment' => 'Titipan',
+                default => '-',
+            },
+
+            'purchase_price' => (float) ($item->purchase_price ?? 0),
+
+            'selling_price' => (float) ($item->selling_price ?? 0),
+
+            'stock' => (int) ($item->stock ?? 0),
+
+            'stock_asset' => $stockAsset,
+
+            'asset' => ((float) ($item->purchase_price ?? 0)) * $stockAsset,
+        ];
+    });
+
         $totalAsset = $data->sum('asset');
 
-        $data->push((object)[
+        $data->push([
             'name' => 'TOTAL',
             'brand' => '',
-            'total_in' => '',
-            'total_out' => '',
+            'stock_source' => '',
+            'purchase_price' => '',
+            'selling_price' => '',
             'stock' => '',
+            'stock_asset' => '',
             'asset' => $totalAsset,
         ]);
 
@@ -79,9 +113,11 @@ class StockReportExport implements FromCollection, WithHeadings
         return [
             'Nama Produk',
             'Brand',
-            'Stok Masuk',
-            'Stok Keluar',
+            'Sumber',
+            'Harga Beli',
+            'Harga Jual',
             'Jumlah Stok',
+            'Stok Asset',
             'Nilai Asset',
         ];
     }
