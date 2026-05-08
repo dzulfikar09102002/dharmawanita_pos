@@ -169,7 +169,8 @@ class SalesReportService
 
         $data = SaleTransaction::with([
                 'paymentMethod',
-                'details.inventoryTransactions'
+                'details.inventoryTransactions',
+                'purchasingMethod'
             ])
             ->when($search, function ($q) use ($search) {
                 $q->where('invoice_number', 'like', "%$search%");
@@ -212,7 +213,8 @@ class SalesReportService
         $data = SaleTransaction::onlyTrashed()
             ->with([
                 'paymentMethod',
-                'details.inventoryTransactions'
+                'details.inventoryTransactions',
+                'purchasingMethod'
             ])
             ->when($search, function ($q) use ($search) {
                 $q->where('invoice_number', 'like', "%$search%");
