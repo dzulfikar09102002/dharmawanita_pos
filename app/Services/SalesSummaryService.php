@@ -24,6 +24,24 @@ class SalesSummaryService
 
         $end = now();
 
+        $pagination = SaleTransaction::with([
+            'paymentMethod',
+            'purchasingMethod',
+            'details.purchase.product',
+        ])
+        ->withSum(
+            'details as total_revenue',
+            \DB::raw('(quantity * selling_price) - COALESCE(adjustment,0)')
+        )
+        ->withSum(
+            'details as total_cost',
+            \DB::raw('quantity * purchase_price')
+        )
+        ->whereBetween('transaction_date', [$start, $end])
+        ->latest('transaction_date')
+        ->paginate(request('per_page', 10))
+            ->withQueryString();
+
         $transactions = SaleTransaction::with(['details', 'paymentMethod'])
             ->whereBetween('transaction_date', [$start, $end])
             ->get();    
@@ -64,6 +82,7 @@ class SalesSummaryService
             'total_item' => $totalItem,
             'total_pendapatan' => $totalPendapatan,
             'by_payment_method' => $byPaymentMethod,
+            'pagination' => $pagination,
         ]);
     }
     public function getHistorySalesSummaries()

@@ -11,6 +11,9 @@ import {
     FilterX,
     Printer,
     SquareArrowOutUpRight,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown,
 } from 'lucide-react';
 import {
     flexRender,
@@ -288,6 +291,7 @@ export default function Index({
     const baseColumns: ColumnDef<SaleTransaction, any>[] = [
         {
             id: 'expand',
+            enableSorting: false,
             header: () => {
                 const allExpanded =
                     data.length > 0 &&
@@ -320,10 +324,9 @@ export default function Index({
                     </button>
                 );
             },
-            enableSorting: true,
+
             cell: ({ row }) => {
                 const sale = row.original;
-
                 const expanded = expandedRows[sale.id];
 
                 return (
@@ -346,22 +349,29 @@ export default function Index({
                 );
             },
         },
+
         {
             id: 'no',
             header: 'No',
+            enableSorting: false,
             cell: (info) =>
                 (pagination.current_page - 1) * pagination.per_page +
                 info.row.index +
                 1,
-            enableSorting: true,
         },
 
         columnHelper.accessor('invoice_number', {
+            id: 'invoice_number',
             header: 'Invoice Number',
             enableSorting: true,
         }),
+
         columnHelper.accessor('transaction_date', {
+            id: 'transaction_date',
             header: 'Tanggal Transaksi',
+
+            enableSorting: true,
+
             cell: (info) =>
                 new Date(info.getValue()).toLocaleDateString('id-ID', {
                     day: '2-digit',
@@ -370,34 +380,41 @@ export default function Index({
                     hour: '2-digit',
                     minute: '2-digit',
                 }),
-            enableSorting: true,
+
             footer: () => (
                 <div className="flex flex-col font-bold">
                     <span>TOTAL PENJUALAN</span>
                 </div>
             ),
         }),
-        columnHelper.accessor((row) => row.purchasing_method?.name, {
+
+        columnHelper.accessor((row) => row.purchasing_method?.name ?? '', {
             id: 'purchasing_method',
             header: 'Metode Pembelian',
-            cell: (info) => info.getValue() ?? '-',
             enableSorting: true,
+
+            cell: (info) => info.getValue() || '-',
         }),
-        columnHelper.accessor('payment_method', {
+
+        columnHelper.accessor((row) => row.payment_method?.name ?? '', {
+            id: 'payment_method',
+
             header: () => <div className="text-center">Metode Pembayaran</div>,
-            cell: (info) => {
-                const row = info.row.original;
-                return (
-                    <div className="text-center">
-                        {row.payment_method?.name ?? '-'}
-                    </div>
-                );
-            },
+
             enableSorting: true,
+
+            cell: (info) => (
+                <div className="text-center">{info.getValue() || '-'}</div>
+            ),
         }),
 
         columnHelper.accessor('payment_status', {
+            id: 'payment_status',
+
             header: () => <div className="text-center">Status Pembayaran</div>,
+
+            enableSorting: true,
+
             cell: (info) => {
                 if (isDeletedRoute) {
                     return <div className="text-center">-</div>;
@@ -421,7 +438,9 @@ export default function Index({
                     canceled: 'Dibatalkan',
                 };
 
-                if (!status) return <div className="text-center">-</div>;
+                if (!status) {
+                    return <div className="text-center">-</div>;
+                }
 
                 return (
                     <div className="text-center">
@@ -433,29 +452,35 @@ export default function Index({
                     </div>
                 );
             },
-            enableSorting: true,
         }),
 
         columnHelper.accessor('grand_total', {
+            id: 'grand_total',
             header: 'Jumlah',
-            cell: (info) => formatRupiah(info.getValue()),
             enableSorting: true,
+
+            cell: (info) => formatRupiah(info.getValue()),
         }),
 
         columnHelper.accessor('total_amount', {
             id: 'total_amount',
             header: 'Total Pembayaran',
-            cell: (info) => formatRupiah(info.getValue()),
             enableSorting: true,
+
+            cell: (info) => formatRupiah(info.getValue()),
+
             footer: () => (
                 <span className="font-bold">{formatRupiah(total_selling)}</span>
             ),
         }),
+
         columnHelper.accessor('change', {
             id: 'change',
             header: 'Kembalian',
-            cell: (info) => formatRupiah(info.getValue()),
             enableSorting: true,
+
+            cell: (info) => formatRupiah(info.getValue()),
+
             footer: () => (
                 <div className="flex flex-col font-bold">
                     <span>TOTAL LABA</span>
@@ -463,17 +488,8 @@ export default function Index({
             ),
         }),
 
-        columnHelper.display({
-            id: 'financial_status',
-            header: isDeletedRoute
-                ? 'Kerugian'
-                : isCanceledRoute
-                  ? 'Pengembalian'
-                  : 'Kurang Bayar',
-            enableSorting: true,
-            cell: (info) => {
-                const row = info.row.original;
-
+        columnHelper.accessor(
+            (row) => {
                 const kurangBayar =
                     (row.grand_total || 0) - (row.total_amount || 0);
 
@@ -481,28 +497,48 @@ export default function Index({
 
                 const refund = (row.total_amount || 0) - (row.change || 0);
 
-                const value = isDeletedRoute
+                return isDeletedRoute
                     ? Math.max(kerugian, 0)
                     : isCanceledRoute
                       ? Math.max(refund, 0)
                       : Math.max(kurangBayar, 0);
+            },
+            {
+                id: 'financial_status',
 
-                if (value > 0) {
+                header: isDeletedRoute
+                    ? 'Kerugian'
+                    : isCanceledRoute
+                      ? 'Pengembalian'
+                      : 'Kurang Bayar',
+
+                enableSorting: true,
+
+                cell: (info) => {
+                    const value = Number(info.getValue() || 0);
+
+                    if (value > 0) {
+                        return (
+                            <span className="font-semibold text-red-600">
+                                {formatRupiah(value)}
+                            </span>
+                        );
+                    }
+
                     return (
-                        <span className="font-semibold text-red-600">
-                            {formatRupiah(value)}
+                        <span className="font-semibold text-green-600">
+                            Rp 0
                         </span>
                     );
-                }
-
-                return (
-                    <span className="font-semibold text-green-600">Rp 0</span>
-                );
+                },
             },
-        }),
+        ),
+
         columnHelper.accessor('profit', {
+            id: 'profit',
             header: 'Laba',
             enableSorting: true,
+
             cell: (info) => {
                 const value = Number(info.getValue() || 0);
 
@@ -527,13 +563,17 @@ export default function Index({
                 </span>
             ),
         }),
+
         {
             id: 'action',
             header: 'Aksi',
+            enableSorting: false,
+
             cell: (info) => {
                 const row = info.row.original as SaleTransaction & {
                     id: number;
                 };
+
                 const meta = info.table.options.meta as TableMeta;
 
                 return (
@@ -791,20 +831,32 @@ export default function Index({
                                                         header.getContext(),
                                                     )}
 
-                                                    {{
-                                                        asc: (
-                                                            <span className="text-xs">
-                                                                ↑
-                                                            </span>
-                                                        ),
-                                                        desc: (
-                                                            <span className="text-xs">
-                                                                ↓
-                                                            </span>
-                                                        ),
-                                                    }[
-                                                        header.column.getIsSorted() as string
-                                                    ] ?? null}
+                                                    {header.column.getCanSort() && (
+                                                        <>
+                                                            {{
+                                                                asc: (
+                                                                    <ArrowUp
+                                                                        size={
+                                                                            14
+                                                                        }
+                                                                    />
+                                                                ),
+                                                                desc: (
+                                                                    <ArrowDown
+                                                                        size={
+                                                                            14
+                                                                        }
+                                                                    />
+                                                                ),
+                                                            }[
+                                                                header.column.getIsSorted() as string
+                                                            ] ?? (
+                                                                <ArrowUpDown
+                                                                    size={14}
+                                                                />
+                                                            )}
+                                                        </>
+                                                    )}
                                                 </div>
                                             )}
                                         </TableHead>

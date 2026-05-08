@@ -124,6 +124,7 @@ export interface SalesSummary {
     total_item: number;
     total_pendapatan: number;
     by_payment_method: PaymentMethodSummary[];
+    pagination: Pagination<SaleTransaction>;
 
     id: number;
     date: string;
