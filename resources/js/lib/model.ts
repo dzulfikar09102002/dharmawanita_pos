@@ -89,6 +89,7 @@ export interface SaleTransaction {
     payment_method_id: number;
     payment_method?: PaymentMethod;
     change: number;
+    purchasing_method: PurchaseMethod;
     payment_status: PaymentStatus;
     total_amount: number;
     grand_total: number;

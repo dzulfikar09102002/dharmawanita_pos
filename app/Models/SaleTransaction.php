@@ -40,6 +40,10 @@ class SaleTransaction extends Model
     {
         return $this->belongsTo(PaymentMethod::class);
     }
+    public function purchasingMethod()
+    {
+        return $this->belongsTo(PurchasingMethod::class);
+    }
 
     // User tracking
     public function createdBy()

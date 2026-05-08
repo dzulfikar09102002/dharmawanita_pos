@@ -29,7 +29,7 @@ class SalesReportService
             ? Carbon::parse($endDate)->endOfDay()
             : null;
 
-        $query = SaleTransaction::with('paymentMethod', 'details')
+        $query = SaleTransaction::with('paymentMethod', 'details', 'purchasingMethod')
             ->withSum('details as total_revenue', \DB::raw('(quantity * selling_price) - COALESCE(adjustment,0)'))
             ->withSum('details as total_cost', \DB::raw('quantity * purchase_price'))
             ->when($search, function ($query) use ($search) {

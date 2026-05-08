@@ -270,6 +270,11 @@ export default function Index({
                 </div>
             ),
         }),
+        columnHelper.accessor((row) => row.purchasing_method?.name, {
+            id: 'purchasing_method',
+            header: 'Metode Pembelian',
+            cell: (info) => info.getValue() ?? '-',
+        }),
         columnHelper.accessor('payment_method', {
             header: () => <div className="text-center">Metode Pembayaran</div>,
             cell: (info) => {
