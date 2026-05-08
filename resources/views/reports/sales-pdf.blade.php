@@ -290,6 +290,70 @@ Rp {{ number_format($trx->change ?? 0,0,',','.') }}
 
 </tr>
 
+{{-- DETAIL BARANG --}}
+@if(!$isDeleted && !$isCanceled)
+
+<tr>
+<td></td>
+
+<td colspan="7" style="padding:0 0 6px 0;">
+<table style="width:100%; border-collapse: collapse;">
+<tbody>
+
+@foreach($trx->details as $detail)
+
+<tr style="background:#fafafa;">
+
+<td style="
+    padding:4px 8px 4px 12px;
+    border-top:1px solid #e5e5e5;
+    font-size:9px;
+    color:#444;
+">
+
+• {{ $detail->purchase->product->name ?? '-' }}
+
+@if(($detail->purchase->product->brand ?? null))
+- {{ $detail->purchase->product->brand }}
+@endif
+
+</td>
+
+<td style="
+    width:120px;
+    text-align:left;
+    padding-left:8px;
+    border-top:1px solid #e5e5e5;
+    font-size:9px;
+    color:#444;
+">
+{{ $detail->quantity }} x
+Rp {{ number_format($detail->selling_price ?? 0,0,',','.') }}
+</td>
+
+<td style="
+    width:120px;
+    text-align:left;
+    padding-left:8px;
+    border-top:1px solid #e5e5e5;
+    font-size:9px;
+    color:#444;
+">
+Diskon :
+Rp {{ number_format(($detail->adjustment ?? 0),0,',','.') }}
+</td>
+
+</tr>
+
+@endforeach
+
+</tbody>
+</table>
+</td>
+</tr>
+
+@endif
+
 @endforeach
 
 
@@ -419,6 +483,72 @@ Rp {{ number_format($trx->change ?? 0,0,',','.') }}
 {{ $profit == 0 ? '-' : 'Rp '.number_format($profit,0,',','.') }}
 </strong>
 </td>
+
+@endif
+
+</tr>
+
+{{-- DETAIL BARANG --}}
+@if(!$isDeleted && !$isCanceled)
+
+<tr>
+<td></td>
+
+<td colspan="7" style="padding:0 0 6px 0;">
+<table style="width:100%; border-collapse: collapse;">
+<tbody>
+
+@foreach($trx->details as $detail)
+
+<tr style="background:#fafafa;">
+
+<td style="
+    padding:4px 8px 4px 12px;
+    border-top:1px solid #e5e5e5;
+    font-size:9px;
+    color:#444;
+">
+
+• {{ $detail->purchase->product->name ?? '-' }}
+
+@if(($detail->purchase->product->brand ?? null))
+- {{ $detail->purchase->product->brand }}
+@endif
+
+</td>
+
+<td style="
+    width:120px;
+    text-align:left;
+    padding-left:8px;
+    border-top:1px solid #e5e5e5;
+    font-size:9px;
+    color:#444;
+">
+{{ $detail->quantity }} x
+Rp {{ number_format($detail->selling_price ?? 0,0,',','.') }}
+</td>
+
+<td style="
+    width:120px;
+    text-align:left;
+    padding-left:8px;
+    border-top:1px solid #e5e5e5;
+    font-size:9px;
+    color:#444;
+">
+Diskon :
+Rp {{ number_format(($detail->adjustment ?? 0),0,',','.') }}
+</td>
+
+</tr>
+
+@endforeach
+
+</tbody>
+</table>
+</td>
+</tr>
 
 @endif
 
