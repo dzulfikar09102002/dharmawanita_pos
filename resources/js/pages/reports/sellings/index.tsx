@@ -866,176 +866,189 @@ export default function Index({
                         </TableHeader>
 
                         <TableBody>
-                            {table.getRowModel().rows.map((row) => {
-                                const sale = row.original;
-                                const expanded = expandedRows[sale.id];
+                            {table.getRowModel().rows.length > 0 ? (
+                                table.getRowModel().rows.map((row) => {
+                                    const sale = row.original;
+                                    const expanded = expandedRows[sale.id];
 
-                                return (
-                                    <Fragment key={row.id}>
-                                        {/* ROW UTAMA */}
-                                        <TableRow
-                                            className={
-                                                expanded
-                                                    ? 'bg-blue-50 hover:bg-blue-100'
-                                                    : ''
-                                            }
-                                        >
-                                            {row
-                                                .getVisibleCells()
-                                                .map((cell, index) => (
-                                                    <TableCell key={cell.id}>
-                                                        <div className="flex items-center gap-2">
-                                                            {flexRender(
-                                                                cell.column
-                                                                    .columnDef
-                                                                    .cell,
-                                                                cell.getContext(),
-                                                            )}
+                                    return (
+                                        <Fragment key={row.id}>
+                                            {/* ROW UTAMA */}
+                                            <TableRow
+                                                className={
+                                                    expanded
+                                                        ? 'bg-blue-50 hover:bg-blue-100'
+                                                        : ''
+                                                }
+                                            >
+                                                {row
+                                                    .getVisibleCells()
+                                                    .map((cell, index) => (
+                                                        <TableCell
+                                                            key={cell.id}
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                {flexRender(
+                                                                    cell.column
+                                                                        .columnDef
+                                                                        .cell,
+                                                                    cell.getContext(),
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                    ))}
+                                            </TableRow>
+
+                                            {/* DETAIL */}
+                                            {expanded && (
+                                                <TableRow>
+                                                    <TableCell
+                                                        colSpan={
+                                                            row.getVisibleCells()
+                                                                .length
+                                                        }
+                                                        className="bg-muted/20"
+                                                    >
+                                                        <div className="rounded-lg border p-4">
+                                                            <Table>
+                                                                <TableHeader>
+                                                                    <TableRow>
+                                                                        <TableHead>
+                                                                            Kode
+                                                                        </TableHead>
+                                                                        <TableHead>
+                                                                            Produk
+                                                                        </TableHead>
+                                                                        <TableHead>
+                                                                            Qty
+                                                                        </TableHead>
+                                                                        <TableHead>
+                                                                            Harga
+                                                                            Beli
+                                                                        </TableHead>
+                                                                        <TableHead>
+                                                                            Harga
+                                                                            Jual
+                                                                        </TableHead>
+                                                                        <TableHead>
+                                                                            Diskon
+                                                                        </TableHead>
+                                                                        <TableHead>
+                                                                            Subtotal
+                                                                        </TableHead>
+                                                                        <TableHead>
+                                                                            Laba
+                                                                        </TableHead>
+                                                                    </TableRow>
+                                                                </TableHeader>
+
+                                                                <TableBody>
+                                                                    {sale.details?.map(
+                                                                        (
+                                                                            detail: any,
+                                                                        ) => {
+                                                                            const subtotal =
+                                                                                Number(
+                                                                                    detail.subtotal ||
+                                                                                        0,
+                                                                                ) -
+                                                                                Number(
+                                                                                    detail.adjustment ||
+                                                                                        0,
+                                                                                );
+
+                                                                            const modal =
+                                                                                Number(
+                                                                                    detail.purchase_price ||
+                                                                                        0,
+                                                                                ) *
+                                                                                Number(
+                                                                                    detail.quantity ||
+                                                                                        0,
+                                                                                );
+
+                                                                            const profit =
+                                                                                subtotal -
+                                                                                modal;
+
+                                                                            return (
+                                                                                <TableRow
+                                                                                    key={
+                                                                                        detail.id
+                                                                                    }
+                                                                                >
+                                                                                    <TableCell>
+                                                                                        {
+                                                                                            detail.code
+                                                                                        }
+                                                                                    </TableCell>
+                                                                                    <TableCell>
+                                                                                        {
+                                                                                            detail
+                                                                                                .purchase
+                                                                                                .product
+                                                                                                .name
+                                                                                        }
+                                                                                    </TableCell>
+
+                                                                                    <TableCell>
+                                                                                        {
+                                                                                            detail.quantity
+                                                                                        }
+                                                                                    </TableCell>
+
+                                                                                    <TableCell>
+                                                                                        {formatRupiah(
+                                                                                            detail.purchase_price,
+                                                                                        )}
+                                                                                    </TableCell>
+
+                                                                                    <TableCell>
+                                                                                        {formatRupiah(
+                                                                                            detail.selling_price,
+                                                                                        )}
+                                                                                    </TableCell>
+                                                                                    <TableCell>
+                                                                                        {formatRupiah(
+                                                                                            detail.adjustment,
+                                                                                        )}
+                                                                                    </TableCell>
+
+                                                                                    <TableCell>
+                                                                                        {formatRupiah(
+                                                                                            detail.subtotal -
+                                                                                                detail.adjustment,
+                                                                                        )}
+                                                                                    </TableCell>
+
+                                                                                    <TableCell className="font-semibold text-green-600">
+                                                                                        {formatRupiah(
+                                                                                            profit,
+                                                                                        )}
+                                                                                    </TableCell>
+                                                                                </TableRow>
+                                                                            );
+                                                                        },
+                                                                    )}
+                                                                </TableBody>
+                                                            </Table>
                                                         </div>
                                                     </TableCell>
-                                                ))}
-                                        </TableRow>
-
-                                        {/* DETAIL */}
-                                        {expanded && (
-                                            <TableRow>
-                                                <TableCell
-                                                    colSpan={
-                                                        row.getVisibleCells()
-                                                            .length
-                                                    }
-                                                    className="bg-muted/20"
-                                                >
-                                                    <div className="rounded-lg border p-4">
-                                                        <Table>
-                                                            <TableHeader>
-                                                                <TableRow>
-                                                                    <TableHead>
-                                                                        Kode
-                                                                    </TableHead>
-                                                                    <TableHead>
-                                                                        Produk
-                                                                    </TableHead>
-                                                                    <TableHead>
-                                                                        Qty
-                                                                    </TableHead>
-                                                                    <TableHead>
-                                                                        Harga
-                                                                        Beli
-                                                                    </TableHead>
-                                                                    <TableHead>
-                                                                        Harga
-                                                                        Jual
-                                                                    </TableHead>
-                                                                    <TableHead>
-                                                                        Diskon
-                                                                    </TableHead>
-                                                                    <TableHead>
-                                                                        Subtotal
-                                                                    </TableHead>
-                                                                    <TableHead>
-                                                                        Laba
-                                                                    </TableHead>
-                                                                </TableRow>
-                                                            </TableHeader>
-
-                                                            <TableBody>
-                                                                {sale.details?.map(
-                                                                    (
-                                                                        detail: any,
-                                                                    ) => {
-                                                                        const subtotal =
-                                                                            Number(
-                                                                                detail.subtotal ||
-                                                                                    0,
-                                                                            ) -
-                                                                            Number(
-                                                                                detail.adjustment ||
-                                                                                    0,
-                                                                            );
-
-                                                                        const modal =
-                                                                            Number(
-                                                                                detail.purchase_price ||
-                                                                                    0,
-                                                                            ) *
-                                                                            Number(
-                                                                                detail.quantity ||
-                                                                                    0,
-                                                                            );
-
-                                                                        const profit =
-                                                                            subtotal -
-                                                                            modal;
-
-                                                                        return (
-                                                                            <TableRow
-                                                                                key={
-                                                                                    detail.id
-                                                                                }
-                                                                            >
-                                                                                <TableCell>
-                                                                                    {
-                                                                                        detail.code
-                                                                                    }
-                                                                                </TableCell>
-                                                                                <TableCell>
-                                                                                    {
-                                                                                        detail
-                                                                                            .purchase
-                                                                                            .product
-                                                                                            .name
-                                                                                    }
-                                                                                </TableCell>
-
-                                                                                <TableCell>
-                                                                                    {
-                                                                                        detail.quantity
-                                                                                    }
-                                                                                </TableCell>
-
-                                                                                <TableCell>
-                                                                                    {formatRupiah(
-                                                                                        detail.purchase_price,
-                                                                                    )}
-                                                                                </TableCell>
-
-                                                                                <TableCell>
-                                                                                    {formatRupiah(
-                                                                                        detail.selling_price,
-                                                                                    )}
-                                                                                </TableCell>
-                                                                                <TableCell>
-                                                                                    {formatRupiah(
-                                                                                        detail.adjustment,
-                                                                                    )}
-                                                                                </TableCell>
-
-                                                                                <TableCell>
-                                                                                    {formatRupiah(
-                                                                                        detail.subtotal -
-                                                                                            detail.adjustment,
-                                                                                    )}
-                                                                                </TableCell>
-
-                                                                                <TableCell className="font-semibold text-green-600">
-                                                                                    {formatRupiah(
-                                                                                        profit,
-                                                                                    )}
-                                                                                </TableCell>
-                                                                            </TableRow>
-                                                                        );
-                                                                    },
-                                                                )}
-                                                            </TableBody>
-                                                        </Table>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </Fragment>
-                                );
-                            })}
+                                                </TableRow>
+                                            )}
+                                        </Fragment>
+                                    );
+                                })
+                            ) : (
+                                <TableRow>
+                                    <TableCell
+                                        colSpan={columns.length}
+                                        className="h-24 text-center text-muted-foreground"
+                                    >
+                                        Tidak ada data transaksi
+                                    </TableCell>
+                                </TableRow>
+                            )}
                         </TableBody>
                     </Table>
                     <TablePagination pagination={pagination} />
