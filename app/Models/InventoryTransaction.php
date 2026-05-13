@@ -9,7 +9,7 @@ use App\Enums\InventorySource;
 
 class InventoryTransaction extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes;    
 
     protected $fillable = [
         'product_id',
@@ -61,6 +61,17 @@ class InventoryTransaction extends Model
         };
     }
 
+    public function purchaseReference()
+    {
+        return $this->belongsTo(Purchase::class, 'reference_id')
+            ->withTrashed();
+    }
+
+    public function saleReference()
+    {
+        return $this->belongsTo(SaleTransactionDetail::class, 'reference_id')
+            ->withTrashed();
+    }
     public function isIn(): bool
     {
         return $this->type === InventoryType::IN;

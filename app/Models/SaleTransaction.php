@@ -35,7 +35,14 @@ class SaleTransaction extends Model
     {
         return $this->hasMany(SaleTransactionDetail::class);
     }
-
+    public function saleTransactionDetails()
+    {
+        return $this->hasMany(
+            SaleTransactionDetail::class,
+            'purchase_id',
+            'id'
+        );
+    }
     public function paymentMethod()
     {
         return $this->belongsTo(PaymentMethod::class);
@@ -59,5 +66,57 @@ class SaleTransaction extends Model
     public function deletedBy()
     {
         return $this->belongsTo(User::class, 'deleted_by');
+    }
+
+        public function groupedDetails()
+    {
+        return $this->hasMany(
+            SaleTransactionDetail::class,
+            'sale_transaction_id'
+        )
+
+            ->join(
+                'purchases',
+                'purchases.id',
+                '=',
+                'sale_transaction_details.purchase_id'
+            )
+
+            ->join(
+                'products',
+                'products.id',
+                '=',
+                'purchases.product_id'
+            )
+
+            ->selectRaw('
+                sale_transaction_details.sale_transaction_id,
+
+                products.id as product_id,
+                products.name as product_name,
+                products.brand as product_brand,
+
+                sale_transaction_details.purchase_price,
+                sale_transaction_details.selling_price,
+
+                MAX(sale_transaction_details.id) as id,
+                MAX(sale_transaction_details.code) as code,
+
+                SUM(sale_transaction_details.quantity) as quantity,
+                SUM(sale_transaction_details.subtotal) as subtotal,
+                SUM(sale_transaction_details.adjustment) as adjustment
+            ')
+
+            ->groupBy(
+                'sale_transaction_details.sale_transaction_id',
+
+                'products.id',
+                'products.name',
+                'products.brand',
+
+                'sale_transaction_details.purchase_price',
+                'sale_transaction_details.selling_price'
+            )
+            ->with('purchase.product');
     }
 }

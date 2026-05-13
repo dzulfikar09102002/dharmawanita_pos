@@ -149,14 +149,14 @@ export default function Index({
                 quantity: 1,
                 purchase_price: Math.round(product.purchase_price),
                 selling_price: Math.round(product.selling_price),
-                purchase_date: new Date().toISOString().split('T')[0],
+                purchase_date: '',
                 expired_date: product.expired_date
                     ? new Date(product.expired_date).toISOString().split('T')[0]
                     : null,
                 year,
                 code: '',
                 supplier_id: null,
-                source: 'purchase',
+                source: '',
             },
         ]);
     };

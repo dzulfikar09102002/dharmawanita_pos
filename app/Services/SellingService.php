@@ -19,91 +19,110 @@ class SellingService
     $search = request('search', '');
     $category_id = request('product_category_id', 'all');
 
-    /**
-     * 🔥 STOCK QUERY FINAL (HANDLE PURCHASE + SALE + RETURN)
-     */
     $stock = \DB::table('inventory_transactions as it')
 
-        // 🔥 langsung ke purchase (beli + cancel + return ke supplier)
         ->leftJoin('purchases as p', function ($join) {
             $join->on('p.id', '=', 'it.reference_id')
                 ->where('it.reference_table', '=', 'purchase');
         })
 
-        // 🔥 ke sale_transaction_details (jual + return dari customer)
         ->leftJoin('sale_transaction_details as std', function ($join) {
             $join->on('std.id', '=', 'it.reference_id')
                 ->where('it.reference_table', '=', 'sale');
         })
 
-        // 🔥 ambil purchase asal dari sale
-        ->leftJoin('purchases as p_from_sale', 'p_from_sale.id', '=', 'std.purchase_id')
+        ->leftJoin(
+            'purchases as p_from_sale',
+            'p_from_sale.id',
+            '=',
+            'std.purchase_id'
+        )
 
         ->selectRaw('
-            COALESCE(p.code, p_from_sale.code) as code,
+            COALESCE(p.product_id, p_from_sale.product_id) as product_id,
+
+            COALESCE(p.selling_price, p_from_sale.selling_price) as selling_price,
 
             SUM(
-                CASE 
+                CASE
                     WHEN it.type = "in" THEN it.quantity
                     WHEN it.type = "out" THEN -it.quantity
                     ELSE 0
                 END
             ) as total_quantity
         ')
+
         ->whereNull('it.deleted_at')
 
         ->groupByRaw('
-            COALESCE(p.code, p_from_sale.code)
+            COALESCE(p.product_id, p_from_sale.product_id),
+            COALESCE(p.selling_price, p_from_sale.selling_price)
         ');
 
-    $base = Purchase::query()
+    $query = Purchase::query()
+
+        ->with('product.category')
+
         ->when($search, function ($query) use ($search) {
+
             $query->where(function ($q) use ($search) {
-                $q->where('purchases.code', 'like', "%$search%")
+
+                $q->where('purchases.code', 'like', "%{$search}%")
+
                     ->orWhereHas('product', function ($q2) use ($search) {
-                        $q2->where('name', 'like', "%$search%")
-                            ->orWhere('brand', 'like', "%$search%");
+
+                        $q2->where('name', 'like', "%{$search}%")
+                            ->orWhere('brand', 'like', "%{$search}%");
                     });
             });
         })
+
         ->when($category_id !== 'all', function ($query) use ($category_id) {
+
             $query->whereHas('product', function ($q) use ($category_id) {
+
                 $q->where('category_id', $category_id);
             });
-        });
-
-    /**
-     * 🔥 FINAL QUERY
-     */
-    $query = $base
-        ->leftJoinSub($stock, 'stock', function ($join) {
-            $join->on('stock.code', '=', 'purchases.code');
         })
-        ->selectRaw('
-            purchases.code,
-            purchases.product_id,
 
+        ->leftJoinSub($stock, 'stock', function ($join) {
+
+            $join->on('stock.product_id', '=', 'purchases.product_id')
+
+                ->on('stock.selling_price', '=', 'purchases.selling_price');
+        })
+
+        ->selectRaw('
             MAX(purchases.id) as id,
+
+            purchases.product_id,
+            purchases.selling_price,
+
+            MAX(purchases.code) as code,
 
             COALESCE(MAX(stock.total_quantity), 0) as total_quantity,
 
             MAX(purchases.purchase_price) as purchase_price,
-            MAX(purchases.selling_price) as selling_price,
             MAX(purchases.expired_date) as expired_date,
             MAX(purchases.purchase_date) as purchase_date,
             MAX(purchases.updated_at) as updated_at
         ')
-        ->groupBy('purchases.code', 'purchases.product_id')
+
+        ->groupBy(
+            'purchases.product_id',
+            'purchases.selling_price'
+        )
+
         ->orderByRaw('
-            CASE 
+            CASE
                 WHEN COALESCE(MAX(stock.total_quantity), 0) > 0 THEN 0
                 ELSE 1
             END
         ')
+
         ->orderByDesc('updated_at');
 
     return $query
-        ->with('product.category')
         ->paginate(request('per_page', 20))
         ->withQueryString();
 }
@@ -133,6 +152,7 @@ class SellingService
             $user  = auth()->id();
 
             $grandTotal = collect($items)->sum(function ($item) {
+
                 $subtotal = $item['quantity'] * $item['selling_price'];
                 $discount = $item['discount'] ?? 0;
 
@@ -155,42 +175,121 @@ class SellingService
                 'created_by'       => $user,
                 'updated_by'       => $user,
             ]);
+
             foreach ($items as $item) {
 
-                $subtotal = $item['quantity'] * $item['selling_price'];
+                $remainingQty = (int) $item['quantity'];
 
-                $detail = SaleTransactionDetail::create([
-                    'sale_transaction_id' => $sale->id,
-                    'purchase_id'         => $item['purchase_id'],
-                    'code'                => $item['code'],
-                    'quantity'            => $item['quantity'],
-                    'purchase_price'      => $item['purchase_price'],
-                    'selling_price'       => $item['selling_price'],
-                    'subtotal'            => $subtotal,
-                    'adjustment'          => $item['discount'],
-                    'created_by'          => $user,
-                    'updated_by'          => $user,
-                ]);
+                $purchases = Purchase::query()
 
-                InventoryTransaction::create([
-                    'product_id'     => $item['product_id'],
-                    'type'           => 'out',
-                    'source'         => 'sale',
-                    'reference_id'   => $detail->id,
-                    'reference_table'=> 'sale',
-                    'quantity'       => $item['quantity'],
-                    'purchase_price' => $item['purchase_price'],
-                    'selling_price'  => $item['selling_price'],
-                    'note'           => 'Penjualan barang',
-                    'created_by'     => $user,
-                    'updated_by'     => $user,
-                ]);
+                    ->where('product_id', $item['product_id'])
+
+                    ->where('selling_price', $item['selling_price'])
+
+                    ->whereNull('deleted_at')
+
+                    ->orderBy('purchase_date', 'asc')
+                    ->orderBy('id', 'asc')
+
+                    ->get();
+
+                foreach ($purchases as $purchase) {
+
+                    $stockIn = InventoryTransaction::query()
+
+                        ->where('reference_table', 'purchase')
+                        ->where('reference_id', $purchase->id)
+                        ->where('type', 'in')
+
+                        ->sum('quantity');
+
+                    $stockOut = InventoryTransaction::query()
+
+                        ->leftJoin(
+                            'sale_transaction_details as std',
+                            'std.id',
+                            '=',
+                            'inventory_transactions.reference_id'
+                        )
+
+                        ->where('inventory_transactions.reference_table', 'sale')
+                        ->where('inventory_transactions.type', 'out')
+
+                        ->where('std.purchase_id', $purchase->id)
+
+                        ->sum('inventory_transactions.quantity');
+
+                    $availableStock = $stockIn - $stockOut;
+
+                    if ($availableStock <= 0) {
+                        continue;
+                    }
+
+                    $takenQty = min($remainingQty, $availableStock);
+
+                    $subtotal = $takenQty * $item['selling_price'];
+
+                    $detail = SaleTransactionDetail::create([
+                        'sale_transaction_id' => $sale->id,
+
+                        'purchase_id'         => $purchase->id,
+
+                        'code'                => $purchase->code,
+
+                        'quantity'            => $takenQty,
+
+                        'purchase_price'      => $purchase->purchase_price,
+
+                        'selling_price'       => $item['selling_price'],
+
+                        'subtotal'            => $subtotal,
+
+                        'adjustment'          => $item['discount'] ?? 0,
+
+                        'created_by'          => $user,
+                        'updated_by'          => $user,
+                    ]);
+                    InventoryTransaction::create([
+                        'product_id'      => $item['product_id'],
+
+                        'type'            => 'out',
+
+                        'source'          => 'sale',
+
+                        'reference_id'    => $detail->id,
+
+                        'reference_table' => 'sale',
+
+                        'quantity'        => $takenQty,
+
+                        'purchase_price'  => $purchase->purchase_price,
+
+                        'selling_price'   => $item['selling_price'],
+
+                        'note'            => 'Penjualan barang FIFO',
+
+                        'created_by'      => $user,
+                        'updated_by'      => $user,
+                    ]);
+
+                    $remainingQty -= $takenQty;
+
+                    if ($remainingQty <= 0) {
+                        break;
+                    }
+                }
+                
+                if ($remainingQty > 0) {
+
+                    throw new \Exception(
+                        "Stok produk {$item['product_id']} tidak mencukupi"
+                    );
+                }
             }
 
             return $sale;
         });
     }
-
     private function generateInvoiceNumber(?string $date = null): string
     {
         $date = $date ? Carbon::parse($date) : now();

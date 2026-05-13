@@ -38,8 +38,6 @@ export function DatePicker({ value, onChange, maxDate }: DatePickerProps) {
                     mode="single"
                     selected={date}
                     captionLayout="dropdown"
-                    fromYear={2000}
-                    toYear={new Date().getFullYear()}
                     disabled={maxDate ? { after: maxDate } : undefined}
                     onSelect={(d) =>
                         onChange(

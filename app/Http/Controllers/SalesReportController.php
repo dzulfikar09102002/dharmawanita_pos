@@ -31,7 +31,7 @@ class SalesReportController extends Controller
             ->findOrFail($id);
 
         $pagination = $this->service->getDetailSalesReport($id);
-
+        
         return Inertia::render('reports/sellings/detail', [
             'pagination' => $pagination,
             'transaction' => $transaction,

@@ -19,6 +19,11 @@ class Supplier extends Model
         'deleted_by',
     ];
 
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class);
+    }
+
     // Relasi ke user
     public function createdBy()
     {

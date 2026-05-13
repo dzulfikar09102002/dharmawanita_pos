@@ -17,6 +17,7 @@ import {
     BaggageClaim,
     Calculator,
     NotebookPen,
+    ClipboardList,
 } from 'lucide-react';
 
 import AppLogo from '@/components/app-logo';
@@ -44,49 +45,50 @@ import reportsStocks from '@/routes/reportsStocks';
 import sellings from '@/routes/sellings';
 import salesSummary from '@/routes/sales-summary';
 import cashLedgers from '@/routes/cash-ledgers';
-import supplierTransactions from '@/routes/supplier-transactions';
-
+import supplierCards from '@/routes/supplier-cards';
+import stockCard from '@/routes/stock-card';
 const mainNavItems = [
     {
         title: 'Dashboard',
         href: dashboard().url,
         icon: LayoutDashboard,
     },
+
     {
-        title: 'Kasir',
-        href: sellings.index().url,
+        title: 'Transaksi',
         icon: ScanBarcode,
-    },
-    {
-        title: 'Rekapan',
-        href: salesSummary.index().url,
-        icon: Calculator,
+        children: [
+            {
+                title: 'Barang Keluar',
+                href: sellings.index().url,
+                icon: ScanBarcode,
+            },
+            {
+                title: 'Barang Masuk',
+                href: purchases.index().url,
+                icon: ShoppingBasket,
+            },
+        ],
     },
 
     {
-        title: 'Barang Masuk',
-        href: purchases.index().url,
-        icon: ShoppingBasket,
-    },
-
-    {
-        title: 'Laporan',
+        title: 'Monitoring',
         icon: BarChart3,
         children: [
             {
-                title: 'Penjualan',
-                href: '/reports/sales',
-                icon: Receipt,
-            },
-            {
-                title: 'Pembelian',
-                href: '/reports/purchases',
-                icon: ShoppingBasket,
+                title: 'Rekapan',
+                href: salesSummary.index().url,
+                icon: Calculator,
             },
             {
                 title: 'Stok',
                 href: reportsStocks.index().url,
                 icon: Boxes,
+            },
+            {
+                title: 'Kartu Supplier',
+                href: supplierCards.index().url,
+                icon: Truck,
             },
             {
                 title: 'Keuangan',
@@ -98,10 +100,27 @@ const mainNavItems = [
                 href: '/reports/laba-rugi',
                 icon: BadgePoundSterling,
             },
+        ],
+    },
+
+    {
+        title: 'Laporan',
+        icon: Receipt,
+        children: [
             {
-                title: 'Supplier',
-                href: supplierTransactions.index().url,
-                icon: Truck,
+                title: 'Laporan Penjualan',
+                href: '/reports/sales',
+                icon: Receipt,
+            },
+            {
+                title: 'Laporan Pembelian',
+                href: '/reports/purchases',
+                icon: ShoppingBasket,
+            },
+            {
+                title: 'Kartu Stok',
+                href: stockCard.index().url,
+                icon: ClipboardList,
             },
         ],
     },
@@ -110,9 +129,21 @@ const mainNavItems = [
         title: 'Master Data',
         icon: Database,
         children: [
-            { title: 'Produk', href: products.index().url, icon: Package },
-            { title: 'Kategori', href: categories.index().url, icon: Tags },
-            { title: 'Supplier', href: suppliers.index().url, icon: Truck },
+            {
+                title: 'Produk',
+                href: products.index().url,
+                icon: Package,
+            },
+            {
+                title: 'Kategori',
+                href: categories.index().url,
+                icon: Tags,
+            },
+            {
+                title: 'Supplier',
+                href: suppliers.index().url,
+                icon: Truck,
+            },
             {
                 title: 'Metode Pembayaran',
                 href: paymentMethods.index().url,
@@ -126,7 +157,6 @@ const mainNavItems = [
         ],
     },
 ];
-
 export function AppSidebar() {
     return (
         <Sidebar collapsible="offcanvas" variant="inset">

@@ -31,7 +31,7 @@ import { FieldLabel } from '@/components/ui/field';
 import { DatePicker } from '@/components/ui/date-picker';
 import NumberBoardDiscount from '@/components/number-board-discount';
 
-const title = 'Kasir / Penjualan';
+const title = 'Barang Keluar';
 
 type Option = {
     value: string;
@@ -72,14 +72,12 @@ type Props = {
 export default function Index({ pagination, categoryOptions }: Props) {
     const { data: products } = pagination;
 
-    const today = new Date().toISOString().split('T')[0];
-
     const { data, setData, post, processing, errors } = useForm<{
         items: Item[];
         transaction_date: string | null;
     }>({
         items: [],
-        transaction_date: today,
+        transaction_date: null,
     });
     const err = (key: string) => ((errors as any)[key] ? 'border-red-500' : '');
     const query = useQuery();
@@ -170,8 +168,9 @@ export default function Index({ pagination, categoryOptions }: Props) {
         0,
     );
 
-    const handleSearch = (e: React.SyntheticEvent<HTMLFormElement>) => {
+    const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
         const formData = new FormData(e.currentTarget);
 
         router.get(
@@ -208,34 +207,6 @@ export default function Index({ pagination, categoryOptions }: Props) {
 
         router.get(first_page_url, { page }, inertiaOptions);
     };
-
-    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const handleSearchChange = (value: string) => {
-        setSearchValue(value);
-
-        if (debounceRef.current) {
-            clearTimeout(debounceRef.current);
-        }
-
-        debounceRef.current = setTimeout(() => {
-            router.get(
-                sellings.index().url,
-                {
-                    search: value,
-                    product_category_id:
-                        categoryValue === 'all' ? '' : categoryValue,
-                    page: 1,
-                },
-                {
-                    preserveState: true,
-                    replace: true,
-                    only: ['pagination'],
-                },
-            );
-        }, 300);
-    };
-    const autoAddedRef = useRef<string | null>(null);
-    const isFirstLoad = useRef(true);
     const [submitting, setSubmitting] = useState(false);
     const [discountModalOpen, setDiscountModalOpen] = useState(false);
     const [selectedDiscountIndex, setSelectedDiscountIndex] = useState<
@@ -253,46 +224,6 @@ export default function Index({ pagination, categoryOptions }: Props) {
 
         setDiscountModalOpen(false);
     };
-    useEffect(() => {
-        if (isFirstLoad.current) {
-            isFirstLoad.current = false;
-            return;
-        }
-
-        if (!searchValue) return;
-
-        if (products.length !== 1) {
-            autoAddedRef.current = null;
-            return;
-        }
-
-        const purchase = products[0];
-
-        if (autoAddedRef.current === purchase.id.toString()) {
-            return;
-        }
-
-        addItem(purchase);
-
-        autoAddedRef.current = purchase.id.toString();
-
-        setSearchValue('');
-        setCategoryValue('all');
-
-        router.get(
-            sellings.index().url,
-            {
-                search: '',
-                product_category_id: '',
-                page: 1,
-            },
-            {
-                preserveState: true,
-                replace: true,
-                only: ['pagination'],
-            },
-        );
-    }, [products]);
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={title} />
@@ -301,7 +232,6 @@ export default function Index({ pagination, categoryOptions }: Props) {
                 <Card className="flex flex-col">
                     <CardHeader>
                         <div className="grid gap-2 lg:grid-cols-[30%_70%]">
-                            {/* CATEGORY */}
                             <Combobox
                                 items={safeCategoryOptions}
                                 value={safeCategoryOptions.find(
@@ -315,7 +245,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
                                     router.get(
                                         sellings.index().url,
                                         {
-                                            search: searchValue,
+                                            search,
                                             product_category_id:
                                                 newValue === 'all'
                                                     ? ''
@@ -351,13 +281,13 @@ export default function Index({ pagination, categoryOptions }: Props) {
                                     </ComboboxList>
                                 </ComboboxContent>
                             </Combobox>
-                            <Input
-                                value={searchValue}
-                                onChange={(e) =>
-                                    handleSearchChange(e.target.value)
-                                }
-                                placeholder="Cari produk..."
-                            />
+                            <form onSubmit={handleSearch} className="w-full">
+                                <Input
+                                    name="search"
+                                    defaultValue={search}
+                                    placeholder="Cari produk..."
+                                />
+                            </form>
                         </div>
                     </CardHeader>
 
@@ -399,7 +329,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
                                             }}
                                         >
                                             <CardContent className="pl-4">
-                                                <div className="absolute top-1 left-2">
+                                                <div className="absolute top-1 right-2">
                                                     <span
                                                         className={`rounded px-2 py-0.5 text-[11px] font-medium text-white ${
                                                             purchase.total_quantity >
@@ -415,12 +345,6 @@ export default function Index({ pagination, categoryOptions }: Props) {
                                                     </span>
                                                 </div>
 
-                                                <div className="absolute top-1 right-2">
-                                                    <span className="rounded bg-muted px-2 py-0.5 text-[11px] font-medium">
-                                                        {purchase.code}
-                                                    </span>
-                                                </div>
-
                                                 <div className="mt-2 text-sm font-semibold">
                                                     {product?.name}
                                                 </div>
@@ -429,7 +353,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
                                                     {product?.brand}
                                                 </div>
 
-                                                <div className="mt-4 text-sm font-semibold">
+                                                <div className="text-md mt-4 font-semibold">
                                                     {new Intl.NumberFormat(
                                                         'id-ID',
                                                         {
@@ -710,7 +634,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
                         className="mx-auto mt-4 w-[95%] cursor-pointer"
                         disabled={submitting || data.items.length === 0}
                         onClick={() => {
-                            if (submitting) return; // anti double click
+                            if (submitting) return;
 
                             if (!data.transaction_date) {
                                 toast.error('Tanggal wajib diisi');
@@ -739,7 +663,7 @@ export default function Index({ pagination, categoryOptions }: Props) {
                                 onSuccess: () => {
                                     setData({
                                         items: [],
-                                        transaction_date: today,
+                                        transaction_date: null,
                                     });
 
                                     toast.success('Data berhasil disimpan');

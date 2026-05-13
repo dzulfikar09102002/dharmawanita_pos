@@ -25,6 +25,7 @@ import {
     Table,
     TableBody,
     TableCell,
+    TableFooter,
     TableHead,
     TableHeader,
     TableRow,
@@ -899,7 +900,6 @@ export default function Index({
                                                     ))}
                                             </TableRow>
 
-                                            {/* DETAIL */}
                                             {expanded && (
                                                 <TableRow>
                                                     <TableCell
@@ -914,10 +914,10 @@ export default function Index({
                                                                 <TableHeader>
                                                                     <TableRow>
                                                                         <TableHead>
-                                                                            Kode
+                                                                            Produk
                                                                         </TableHead>
                                                                         <TableHead>
-                                                                            Produk
+                                                                            Brand
                                                                         </TableHead>
                                                                         <TableHead>
                                                                             Qty
@@ -943,9 +943,10 @@ export default function Index({
                                                                 </TableHeader>
 
                                                                 <TableBody>
-                                                                    {sale.details?.map(
+                                                                    {sale.grouped_details?.map(
                                                                         (
                                                                             detail: any,
+                                                                            index: number,
                                                                         ) => {
                                                                             const subtotal =
                                                                                 Number(
@@ -974,23 +975,25 @@ export default function Index({
                                                                             return (
                                                                                 <TableRow
                                                                                     key={
-                                                                                        detail.id
+                                                                                        index
                                                                                     }
+                                                                                    className="border-b"
                                                                                 >
                                                                                     <TableCell>
-                                                                                        {
-                                                                                            detail.code
-                                                                                        }
-                                                                                    </TableCell>
-                                                                                    <TableCell>
-                                                                                        {
-                                                                                            detail
-                                                                                                .purchase
-                                                                                                .product
-                                                                                                .name
-                                                                                        }
+                                                                                        <div className="flex flex-col">
+                                                                                            <span>
+                                                                                                {
+                                                                                                    detail.product_name
+                                                                                                }
+                                                                                            </span>
+                                                                                        </div>
                                                                                     </TableCell>
 
+                                                                                    <TableCell>
+                                                                                        {
+                                                                                            detail.product_brand
+                                                                                        }
+                                                                                    </TableCell>
                                                                                     <TableCell>
                                                                                         {
                                                                                             detail.quantity
@@ -1008,6 +1011,7 @@ export default function Index({
                                                                                             detail.selling_price,
                                                                                         )}
                                                                                     </TableCell>
+
                                                                                     <TableCell>
                                                                                         {formatRupiah(
                                                                                             detail.adjustment,
@@ -1016,8 +1020,7 @@ export default function Index({
 
                                                                                     <TableCell>
                                                                                         {formatRupiah(
-                                                                                            detail.subtotal -
-                                                                                                detail.adjustment,
+                                                                                            subtotal,
                                                                                         )}
                                                                                     </TableCell>
 
@@ -1050,6 +1053,23 @@ export default function Index({
                                 </TableRow>
                             )}
                         </TableBody>
+                        <TableFooter>
+                            {table.getFooterGroups().map((footerGroup) => (
+                                <TableRow key={footerGroup.id}>
+                                    {footerGroup.headers.map((header) => (
+                                        <TableCell key={header.id}>
+                                            {header.isPlaceholder
+                                                ? null
+                                                : flexRender(
+                                                      header.column.columnDef
+                                                          .footer,
+                                                      header.getContext(),
+                                                  )}
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            ))}
+                        </TableFooter>
                     </Table>
                     <TablePagination pagination={pagination} />
                 </CardContent>

@@ -155,9 +155,12 @@ export default function Index({ summary }: Props) {
                         }}
                     >
                         {allExpanded ? (
-                            <ChevronDown size={16} />
+                            <ChevronDown className="cursor-pointer" size={16} />
                         ) : (
-                            <ChevronRight size={16} />
+                            <ChevronRight
+                                className="cursor-pointer"
+                                size={16}
+                            />
                         )}
                     </button>
                 );
@@ -178,9 +181,12 @@ export default function Index({ summary }: Props) {
                         }
                     >
                         {expanded ? (
-                            <ChevronDown size={16} />
+                            <ChevronDown className="cursor-pointer" size={16} />
                         ) : (
-                            <ChevronRight size={16} />
+                            <ChevronRight
+                                className="cursor-pointer"
+                                size={16}
+                            />
                         )}
                     </button>
                 );
@@ -225,25 +231,39 @@ export default function Index({ summary }: Props) {
             cell: (info) => formatRupiah(info.getValue()),
         }),
 
-        columnHelper.accessor('profit', {
+        {
+            id: 'profit',
             header: 'Laba',
 
-            cell: (info) => {
-                const value = Number(info.getValue() || 0);
+            cell: ({ row }) => {
+                const sale = row.original;
+
+                const totalProfit =
+                    sale.details?.reduce((total: number, detail: any) => {
+                        const subtotal =
+                            Number(detail.subtotal || 0) -
+                            Number(detail.adjustment || 0);
+
+                        const modal =
+                            Number(detail.purchase_price || 0) *
+                            Number(detail.quantity || 0);
+
+                        return total + (subtotal - modal);
+                    }, 0) || 0;
 
                 return (
                     <span
                         className={
-                            value >= 0
+                            totalProfit >= 0
                                 ? 'font-semibold text-green-600'
                                 : 'font-semibold text-red-600'
                         }
                     >
-                        {formatRupiah(value)}
+                        {formatRupiah(totalProfit)}
                     </span>
                 );
             },
-        }),
+        },
     ];
     const table = useReactTable({
         data,
@@ -349,7 +369,7 @@ export default function Index({ summary }: Props) {
                                 </div>
                                 <div>
                                     <p className="text-sm text-muted-foreground">
-                                        Pendapatan
+                                        Penjualan
                                     </p>
                                     <p className="text-2xl font-bold">
                                         {formatRupiah(summary.total_pendapatan)}
@@ -553,10 +573,10 @@ export default function Index({ summary }: Props) {
                                                                 <TableHeader>
                                                                     <TableRow>
                                                                         <TableHead>
-                                                                            Kode
+                                                                            Produk
                                                                         </TableHead>
                                                                         <TableHead>
-                                                                            Produk
+                                                                            Brand
                                                                         </TableHead>
                                                                         <TableHead>
                                                                             Qty
@@ -582,7 +602,7 @@ export default function Index({ summary }: Props) {
                                                                 </TableHeader>
 
                                                                 <TableBody>
-                                                                    {sale.details?.map(
+                                                                    {sale.grouped_details?.map(
                                                                         (
                                                                             detail: any,
                                                                         ) => {
@@ -618,16 +638,12 @@ export default function Index({ summary }: Props) {
                                                                                 >
                                                                                     <TableCell>
                                                                                         {
-                                                                                            detail.code
+                                                                                            detail.product_name
                                                                                         }
                                                                                     </TableCell>
-
                                                                                     <TableCell>
                                                                                         {
-                                                                                            detail
-                                                                                                .purchase
-                                                                                                ?.product
-                                                                                                ?.name
+                                                                                            detail.product_brand
                                                                                         }
                                                                                     </TableCell>
 
@@ -691,7 +707,23 @@ export default function Index({ summary }: Props) {
                             )}
                         </TableBody>
                     </Table>
+                    <div className="mt-4 rounded-lg border bg-muted/30 px-4 py-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-bold">
+                                TOTAL LABA
+                            </span>
 
+                            <span
+                                className={`text-md font-bold ${
+                                    Number(summary.total_profit) >= 0
+                                        ? 'text-green-600'
+                                        : 'text-red-600'
+                                }`}
+                            >
+                                {formatRupiah(summary.total_profit)}
+                            </span>
+                        </div>
+                    </div>
                     <div className="mt-4">
                         <TablePagination pagination={pagination} />
                     </div>

@@ -53,7 +53,7 @@ function CollapsibleItem({ item }: { item: NavItem }) {
         <div>
             <button
                 onClick={() => setOpen(!open)}
-                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 transition ${isActive ? 'bg-muted font-semibold' : 'hover:bg-muted'} `}
+                className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 transition ${isActive ? 'bg-muted font-semibold' : 'hover:bg-muted'} `}
             >
                 <div className="flex items-center gap-2">
                     <Icon className="h-4 w-4" />

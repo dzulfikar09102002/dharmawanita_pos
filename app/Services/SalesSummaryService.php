@@ -14,12 +14,10 @@ class SalesSummaryService
     public function getSalesSummaryToday()
     {
 
-        $lastSummary = SalesSummary::whereDate('date', today())
-            ->latest('date')
-            ->first();
+        $lastSummary = SalesSummary::latest('date')->first();
 
         $start = $lastSummary
-            ? $lastSummary->date 
+            ? \Carbon\Carbon::parse($lastSummary->date)->addSecond()
             : now()->startOfDay();
 
         $end = now();
@@ -27,7 +25,7 @@ class SalesSummaryService
         $pagination = SaleTransaction::with([
             'paymentMethod',
             'purchasingMethod',
-            'details.purchase.product',
+            'groupedDetails.purchase.product',
         ])
         ->withSum(
             'details as total_revenue',
@@ -42,9 +40,12 @@ class SalesSummaryService
         ->paginate(request('per_page', 10))
             ->withQueryString();
 
-        $transactions = SaleTransaction::with(['details', 'paymentMethod'])
+        $transactions = SaleTransaction::with([
+            'groupedDetails',
+            'paymentMethod'
+        ])
             ->whereBetween('transaction_date', [$start, $end])
-            ->get();    
+            ->get(); 
 
         $totalTransaksi = $transactions->count();
 
@@ -54,6 +55,22 @@ class SalesSummaryService
 
         $totalPendapatan = $transactions->sum(function ($trx) {
             return max(0, ($trx->total_amount ?? 0) - ($trx->change ?? 0));
+        });
+
+        $totalProfit = $transactions->sum(function ($trx) {
+
+            return $trx->details->sum(function ($detail) {
+
+                $subtotal =
+                    (float) ($detail->subtotal ?? 0) -
+                    (float) ($detail->adjustment ?? 0);
+
+                $modal =
+                    (float) ($detail->purchase_price ?? 0) *
+                    (float) ($detail->quantity ?? 0);
+
+                return $subtotal - $modal;
+            });
         });
 
         $byPaymentMethod = $transactions
@@ -83,6 +100,7 @@ class SalesSummaryService
             'total_pendapatan' => $totalPendapatan,
             'by_payment_method' => $byPaymentMethod,
             'pagination' => $pagination,
+            'total_profit' => $totalProfit,
         ]);
     }
     public function getHistorySalesSummaries()

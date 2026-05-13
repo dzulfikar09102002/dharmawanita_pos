@@ -5,6 +5,8 @@ use App\Http\Controllers\PaymentMethodController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SalesSummaryController;
 use App\Http\Controllers\SellingController;
+use App\Http\Controllers\StockCardController;
+use App\Http\Controllers\SupplierCardController;
 use App\Http\Controllers\SupplierTransactionsController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -63,7 +65,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/categories/{id}/restore', [CategoryController::class, 'restore'])
         ->name('categories.restore');
 
-    Route::resource('/supplier-transactions', SupplierTransactionsController::class)->except('show');
+    Route::resource('/supplier-cards', SupplierCardController::class)->except('show');
+    Route::resource('stock-card', StockCardController::class)
+    ->only(['index']);
 
     Route::resource('/suppliers', SupplierController::class)->except('show');
     Route::get('suppliers/deleted', [SupplierController::class, 'deleted'])

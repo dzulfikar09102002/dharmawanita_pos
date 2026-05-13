@@ -47,6 +47,10 @@ class Product extends Model
     return $this->hasMany(SaleTransactionDetail::class, 'product_id');
 }
 
+    public function inventoryTransactions()
+    {
+        return $this->hasMany(InventoryTransaction::class, 'product_id');
+    }
     // Relasi ke user
     public function createdBy()
     {

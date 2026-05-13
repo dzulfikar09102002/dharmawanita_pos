@@ -34,7 +34,24 @@ export interface Category {
     id: number;
     name: string;
 }
+export interface GroupedSaleTransactionDetail {
+    id: number;
+    purchase_id: number;
 
+    product_id: number;
+    product_name: string;
+    product_brand: string;
+
+    code: string;
+
+    quantity: number;
+
+    purchase_price: number;
+    selling_price: number;
+
+    subtotal: number;
+    adjustment: number;
+}
 export interface Product {
     id: number;
     category_id: number;
@@ -90,6 +107,7 @@ export interface SaleTransaction {
     payment_method?: PaymentMethod;
     change: number;
     details: SaleTransactionDetail[];
+    grouped_details?: GroupedSaleTransactionDetail[];
     purchasing_method: PurchaseMethod;
     payment_status: PaymentStatus;
     total_amount: number;
@@ -119,13 +137,44 @@ export interface PaymentMethodSummary {
     total_transaksi: number;
     total_nominal: number;
 }
+export type SupplierCardProduct = {
+    product_id: number;
+    product_name: string;
+
+    source: string;
+
+    barang_masuk: number;
+    barang_keluar: number;
+
+    laku_paid: number;
+
+    harga_beli: number;
+
+    hutang: number;
+};
+
+export type SupplierCard = {
+    // PARENT
+    supplier_id: number;
+    supplier_name: string;
+
+    total_masuk: number;
+    total_keluar: number;
+
+    total_laku_paid: number;
+
+    total_hutang: number;
+
+    // CHILDREN
+    products: SupplierCardProduct[];
+};
 export interface SalesSummary {
     total_transaksi: number;
     total_item: number;
     total_pendapatan: number;
     by_payment_method: PaymentMethodSummary[];
     pagination: Pagination<SaleTransaction>;
-
+    total_profit: number;
     id: number;
     date: string;
     total_sales: number;
@@ -150,6 +199,7 @@ export interface SaleTransactionDetail {
     subtotal: number;
     adjustment: number;
     return_transaction?: InventoryTransaction[];
+    sale_transaction?: SaleTransaction;
 }
 
 export interface Stock {
@@ -176,6 +226,15 @@ export interface InventoryTransaction {
     purchase_price: number;
     selling_price: number;
     note?: string;
+    product?: Product | null;
+    purchase_reference?: Purchase | null;
+    sale_reference?: SaleTransactionDetail | null;
+    created_by?: number | null;
+    updated_by?: number | null;
+    deleted_by?: number | null;
+    created_at?: string;
+    updated_at?: string;
+    deleted_at?: string | null;
 }
 export interface LabaRugi {
     bulan: number;

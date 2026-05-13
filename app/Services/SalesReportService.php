@@ -31,7 +31,7 @@ class SalesReportService
 
         $query = SaleTransaction::with(
             'paymentMethod',
-            'details.purchase.product',
+            'groupedDetails.purchase.product',
             'purchasingMethod'
         )
         ->withSum(
@@ -89,28 +89,53 @@ class SalesReportService
         ];
     }
 
-    public function getDetailSalesReport(int $id)
-    {
-        $query = SaleTransactionDetail::with([
-            'purchase' => function ($q) {
-                $q->withTrashed()->with([
-                    'product' => function ($q2) {
-                        $q2->withTrashed();
-                    },
-                    'supplier' => function ($q2) {
-                        $q2->withTrashed();
-                    }
-                ]);
-            },
-            'returnTransaction'
-        ])
-        ->where('sale_transaction_id', $id);
+public function getDetailSalesReport(int $id)
+{
+    $query = SaleTransactionDetail::with([
+        'purchase' => function ($q) {
+            $q->withTrashed()->with([
+                'product' => function ($q2) {
+                    $q2->withTrashed();
+                },
+                'supplier' => function ($q2) {
+                    $q2->withTrashed();
+                }
+            ]);
+        },
+        'returnTransaction'
+    ])
+    ->where('sale_transaction_id', $id);
 
-        return $query
-            ->paginate(request('per_page', 10))
-            ->withQueryString();
-    }
+    $data = $query
+        ->paginate(request('per_page', 10))
+        ->withQueryString();
 
+    $grouped = $data->getCollection()
+        ->groupBy(function ($item) {
+            return implode('-', [
+                $item->purchase?->product?->id,
+                $item->purchase_price,
+                $item->selling_price,
+            ]);
+        })
+        ->map(function ($items) {
+
+            $first = $items->first();
+
+            $first->quantity = $items->sum('quantity');
+
+            $first->subtotal = $items->sum('subtotal');
+
+            $first->adjustment = $items->sum('adjustment');
+
+            return $first;
+        })
+        ->values();
+
+    $data->setCollection($grouped);
+
+    return $data;
+}
     public function cancel(int $id)
     {
         return DB::transaction(function () use ($id) {

@@ -66,6 +66,10 @@ class Purchase extends Model
         ->where('type', 'in')
         ->where('reference_table', 'purchase');
     }
+    public function saleTransactionDetails()
+    {
+        return $this->hasMany(SaleTransactionDetail::class);
+    }
     public function returnTransaction()
     {
         return $this->hasMany(

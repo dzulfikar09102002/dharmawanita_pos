@@ -25,9 +25,10 @@ class SaleTransactionDetail extends Model
     ];
 
     // Relasi
-    public function saleTransaction()
+   public function saleTransaction()
     {
-        return $this->belongsTo(SaleTransaction::class);
+        return $this->belongsTo(SaleTransaction::class)
+            ->withTrashed();
     }
 
     public function purchase()
@@ -69,4 +70,5 @@ class SaleTransactionDetail extends Model
     {
         return $this->belongsTo(User::class, 'deleted_by');
     }
+
 }
