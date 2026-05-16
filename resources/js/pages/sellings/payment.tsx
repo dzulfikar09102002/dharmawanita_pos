@@ -29,10 +29,12 @@ type Props = {
     transaction: SaleTransaction;
     purchasingMethods: PurchaseMethod[];
 };
+
 type Option = {
     value: string;
     label: string;
 };
+
 export default function Payment({
     details,
     paymentMethods,
@@ -41,20 +43,24 @@ export default function Payment({
 }: Props) {
     const [selectedPayment, setSelectedPayment] =
         useState<PaymentMethod | null>(null);
+
     const purchasingOptions: Option[] = purchasingMethods.map((m) => ({
         value: String(m.id),
         label: m.name,
     }));
 
+    // HAPUS DEFAULT
     const [selectedPurchasing, setSelectedPurchasing] = useState<Option | null>(
-        purchasingOptions.find((opt) => Number(opt.value) === 1) ?? null,
+        null,
     );
+
     const [cashModalOpen, setCashModalOpen] = useState(false);
     const [cashAmount, setCashAmount] = useState(0);
 
     const grandTotal = Number(transaction.grand_total ?? 0);
     const paidSoFar = Number(transaction.total_amount ?? 0);
     const remaining = Math.max(grandTotal - paidSoFar, 0);
+
     const groupedPayments = paymentMethods.reduce<
         Record<string, PaymentMethod[]>
     >((acc, method) => {
@@ -74,18 +80,24 @@ export default function Payment({
     const isCash = selectedPayment?.kind === 'cash';
 
     const change = cashAmount - remaining;
+
     const [reason, setReason] = useState('');
+
     const showReason = selectedPurchasing
         ? Number(selectedPurchasing.value) > 2
         : false;
+
     useEffect(() => {
         if (!isCash) {
             setCashModalOpen(false);
         }
     }, [selectedPayment]);
+
     const showPaymentDetail =
         showReason || (selectedPayment && (isCash ? cashAmount > 0 : true));
+
     const [processing, setProcessing] = useState(false);
+
     return (
         <AppLayout>
             <Head title="Pembayaran" />
@@ -101,6 +113,7 @@ export default function Payment({
             />
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[65%_35%]">
+                {/* ================= LEFT : ORDER ================= */}
                 <Card>
                     <CardHeader>
                         <h2 className="text-lg font-semibold">
@@ -109,25 +122,49 @@ export default function Payment({
                     </CardHeader>
 
                     <CardContent className="space-y-3">
-                        {details.map((item) => (
-                            <div
-                                key={item.id}
-                                className="flex justify-between rounded-md bg-muted p-3"
-                            >
-                                <div>
-                                    {item.quantity} x{' '}
-                                    {item.purchase?.product?.name ?? 'Produk'}
-                                </div>
+                        {details.map((item) => {
+                            const subtotal = Number(item.subtotal ?? 0);
+                            const adjustment = Number(item.adjustment ?? 0);
+                            const finalSubtotal = subtotal - adjustment;
 
-                                <div>
-                                    {formatIDR(Number(item.subtotal ?? 0))}
+                            return (
+                                <div
+                                    key={item.id}
+                                    className="rounded-md bg-muted p-3"
+                                >
+                                    <div className="flex justify-between">
+                                        <div>
+                                            {item.quantity} x{' '}
+                                            {item.purchase?.product?.name ??
+                                                'Produk'}
+                                        </div>
+
+                                        <div>{formatIDR(subtotal)}</div>
+                                    </div>
+
+                                    {adjustment > 0 && (
+                                        <div className="mt-1 flex justify-between text-sm text-red-500">
+                                            <span>Diskon</span>
+
+                                            <span>
+                                                -{formatIDR(adjustment)}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div className="mt-2 flex justify-between border-t pt-2 font-semibold">
+                                        <span>Total</span>
+
+                                        <span>{formatIDR(finalSubtotal)}</span>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
 
                         <div className="mt-6 space-y-2 border-t pt-4">
                             <div className="flex justify-between text-base font-semibold">
                                 <span>Grand Total</span>
+
                                 <span>{formatIDR(grandTotal)}</span>
                             </div>
                         </div>
@@ -144,6 +181,7 @@ export default function Payment({
                         <div className="space-y-2 rounded-md bg-muted p-4">
                             <div className="flex justify-between text-sm">
                                 <span>Total Pesanan</span>
+
                                 <span className="font-semibold">
                                     {formatIDR(grandTotal)}
                                 </span>
@@ -153,6 +191,7 @@ export default function Payment({
                                 <>
                                     <div className="flex justify-between text-sm">
                                         <span>Sudah Dibayar</span>
+
                                         <span className="font-semibold text-green-600">
                                             {formatIDR(paidSoFar)}
                                         </span>
@@ -160,6 +199,7 @@ export default function Payment({
 
                                     <div className="flex justify-between text-sm">
                                         <span>Sisa Pembayaran</span>
+
                                         <span className="font-semibold text-red-500">
                                             {formatIDR(remaining)}
                                         </span>
@@ -172,6 +212,7 @@ export default function Payment({
                                     {showReason ? (
                                         <div className="flex justify-between text-sm">
                                             <span>Kerugian</span>
+
                                             <span className="font-semibold text-red-500">
                                                 {formatIDR(remaining)}
                                             </span>
@@ -180,6 +221,7 @@ export default function Payment({
                                         <>
                                             <div className="flex justify-between text-sm">
                                                 <span>Pembayaran</span>
+
                                                 <span className="font-semibold">
                                                     {formatIDR(
                                                         isCash
@@ -196,6 +238,7 @@ export default function Payment({
                                                             ? 'Kembalian'
                                                             : 'Kurang Bayar'}
                                                     </span>
+
                                                     <span
                                                         className={`font-semibold ${
                                                             change >= 0
@@ -214,10 +257,11 @@ export default function Payment({
                                 </>
                             )}
                         </div>
+
+                        {/* ================= PAYMENT METHOD ================= */}
                         <div className="space-y-4">
                             <h4 className="font-medium">Metode Pembayaran</h4>
 
-                            {/* ================= CASH (STATIC) ================= */}
                             <div className="space-y-2">
                                 <div className="text-sm font-medium capitalize">
                                     Cash
@@ -270,6 +314,7 @@ export default function Payment({
                                                         );
 
                                                         setCashModalOpen(false);
+
                                                         setCashAmount(
                                                             grandTotal,
                                                         );
@@ -283,7 +328,10 @@ export default function Payment({
                                 ))}
                         </div>
                         <div className="space-y-4">
-                            <h4 className="font-medium">Metode Pembelian</h4>
+                            <h4 className="font-medium">
+                                Metode Pembelian{' '}
+                                <span className="text-red-500">*</span>
+                            </h4>
                             <Combobox
                                 items={purchasingOptions}
                                 value={selectedPurchasing}
@@ -293,16 +341,14 @@ export default function Payment({
                             >
                                 <ComboboxInput
                                     placeholder="Pilih Metode Pembelian"
-                                    className={`w-full ${
-                                        !selectedPurchasing
-                                            ? 'border-red-500 focus:ring-red-500'
-                                            : ''
-                                    }`}
+                                    className="w-full"
                                 />
+
                                 <ComboboxContent>
                                     <ComboboxEmpty>
                                         Tidak ditemukan
                                     </ComboboxEmpty>
+
                                     <ComboboxList>
                                         {(el) => (
                                             <ComboboxItem
@@ -315,7 +361,6 @@ export default function Payment({
                                     </ComboboxList>
                                 </ComboboxContent>
                             </Combobox>
-
                             {!selectedPurchasing && (
                                 <p className="text-xs text-red-500">
                                     Metode pembelian wajib dipilih
@@ -323,16 +368,18 @@ export default function Payment({
                             )}
                         </div>
                         {showReason && (
-                            <div className="space-y-2">
+                            <div className="space-y-1">
                                 <label className="text-sm font-medium">
                                     Alasan
                                 </label>
+
                                 <textarea
                                     className="w-full rounded-md border p-2 text-sm"
                                     placeholder="Masukkan alasan..."
                                     value={reason}
                                     onChange={(e) => setReason(e.target.value)}
                                 />
+
                                 {reason === '' && (
                                     <p className="text-xs text-red-500">
                                         Alasan wajib diisi
@@ -370,6 +417,7 @@ export default function Payment({
                                                   ? change
                                                   : 0
                                               : 0,
+
                                         purchase_method_id: selectedPurchasing
                                             ? Number(selectedPurchasing.value)
                                             : null,
@@ -391,10 +439,12 @@ export default function Payment({
 
                                         onError: (err) => {
                                             console.log(err);
+
                                             toast.error('Gagal!', {
                                                 id: 'pay',
                                             });
                                         },
+
                                         onFinish: () => {
                                             setProcessing(false);
                                         },

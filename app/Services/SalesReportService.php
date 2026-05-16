@@ -208,7 +208,17 @@ public function getDetailSalesReport(int $id)
 
         $data = SaleTransaction::with([
                 'paymentMethod',
-                'details.purchase.product',
+                'groupedDetails' => function ($q) {
+                    $q->with([
+                        'purchase' => function ($q2) {
+                            $q2->withTrashed()->with([
+                                'product' => function ($q3) {
+                                    $q3->withTrashed();
+                                }
+                            ]);
+                        }
+                    ]);
+                },
                 'details.inventoryTransactions',
                 'purchasingMethod'
             ])
@@ -259,7 +269,17 @@ public function getDetailSalesReport(int $id)
         $data = SaleTransaction::onlyTrashed()
             ->with([
                 'paymentMethod',
-                'details.purchase.product',
+                'groupedDetails' => function ($q) {
+                    $q->with([
+                        'purchase' => function ($q2) {
+                            $q2->withTrashed()->with([
+                                'product' => function ($q3) {
+                                    $q3->withTrashed();
+                                }
+                            ]);
+                        }
+                    ]);
+                },
                 'details.inventoryTransactions',
                 'purchasingMethod'
             ])

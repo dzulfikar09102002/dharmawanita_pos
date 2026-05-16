@@ -22,6 +22,7 @@ class StorePaymentRequest extends FormRequest
                 'min:0',
             ],
             'purchase_method_id' => [
+                'required',
                 'numeric',
                 'min:0',
             ],

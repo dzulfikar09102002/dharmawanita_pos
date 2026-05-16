@@ -180,6 +180,15 @@ class SellingService
 
                 $remainingQty = (int) $item['quantity'];
 
+                $totalQty = (int) $item['quantity'];
+
+                $totalDiscount = (float) ($item['discount'] ?? 0);
+
+                // diskon per qty
+                $discountPerQty = $totalQty > 0
+                    ? $totalDiscount / $totalQty
+                    : 0;
+
                 $purchases = Purchase::query()
 
                     ->where('product_id', $item['product_id'])
@@ -195,31 +204,61 @@ class SellingService
 
                 foreach ($purchases as $purchase) {
 
-                    $stockIn = InventoryTransaction::query()
+                $purchaseIn = InventoryTransaction::query()
 
-                        ->where('reference_table', 'purchase')
-                        ->where('reference_id', $purchase->id)
-                        ->where('type', 'in')
+                    ->where('reference_table', 'purchase')
+                    ->where('reference_id', $purchase->id)
+                    ->where('type', 'in')
 
-                        ->sum('quantity');
+                    ->sum('quantity');
 
-                    $stockOut = InventoryTransaction::query()
+                $saleReturnIn = InventoryTransaction::query()
 
-                        ->leftJoin(
-                            'sale_transaction_details as std',
-                            'std.id',
-                            '=',
-                            'inventory_transactions.reference_id'
-                        )
+                    ->leftJoin(
+                        'sale_transaction_details as std',
+                        'std.id',
+                        '=',
+                        'inventory_transactions.reference_id'
+                    )
 
-                        ->where('inventory_transactions.reference_table', 'sale')
-                        ->where('inventory_transactions.type', 'out')
+                    ->where('inventory_transactions.reference_table', 'sale')
+                    ->where('inventory_transactions.type', 'in')
 
-                        ->where('std.purchase_id', $purchase->id)
+                    ->where('std.purchase_id', $purchase->id)
 
-                        ->sum('inventory_transactions.quantity');
+                    ->sum('inventory_transactions.quantity');
 
-                    $availableStock = $stockIn - $stockOut;
+                $stockIn = $purchaseIn + $saleReturnIn;
+
+                // pembatalan purchase
+                $purchaseOut = InventoryTransaction::query()
+
+                    ->where('reference_table', 'purchase')
+                    ->where('reference_id', $purchase->id)
+                    ->where('type', 'out')
+
+                    ->sum('quantity');
+
+                // penjualan
+                $saleOut = InventoryTransaction::query()
+
+                    ->leftJoin(
+                        'sale_transaction_details as std',
+                        'std.id',
+                        '=',
+                        'inventory_transactions.reference_id'
+                    )
+
+                    ->where('inventory_transactions.reference_table', 'sale')
+                    ->where('inventory_transactions.type', 'out')
+
+                    ->where('std.purchase_id', $purchase->id)
+
+                    ->sum('inventory_transactions.quantity');
+
+                $stockOut = $purchaseOut + $saleOut;
+
+                $availableStock = $stockIn - $stockOut;
 
                     if ($availableStock <= 0) {
                         continue;
@@ -228,6 +267,8 @@ class SellingService
                     $takenQty = min($remainingQty, $availableStock);
 
                     $subtotal = $takenQty * $item['selling_price'];
+
+                    $discountAmount = $takenQty * $discountPerQty;
 
                     $detail = SaleTransactionDetail::create([
                         'sale_transaction_id' => $sale->id,
@@ -244,13 +285,16 @@ class SellingService
 
                         'subtotal'            => $subtotal,
 
-                        'adjustment'          => $item['discount'] ?? 0,
+                        'adjustment'          => $discountAmount,
 
                         'created_by'          => $user,
                         'updated_by'          => $user,
                     ]);
+
                     InventoryTransaction::create([
                         'product_id'      => $item['product_id'],
+
+                        'purchase_id'     => $purchase->id,
 
                         'type'            => 'out',
 
@@ -277,13 +321,6 @@ class SellingService
                     if ($remainingQty <= 0) {
                         break;
                     }
-                }
-                
-                if ($remainingQty > 0) {
-
-                    throw new \Exception(
-                        "Stok produk {$item['product_id']} tidak mencukupi"
-                    );
                 }
             }
 
@@ -316,7 +353,34 @@ class SellingService
     }
     public function getTransactionDetails(int $id)
     {
-        return SaleTransactionDetail::with('purchase.product')->where('sale_transaction_id', $id)->get();
+        $data = SaleTransactionDetail::with([
+                'purchase.product'
+            ])
+            ->where('sale_transaction_id', $id)
+            ->get();
+
+        return $data
+            ->groupBy(function ($item) {
+
+                return implode('-', [
+                    $item->purchase?->product?->id,
+                    $item->purchase_price,
+                    $item->selling_price,
+                ]);
+            })
+            ->map(function ($items) {
+
+                $first = $items->first();
+
+                $first->quantity = $items->sum('quantity');
+
+                $first->subtotal = $items->sum('subtotal');
+
+                $first->adjustment = $items->sum('adjustment');
+
+                return $first;
+            })
+            ->values();
     }
     public function getSaleTransaction(int $id)
     {
