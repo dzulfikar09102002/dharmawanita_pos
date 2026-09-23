@@ -68,7 +68,7 @@ class SaleTransaction extends Model
         return $this->belongsTo(User::class, 'deleted_by');
     }
 
-        public function groupedDetails()
+    public function groupedDetails()
     {
         return $this->hasMany(
             SaleTransactionDetail::class,

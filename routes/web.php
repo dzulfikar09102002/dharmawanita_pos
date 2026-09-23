@@ -23,9 +23,9 @@ use App\Exports\StockReportExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
 
-Route::inertia('/', 'welcome', [
-    'canRegister' => Features::enabled(Features::registration()),
-])->name('home');
+Route::get('/', function () {
+    return redirect()->route('dashboard');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
    Route::get('/dashboard', [DashboardController::class, 'index'])

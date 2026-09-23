@@ -176,6 +176,7 @@ export default function Modal({
                                 onValueChange={(val: Option | null) =>
                                     setData('category_id', val?.value ?? '')
                                 }
+                                
                             >
                                 <ComboboxInput
                                     placeholder="Pilih kategori"

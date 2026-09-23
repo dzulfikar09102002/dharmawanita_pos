@@ -12,7 +12,7 @@ export default defineConfig({
             origin: '*',
         },
         hmr: {
-            host: '10.0.70.90',
+            host: '10.0.12.90',
         },
     },
     plugins: [

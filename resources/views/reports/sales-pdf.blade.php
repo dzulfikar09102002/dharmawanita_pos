@@ -96,21 +96,21 @@ tfoot tr {
 <div class="header">
     <h1>
         {{
-$isDeleted
-    ? 'LAPORAN BARANG KERUGIAN' . ($type === 'week' ? ' MINGGUAN' : '')
-    : (
-        $isCanceled
-            ? 'LAPORAN PEMBATALAN' . ($type === 'week' ? ' MINGGUAN' : '')
-            : 'LAPORAN PENJUALAN' . ($type === 'week' ? ' MINGGUAN' : '')
-      )
-}}
+            $isDeleted
+            ? 'LAPORAN BARANG KERUGIAN' . ($type === 'week' ? ' MINGGUAN' : '')
+            : (
+                $isCanceled
+                    ? 'LAPORAN PEMBATALAN' . ($type === 'week' ? ' MINGGUAN' : '')
+                    : 'LAPORAN PENJUALAN' . ($type === 'week' ? ' MINGGUAN' : '')
+              )
+        }}
     </h1>
 
     <p>
-@php
-    $start = request('start_date');
-    $end   = request('end_date');
-@endphp
+    @php
+        $start = request('start_date');
+        $end   = request('end_date');
+    @endphp
 
     @if($start && $end)
         Periode:
@@ -146,18 +146,19 @@ $isDeleted
         <th class="text-center">Jumlah</th>
         <th class="text-center">Tanggal</th>
         <th style="text-align: left;">Alasan</th>
-        <th  class="text-right">Kerugian</th>
+        <th class="text-right">Kerugian</th>
 
     @elseif($isCanceled)
         <th style="text-align: left;">Invoice</th>
         <th class="text-center">Status</th>
-        <th  class="text-center">Tanggal</th>
+        <th class="text-center">Tanggal</th>
         <th style="text-align: left;">Keterangan</th>
-        <th  class="text-right">Total</th>
+        <th class="text-right">Total</th>
 
     @else
         <th style="text-align: left;">Invoice</th>
         <th class="text-center">Status</th>
+        <th class="text-center">Metode</th>
         <th class="text-center">Tanggal</th>
         <th class="text-right">Total</th>
         <th class="text-right">Pembayaran</th>
@@ -176,7 +177,7 @@ $isDeleted
 @forelse($transactions as $week => $items)
 
 <tr>
-<td colspan="{{ $isDeleted || $isCanceled ? 6 : 8 }}"
+<td colspan="{{ $isDeleted || $isCanceled ? 6 : 9 }}"
 style="background:#e5e5e5;font-weight:bold;">
 Minggu ke-{{ $week }}
 </td>
@@ -187,7 +188,6 @@ Minggu ke-{{ $week }}
 @php
 $date = \Carbon\Carbon::parse($trx->transaction_date);
 
-// HITUNG LABA
 $revenue = $trx->details->sum(fn($d) =>
     ($d->quantity * $d->selling_price) - ($d->adjustment ?? 0)
 );
@@ -199,6 +199,13 @@ $cost = $trx->details->sum(fn($d) =>
 $profit = $trx->payment_status === 'paid'
     ? ($revenue - $cost)
     : 0;
+
+// OLAH TEKS METODE PEMBELIAN
+$paymentName  = $trx->paymentMethod->name ?? '-';
+$purchaseName = $trx->purchasingMethod->name ?? '';
+$purchaseClean = trim(str_replace(['Pembelian', 'pembelian'], '', $purchaseName));
+
+$metodeFormatted = $paymentName . ($purchaseClean ? ' - ' . $purchaseClean : '');
 @endphp
 
 <tr>
@@ -264,6 +271,10 @@ $trx->payment_status==='paid'
 </td>
 
 <td class="text-center">
+{{ $metodeFormatted }}
+</td>
+
+<td class="text-center">
 {{ $date->translatedFormat('d F Y H:i') }}
 </td>
 
@@ -285,7 +296,6 @@ Rp {{ number_format($trx->change ?? 0,0,',','.') }}
 </strong>
 </td>
 
-
 @endif
 
 </tr>
@@ -296,7 +306,7 @@ Rp {{ number_format($trx->change ?? 0,0,',','.') }}
 <tr>
 <td></td>
 
-<td colspan="7" style="padding:0 0 6px 0;">
+<td colspan="8" style="padding:0 0 6px 0;">
 <table style="width:100%; border-collapse: collapse;">
 <tbody>
 
@@ -356,9 +366,8 @@ Rp {{ number_format(($detail->adjustment ?? 0),0,',','.') }}
 
 @endforeach
 
-
 <tr>
-<td colspan="{{ $isDeleted || $isCanceled ? 5 : 7 }}"
+<td colspan="{{ $isDeleted || $isCanceled ? 5 : 8 }}"
 class="text-right">
 <strong>Subtotal Minggu {{ $week }}</strong>
 </td>
@@ -377,7 +386,7 @@ Rp {{ number_format($weeklyTotals[$week] ?? 0,0,',','.') }}
 @empty
 
 <tr>
-<td colspan="{{ $isDeleted || $isCanceled ? 6 : 9 }}"
+<td colspan="{{ $isDeleted || $isCanceled ? 6 : 10 }}"
 class="no-data">
 Tidak ada data
 </td>
@@ -403,6 +412,12 @@ $cost = $trx->details->sum(fn($d) =>
 $profit = $trx->payment_status === 'paid'
     ? ($revenue - $cost)
     : 0;
+
+$paymentName  = $trx->paymentMethod->name ?? '-';
+$purchaseName = $trx->purchasingMethod->name ?? '';
+$purchaseClean = trim(str_replace(['Pembelian', 'pembelian'], '', $purchaseName));
+
+$metodeFormatted = $paymentName . ($purchaseClean ? ' - ' . $purchaseClean : '');
 @endphp
 
 <tr>
@@ -461,6 +476,10 @@ Rp {{ number_format($trx->grand_total ?? 0,0,',','.') }}
 </td>
 
 <td class="text-center">
+{{ $metodeFormatted }}
+</td>
+
+<td class="text-center">
 {{ $date->format('d') }}
 {{ $namaBulan[(int)$date->format('n')] }}
 {{ $date->format('Y H:i') }}
@@ -494,7 +513,7 @@ Rp {{ number_format($trx->change ?? 0,0,',','.') }}
 <tr>
 <td></td>
 
-<td colspan="7" style="padding:0 0 6px 0;">
+<td colspan="8" style="padding:0 0 6px 0;">
 <table style="width:100%; border-collapse: collapse;">
 <tbody>
 
@@ -552,8 +571,6 @@ Rp {{ number_format(($detail->adjustment ?? 0),0,',','.') }}
 
 @endif
 
-</tr>
-
 @empty
 
 <tr>
@@ -569,9 +586,7 @@ Tidak ada data
 
 </tbody>
 
-
 @php
-
 $flat = $type==='week'
 ? collect($transactions)->flatten()
 : $transactions;
@@ -598,12 +613,10 @@ if($isDeleted){
         );
 
     $labelTotal='Total Penjualan';
-    $colspan=7;
+    $colspan=8;
 
 }
-
 @endphp
-
 
 <tfoot>
 <tr>
@@ -621,6 +634,7 @@ Rp {{ number_format($totalFinal,0,',','.') }}
 </strong>
 </td>
 </tr>
+
 @php
 $totalProfit = $flat
     ->where('payment_status','paid')

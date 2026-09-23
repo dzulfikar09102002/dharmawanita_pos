@@ -64,6 +64,7 @@ export interface Product {
     has_expired: boolean;
     expired_date?: string | null;
     stock: ProductStock;
+    inventory_transactions?: InventoryTransaction[];
 }
 export interface ProductStock {
     id: number;
@@ -228,6 +229,7 @@ export interface InventoryTransaction {
     note?: string;
     product?: Product | null;
     purchase_reference?: Purchase | null;
+    stock_balance?: number;
     sale_reference?: SaleTransactionDetail | null;
     created_by?: number | null;
     updated_by?: number | null;
